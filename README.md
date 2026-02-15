@@ -172,7 +172,7 @@ b. max_single_weight (0.30 / 30%)
 
 * Function: The "Anti-Blowup" Cap. No single asset can exceed 30% of the total portfolio value.
 
-* Logic: This forces the "Cubed Momentum" engine to select a basket of winners rather than betting the farm on one. Even if SMH (Semiconductors) has a perfect momentum score, the system must find at least two or three other assets (e.g., TAN, XBI) to fill the remaining allocation, ensuring a mathematical minimum diversity of ~3.33 assets (1 / 0.30).
+* Logic: This forces the "Cubed Momentum" engine to select a basket of winners rather than betting the farm on one. Even if SMH (Semiconductors) has a perfect momentum score, the system must find at least two or three other assets (e.g., TAN, XBI) to fill the remaining allocation, ensuring a mathematical minimum diversity of $\sim 3.33$ assets ($1 / 0.30$).
 
 c. gold_cap_risk_on (0.01 / 1%)
 
@@ -190,7 +190,7 @@ d. entropy_lambda (0.02)
 
 a. Transaction Cost Calculation & Formula
 
-* Total Cost per Rebalance = Portfolio Value x SUM(|Weight_new - Weight_old| x Cost_bps / 10,000)
+$$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right| \times \frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$$
 
 *  Per-Asset Transaction Costs:
 
@@ -215,7 +215,7 @@ b. min_rebalance_threshold (0.12 / 12%)
 
 * Logic: This is the most critical execution parameter. Before rebalancing, the engine calculates the total portfolio turnover (the sum of absolute weight changes).
 
-* If Turnover < 12%: Trade Cancelled.
+* If $\text{Turnover} < 12\%$: Trade Cancelled.
 
 * Effect: This prevents "noise trading"—small, mathematical adjustments that generate fees without adding significant alpha. The system only moves when the portfolio structure is significantly misaligned.
 
@@ -278,13 +278,15 @@ This is the most critical logic block in the entire script, which splits the ran
 
 a. For Equities: The "Cubed Momentum" Metric
 
-* Formula: Metric=(Price/SMA60)^3
+* Formula:
+
+$$M_i = \left(\frac{P_i}{\text{SMA}_{60,i}}\right)^3$$
 
 * The "Soft Filter": By raising the momentum ratio to the third power, the math creates an exponential gap between "Good" and "Great."
 
-Scenario A: Asset is 2% above trend (1.02^3 = 1.06).
+Scenario A: Asset is 2% above trend → $1.02^3 \approx 1.06$
 
-Scenario B: Asset is 10% above trend (1.10^3 = 1.33).
+Scenario B: Asset is 10% above trend → $1.10^3 \approx 1.33$
 
 * Result: The optimizer sees Scenario B as 5x better than Scenario A, naturally forcing capital into the fastest-moving sector without needing manual "if/else" exclusions.
 
@@ -400,13 +402,15 @@ This is not a standard "Mean-Variance" optimizer (which often produces boring, o
 
 **1. The Mathematical Objective**
 
-The heart of the optimizer is the function it tries to minimize: lambda_risk * (w^T * Sigma * w) - lambda_mom * (w . M) - lambda_entropy * H(w)
+The heart of the optimizer is the function it tries to minimize:
 
-a. Minimizing Variance (w^T * Sigma * w): It tries to keep the portfolio stable. However, with target_volatility set to 0.25, the "leash" is loose, allowing for high-beta plays.
+$$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \cdot \mathbf{w}^\top \Sigma \mathbf{w} \;-\; \lambda_{\text{mom}} \cdot (\mathbf{w} \cdot \mathbf{M}) \;-\; \lambda_{\text{entropy}} \cdot H(\mathbf{w})$$
 
-b. Maximizing Momentum (-w . M): This is the alpha driver. It pushes weights toward assets with the highest "Cubed Momentum" scores (SMH, TAN).
+a. Minimizing Variance — $\mathbf{w}^\top \Sigma \mathbf{w}$: It tries to keep the portfolio stable. However, with target_volatility set to 0.25, the "leash" is loose, allowing for high-beta plays.
 
-c. Maximizing Entropy (-H(w)): The entropy_lambda (set to 0.02) is the "Anti-Concentration" term. It prevents the math from simply putting 100% into the single best stock. It forces a slight spread across the top 3-4 winners.
+b. Maximizing Momentum — $-\mathbf{w} \cdot \mathbf{M}$: This is the alpha driver. It pushes weights toward assets with the highest "Cubed Momentum" scores (SMH, TAN).
+
+c. Maximizing Entropy — $-H(\mathbf{w})$: The entropy_lambda (set to 0.02) is the "Anti-Concentration" term. It prevents the math from simply putting 100% into the single best stock. It forces a slight spread across the top 3-4 winners.
 
 **2. The Bifurcated Bounds Engine**
 
@@ -471,11 +475,11 @@ This is the critical logic block implemented in v10.0 to solve the "Churn Proble
 
 a. Logic: Inside the main loop, before executing any rebalance, the engine calculates the Proposed Turnover:
 
-Turnover = SUM(|Weight_new - Weight_old|)
+$$\text{Turnover} = \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right|$$
 
 b. The Rule:
 
-* If Turnover < 0.12 (12%): THE TRADE IS REJECTED.
+* If $\text{Turnover} < 0.12$ (12%): THE TRADE IS REJECTED.
 
 * Effect: The engine effectively says, "This change is too small to be worth the fees. Do nothing." It carries forward the existing portfolio weights exactly as they were.
 
@@ -487,7 +491,7 @@ If the Regime does change (e.g., Bullish to Defensive): The Gate is lifted. Safe
 
 The engine uses a tiered, per-asset transaction cost model that reflects real-world trading friction. Each asset has its own cost in basis points (see the fee table in Section I.2), ranging from 1 bps for the most liquid bond ETFs to 30 bps for cryptocurrency. The cost for each rebalance is calculated as:
 
-Cost = Portfolio Value x SUM(|Weight_new - Weight_old| x Cost_bps / 10,000)
+$$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right| \times \frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$$
 
 This penalizes high-turnover strategies proportionally to the actual friction of the assets being traded, rewarding the "Lazy" approach mandated by the Fee Guillotine.
 
@@ -507,7 +511,9 @@ b. Calculation:
 
 * If the market went up, it's a "Hit." If it went down, it's a "Miss."
 
-c. Formula: Sniper Score = Successful Bull Signals / Total Bull Signals
+c. Formula:
+
+$$\text{Sniper Score} = \frac{\text{Successful Bull Signals}}{\text{Total Bull Signals}}$$
 
 d. Target: A score >0.70 (70%) indicates the model is highly selective and only entering when the statistical edge is real.
 
@@ -591,9 +597,13 @@ The Monte Carlo Simulator serves as the final, rigorous validation layer of the 
 
 a. Mathematical Foundation: The simulator utilizes Geometric Brownian Motion, the industry-standard model for projecting asset price paths. This model assumes that the logarithm of the asset price follows a Brownian motion with drift and diffusion components.
 
-b. Drift Component (mu): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag (mu - 0.5 * sigma^2).
+b. Drift Component ($\mu$): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag:
 
-c. Diffusion Component (sigma): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable (Z).
+$$\mu_{\text{adj}} = \mu - \tfrac{1}{2}\sigma^2$$
+
+c. Diffusion Component ($\sigma$): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable ($Z$):
+
+$$S_{t+1} = S_t \cdot \exp\!\left(\mu_{\text{adj}} \cdot \Delta t + \sigma \sqrt{\Delta t} \cdot Z\right)$$
 
 d. Vectorized Execution: To handle the immense computational load, the simulation logic is fully vectorized using NumPy, allowing for the simultaneous generation of all price paths without slow iterative loops.
 
@@ -603,7 +613,7 @@ f. Statistical Convergence: While standard academic projects run 1,000 to 10,000
 
 g. Data Intensity: Projecting 1,000,000 paths over a 5-year horizon (1,260 trading days) generates a matrix containing over 1.26 billion data points. This capability acts as a dual stress test: verifying the financial strategy's robustness and demonstrating the hardware's computational capacity.
 
-h. Extreme Tail Detection: At this magnitude, the simulation can capture rare "3-sigma" or "4-sigma" events that smaller simulations often miss, providing a more honest view of potential catastrophic downside.
+h. Extreme Tail Detection: At this magnitude, the simulation can capture rare $3\sigma$ or $4\sigma$ events that smaller simulations often miss, providing a more honest view of potential catastrophic downside.
 
 **2. Risk Metrics & Output Analytics**
 

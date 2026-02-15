@@ -400,7 +400,7 @@ This is not a standard "Mean-Variance" optimizer (which often produces boring, o
 
 The heart of the optimizer is the function it tries to minimize:
 
-$$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \cdot \mathbf{w}^\top \Sigma \mathbf{w} \;-\; \lambda_{\text{mom}} \cdot (\mathbf{w} \cdot \mathbf{M}) \;-\; \lambda_{\text{entropy}} \cdot H(\mathbf{w})$$
+$$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$$
 
 a. Minimizing Variance — $\mathbf{w}^\top \Sigma \mathbf{w}$: It tries to keep the portfolio stable. However, with target_volatility set to 0.25, the "leash" is loose, allowing for high-beta plays.
 

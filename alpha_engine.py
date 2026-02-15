@@ -2,7 +2,7 @@
 """
 Regime-Adaptive Mean-Variance Optimization Strategy - Streamlit Dashboard
 ==========================================================================
-"The Alpha Dominator" v10.0 - Interactive Dashboard Edition
+"Alpha Dual Engine" v10.0 - Interactive Dashboard Edition
 
 This module refactors the terminal-based alpha_dominator_v10.py into a
 Streamlit dashboard with:
@@ -58,7 +58,7 @@ sns.set_palette("husl")
 
 @dataclass
 class StrategyConfig:
-    """Strategy configuration for The Alpha Dominator, refactored for balanced, high-return diversity."""
+    """Strategy configuration for Alpha Dual Engine, refactored for balanced, high-return diversity."""
 
     # 1. Volatility & Growth Configuration
     target_volatility: float = 0.25  # Target 25% vol — allow higher volatility for alpha
@@ -480,7 +480,7 @@ class AdaptiveRegimeClassifier:
 
 class AlphaDominatorOptimizer:
     """
-    The Alpha Dominator: IR Filter + Growth Anchor + Shannon Entropy
+    Alpha Dual Engine: IR Filter + Growth Anchor + Shannon Entropy
     """
 
     def __init__(
@@ -1383,7 +1383,7 @@ class BacktestEngine:
             f"Optimal Rebal: {metrics['optimal_rebalance_period']}d"
         )
 
-        ax.set_title('The Alpha Dominator v10.0 - IR Filter + Growth Anchor', fontsize=12)
+        ax.set_title('Alpha Dual Engine v10.0 - IR Filter + Growth Anchor', fontsize=12)
         ax.set_ylabel('Portfolio Value ($)')
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
         ax.legend(loc='upper left')
@@ -1872,11 +1872,23 @@ def render_detailed_metrics(metrics: Dict, engine: BacktestEngine, classifier: A
 def main():
     """Main Streamlit application."""
     st.set_page_config(
-        page_title="Alpha Dominator v10.0",
+        page_title="Alpha Dual Engine v10.0",
         page_icon="📈",
         layout="wide",
         initial_sidebar_state="expanded"
     )
+
+    # ==========================================================================
+    # AUTO-RESET: Clear stale slider state when code defaults change
+    # Bump _CONFIG_VERSION any time you change a slider default value.
+    # ==========================================================================
+    _CONFIG_VERSION = 2
+    if st.session_state.get("_config_version") != _CONFIG_VERSION:
+        # Wipe all widget keys so sliders re-read code defaults
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.session_state["_config_version"] = _CONFIG_VERSION
+        st.rerun()
 
     # ==========================================================================
     # SIDEBAR CONTROLS (must come after set_page_config)
@@ -1888,7 +1900,7 @@ def main():
         st.cache_resource.clear()
         st.rerun()
 
-    st.title("🎯 The Alpha Dominator v10.0")
+    st.title("🎯 Alpha Dual Engine v10.0")
     st.markdown("**IR Filter + Growth Anchor + Regularized ML**")
 
     ml_threshold = st.sidebar.slider(
@@ -1897,6 +1909,7 @@ def main():
         max_value=0.80,
         value=0.55,
         step=0.01,
+        key="ml_threshold_v2",
         help="Probability threshold for RISK_ON regime classification"
     )
 
@@ -1904,9 +1917,10 @@ def main():
         "Min Growth Anchor Weight",
         min_value=0.10,
         max_value=0.80,
-        value=0.60,
+        value=0.40,
         step=0.05,
-        help="Minimum combined weight for QQQ+XLK+SMH+VGT in RISK_ON"
+        key="min_growth_anchor_v2",
+        help="Minimum combined weight for SMH+XBI+TAN+IGV in RISK_ON"
     )
 
     n_simulations = st.sidebar.number_input(
@@ -1928,6 +1942,7 @@ def main():
         max_value=1.0,
         value=0.5,
         step=0.05,
+        key="ir_threshold_v2",
         help="Information Ratio threshold for asset eligibility"
     )
 
@@ -1935,17 +1950,19 @@ def main():
         "Gold Cap (Risk On)",
         min_value=0.0,
         max_value=0.20,
-        value=0.05,
+        value=0.01,
         step=0.01,
+        key="gold_cap_v2",
         help="Maximum gold allocation in RISK_ON regime"
     )
 
     turnover_penalty = st.sidebar.slider(
         "Turnover Penalty",
         min_value=0.0,
-        max_value=100.0,
-        value=50.0,
-        step=5.0,
+        max_value=5.0,
+        value=0.3,
+        step=0.1,
+        key="turnover_penalty_v2",
         help="Penalty multiplier for portfolio turnover"
     )
 
@@ -2138,7 +2155,7 @@ def main():
     st.markdown(
         f"""
         <div style='text-align: center; color: gray; font-size: 12px;'>
-        The Alpha Dominator v10.0 | Data Period: {prices.index[0].date()} to {prices.index[-1].date()} | 
+        Alpha Dual Engine v10.0 | Data Period: {prices.index[0].date()} to {prices.index[-1].date()} | 
         Assets: {', '.join(dm.all_tickers)}
         </div>
         """,

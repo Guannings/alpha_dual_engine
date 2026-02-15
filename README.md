@@ -25,12 +25,12 @@ Open your terminal (or Command Prompt) and run:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Guannings/privtate_testing.git
+git clone https://github.com/Guannings/alpha_dual_engine.git
 ```
 
 ### 3. Enter the project folder and install dependencies
 ```bash
-cd private_testing
+cd alpha_dual_engine
 pip install -r requirements.txt
 ```
 

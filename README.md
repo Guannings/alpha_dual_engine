@@ -1,22 +1,22 @@
-# **🚀 How to Run the Docker File**
+# **How to Run the Docker File**
 
-This project is fully containerized to ensure reproducibility. 
+This project is fully containerized to ensure reproducibility.
 
-**It runs consistently on whatever software envirionment using Docker.**
+**It runs consistently on whatever software environment using Docker.**
 
 ### 1. Prerequisites
 **a. Docker Desktop (The Environment)**
 
   Installed and running ([Download here if you don't have one](https://www.docker.com/products/docker-desktop/))
-  
-**b. Git (The Code Downloader)** 
+
+**b. Git (The Code Downloader)**
 
   Check if you have it by typing `git --version` in your terminal. If not installed:
-  
+
    **macOS:** Open Terminal and type `xcode-select --install` or download from [git-scm.com](https://git-scm.com/download/mac).
-   
+
    **Windows:** Download and install **Git for Windows** from [gitforwindows.org](https://gitforwindows.org/).
-   
+
    **Linux:** Run `sudo apt-get install git` (Debian/Ubuntu).
 
 
@@ -34,9 +34,9 @@ cd alpha_dual_engine
 pip install -r requirements.txt
 ```
 
-### 4. Build the Docker Image (This installs the Python 3.11 environment + XGBoost + SHAP.)
+### 4. Build the Docker Image (This installs the Python 3.9 environment + XGBoost + SHAP.)
 ```bash
-docker build --no-cache -t alpha-dominatorr .
+docker build --no-cache -t alpha-dual_engine .
 ```
 
 ### 5. Launching the Dashboard (Choose One Method)
@@ -57,23 +57,23 @@ Method B: Manual Build & Run (Advanced) Use this if you want to configure specif
 
 ```bash
 # 1. Build the Image (Force fresh build)
-docker build --no-cache -t alpha-dominatorr .
+docker build --no-cache -t alpha-dual_engine .
 ```
 
 ```bash
 # 2. Run the Container
-docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dominatorr
+docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dual_engine
 ```
 
-### 💡 Troubleshooting & Best Practices
+### Troubleshooting & Best Practices
 #### **1. Avoid System Folders (Windows Users)**
-Do **not** clone this repository into `C:\Windows\System32` or other restricted system directories. This will cause permission errors with Git and Docker. 
+Do **not** clone this repository into `C:\Windows\System32` or other restricted system directories. This will cause permission errors with Git and Docker.
 
 **Recommended Path:** Clone into a user-controlled folder via the commands below:
 ```bash
 # Go to your user folder
 cd ~
-# Then go to oyur desktop:
+# Then go to your desktop:
 cd Desktop
 ```
 Then proceed with **2. Installation** and its following commands.
@@ -82,47 +82,47 @@ Then proceed with **2. Installation** and its following commands.
 If you encounter a "Path not found" error when using `cd`, ensure you are matching the exact capitalization of the repository:
 ```powershell
 # Use Tab-completion in your terminal to avoid typos
-cd Alpha-Dominator-Quant
+cd alpha_dual_engine
 ```
 
 #### **3. Port Conflicts:**
-**If port 8501 is busy, simply use Option B above to map it to a different local port (replace the 4-digit number before -8501 to with a 4-digit number of your choice).**
+**If port 8501 is busy, simply use Option B above to map it to a different local port (replace the first `8501` before the colon with a port number of your choice, e.g. `-p 9000:8501`).**
 
 ====================================================================================
 
-# **🖥️ Computational Requirements**
+# **Computational Requirements**
 
 To ensure the stability of the **Monte Carlo simulation engine** and the **XGBoost training pipeline**, the following resources are recommended:
 
 **1. Memory (RAM):**
 
   **a. System Total:** 8GB minimum.
-      
+
   **b. Docker Allocation:**
-      
+
  Ensure at least **4GB** is dedicated to the container in Docker Desktop settings.
-      
+
  This prevents **Out-of-Memory (OOM)** errors during the 1,000,000-path stress tests.
-      
+
 **2. Processor (CPU):**
-  
+
 a. **4+ Cores** recommended.
-    
+
 b. The machine learning model utilizes multi-threading for rapid retraining and regime classification.
-      
+
 **3. Connectivity:**
-  
+
 Data Pipeline: High-speed internet access is mandatory for real-time data ingestion via the Yahoo Finance API.
 
 ====================================================================================
-# **⚠️ Disclaimer and Terms of Use**
+# **Disclaimer and Terms of Use**
 **1. Educational Purpose Only**
 
-This software is for educational and research purposes only and was built as a personal project by a student, PEHC, studing at National Chengchi University (NCCU). It is not intended to be a source of financial advice, and the author is not registered financial advisors. The algorithms, simulations, and optimization techniques implemented herein—including Consensus Machine Learning, Shannon Entropy, and Geometric Brownian Motion—are demonstrations of theoretical concepts and should not be construed as a recommendation to buy, sell, or hold any specific security or asset class.
+This software is for educational and research purposes only and was built as a personal project by a student, PEHC, studying at National Chengchi University (NCCU). It is not intended to be a source of financial advice, and the author is not a registered financial advisor. The algorithms, simulations, and optimization techniques implemented herein—including Consensus Machine Learning, Shannon Entropy, and Geometric Brownian Motion—are demonstrations of theoretical concepts and should not be construed as a recommendation to buy, sell, or hold any specific security or asset class.
 
 **2. No Financial Advice**
 
-Nothing in this repository constitutes professional financial, legal, or tax advice. Investment decisions should be made based on your own research and consultation with a qualified financial professional. The strategies modeled in this software—specifically the 60% Growth Anchor and IR Filter—may not be suitable for your specific financial situation, risk tolerance, or investment goals.
+Nothing in this repository constitutes professional financial, legal, or tax advice. Investment decisions should be made based on your own research and consultation with a qualified financial professional. The strategies modeled in this software—specifically the 40% Growth Anchor and IR Filter—may not be suitable for your specific financial situation, risk tolerance, or investment goals.
 
 **3. Risk of Loss**
 
@@ -138,7 +138,7 @@ d. Market Data: Data fetched from third-party APIs (e.g., Yahoo Finance) may be 
 
 **4. Hardware and Computation Liability**
 
-The author assumes no responsibility for hardware failure, system instability, or data loss resulting from the execution of the 1,000,000 Monte Carlo simulations. Execution of this code at the configured scale is a high-stress computational event that should only be performed on hardware meeting the minimum specified 32GB RAM requirements.
+The author assumes no responsibility for hardware failure, system instability, or data loss resulting from the execution of the 1,000,000 Monte Carlo simulations. Execution of this code at the configured scale is a high-stress computational event that should only be performed on hardware meeting the minimum specified 8GB RAM requirements.
 
 **5. "AS-IS" SOFTWARE WARRANTY**
 
@@ -147,13 +147,13 @@ The author assumes no responsibility for hardware failure, system instability, o
 **BY USING THIS SOFTWARE, YOU AGREE TO ASSUME ALL RISKS ASSOCIATED WITH YOUR INVESTMENT DECISIONS AND HARDWARE USAGE, RELEASING THE AUTHOR (PEHC) FROM ANY LIABILITY REGARDING YOUR FINANCIAL OUTCOMES OR SYSTEM INTEGRITY.**
 
 ====================================================================================
-# **📖Alpha Dominator v100.0: The "Alpha Engine" Framework**
+# **Alpha Dual Engine v10.0: The "Alpha Engine" Framework**
 
-This documentation details the architecture of Alpha Dominator v100.0, a high-performance quantitative trading system refactored to prioritize "Acceleration Alpha" over passive diversification and engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a Bifurcated Logic that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles). Unlike traditional mean-variance models that treat all assets identically, v100.0 utilizes a Bifurcated Logic Engine that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles).
+This documentation details the architecture of Alpha Dual Engine v10.0, a high-performance quantitative trading system refactored to prioritize "Acceleration Alpha" over passive diversification and engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a Bifurcated Logic that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles). Unlike traditional mean-variance models that treat all assets identically, v10.0 utilizes a Bifurcated Logic Engine that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles).
 
 **I. Configuration & Constants (StrategyConfig)**
 
-The StrategyConfig class serves as the immutable constitution of the Alpha Dominator v100.0. Defined as a Python dataclass, it centralizes every hard-coded rule, risk limit, and execution parameter into a single, modifiable control panel. This design ensures that the strategy's logic remains separated from its parameters, allowing for rapid sensitivity testing without risking code breakage.
+The StrategyConfig class serves as the immutable constitution of the Alpha Dual Engine v10.0. Defined as a Python dataclass, it centralizes every hard-coded rule, risk limit, and execution parameter into a single, modifiable control panel. This design ensures that the strategy's logic remains separated from its parameters, allowing for rapid sensitivity testing without risking code breakage.
 
 This section acts as the primary filter for all downstream logic. If a trade or allocation violates these parameters, it is rejected before it ever reaches the optimization engine.
 
@@ -180,20 +180,20 @@ c. gold_cap_risk_on (0.01 / 1%)
 
 * Logic: During a RISK_ON regime, the strategy is strictly prohibited from allocating more than 1% to Gold (GLD). This prevents the optimizer from "hiding" in safe-haven assets during a bull market, ensuring 99% of capital is deployed into productive, high-beta assets.
 
-d. entropy_lambda (0.01)
+d. entropy_lambda (0.02)
 
 * Function: The penalty for concentration.
 
-* Logic: A low lambda value (0.01) tells the optimizer that we prefer concentration over diversification. It allows the weights to cluster near the 30% maximums rather than being flattened out equally across all assets.
+* Logic: A low lambda value (0.02) tells the optimizer that we prefer concentration over diversification. It allows the weights to cluster near the 30% maximums rather than being flattened out equally across all assets.
 
 **2. Execution & Cost Control (The "Fee Guillotine")**
 
-a. Transcation Cost Calculation & Formula
+a. Transaction Cost Calculation & Formula
 
-* Total Cost per Rebalance = Portfolio Value × Σ(|Weight_new - Weight_old| × Cost_bps / 10,000)
+* Total Cost per Rebalance = Portfolio Value x SUM(|Weight_new - Weight_old| x Cost_bps / 10,000)
 
-*  Per-Asset Transaction Costs:                                                                                          
-                                                                                                                        
+*  Per-Asset Transaction Costs:
+
  | Ticker | Asset Name | Asset Class | Cost (bps) | Cost (%) | Rationale |
 | :--- | :--- | :--- | :---: | :---: | :--- |
 | **QQQ** | Invesco QQQ Trust | Large-cap Equity | 3 | 0.03% | Nasdaq 100 ETF, extremely liquid, tight spreads, commission-free |
@@ -209,27 +209,27 @@ a. Transcation Cost Calculation & Formula
 | **BTC-USD** | Bitcoin | Cryptocurrency | 30 | 0.30% | Exchange fees (10-25 bps) + spread (5-10 bps) |
 | **ETH-USD** | Ethereum | Cryptocurrency | 30 | 0.30% | Exchange fees (10-25 bps) + spread (5-10 bps) |
 
-b. min_turnover_threshold (0.20 / 20%)
+b. min_rebalance_threshold (0.12 / 12%)
 
 * Function: The Trade Gate.
 
 * Logic: This is the most critical execution parameter. Before rebalancing, the engine calculates the total portfolio turnover (the sum of absolute weight changes).
 
-* If Turnover < 20% AND the Regime is unchanged: Trade Cancelled.
+* If Turnover < 12%: Trade Cancelled.
 
-* Effect: This prevents "noise trading"—small, mathematical adjustments (e.g., selling 1% of Apple to buy 1% of Microsoft) that generate fees without adding significant alpha. The system only moves when the portfolio structure is significantly misaligned.
+* Effect: This prevents "noise trading"—small, mathematical adjustments that generate fees without adding significant alpha. The system only moves when the portfolio structure is significantly misaligned.
 
 **3. Crypto Architecture Constraints**
 
 These parameters define the Active HODL engine, treating crypto as a distinct asset class with its own physics.
 
-a. crypto_min_weight (0.05 / 5%)
+a. crypto_floor_risk_on (0.05 / 5%)
 
 * Function: The "Zero-Coin" Prevention Floor.
 
 * Logic: Regardless of how bad the chart looks, the strategy is mathematically forbidden from holding less than 5% in the crypto bucket (BTC + ETH). This ensures exposure to "God Candles"—sudden, violent upside moves that often occur after periods of despair.
 
-b. crypto_max_weight (0.15 / 15%)
+b. total_crypto_cap (0.15 / 15%)
 
 * Function: The Volatility Containment Ceiling.
 
@@ -256,35 +256,35 @@ b. anxiety_vix_threshold (18.0)
 
 The DataManager class is the manufacturing plant of the strategy. It is responsible for ingesting raw, noisy market data and refining it into the precise "fuel" needed for both the Machine Learning models and the Portfolio Optimizer.
 
-In v100.0, this class has been radically re-engineered to support the Bifurcated Asset Logic, treating Crypto and Equities as fundamentally different data species.
+In v10.0, this class has been radically re-engineered to support the Bifurcated Asset Logic, treating Crypto and Equities as fundamentally different data species.
 
 **1. Universe Construction (The "Alpha Roster")**
 
-a. Growth Anchors (The Engine): SMH (Semiconductors), TAN (Solar), XBI (Biotech), IWM (Small Caps).
+a. Growth Anchors (The Engine): SMH (Semiconductors), XBI (Biotech), TAN (Solar), IGV (Software).
 
-* Logic: These are "High Beta" sectors. They move faster than the S&P 500. The strategy intentionally excludes broad, slow indices (like QQQ or SPY) from the growth bucket to prevent "Beta Drag."
+* Logic: These are "High Beta" sectors. They move faster than the S&P 500. The strategy intentionally designates these as the core growth drivers to maximize acceleration alpha.
 
 b. Crypto Assets (The Turbo): BTC-USD, ETH-USD.
 
 * Logic: These provide non-correlated, exponential upside potential.
 
-c. Defensive Assets (The Brakes): TLT (Long-Term Treasuries), SHY (Cash Proxy), GLD (Gold).
+c. Defensive Assets (The Brakes): TLT (Long-Term Treasuries), IEF (Intermediate Treasuries), SHY (Cash Proxy), GLD (Gold).
 
 * Logic: These are the "Panic Buttons." When the regime flips to DEFENSIVE, capital flees here.
 
-**2.The Bifurcated Signal Engine**
+**2. The Bifurcated Signal Engine**
 
 This is the most critical logic block in the entire script, which splits the ranking logic based on the asset class.
 
 a. For Equities: The "Cubed Momentum" Metric
 
 * Formula: Metric=(Price/SMA60)^3
-  
+
 * The "Soft Filter": By raising the momentum ratio to the third power, the math creates an exponential gap between "Good" and "Great."
 
-Scenario A: Asset is 2% above trend (1.02^3 ≈1.06).
+Scenario A: Asset is 2% above trend (1.02^3 = 1.06).
 
-Scenario B: Asset is 10% above trend (1.10^3≈1.33).
+Scenario B: Asset is 10% above trend (1.10^3 = 1.33).
 
 * Result: The optimizer sees Scenario B as 5x better than Scenario A, naturally forcing capital into the fastest-moving sector without needing manual "if/else" exclusions.
 
@@ -300,7 +300,7 @@ b. For Crypto: The "RSI Rotation" Metric
 
 This section builds the input vectors for the Machine Learning "Brain." It distills the complex market state into 7 digestible numbers:
 
-a. volatility: Realized 21-day volatility of the S&P 500 (Market Fear).
+a. realized_vol: Realized volatility derived from the VIX (Market Fear).
 
 b. trend_score: Distance of SPY from its 200-day SMA (The "Bull/Bear" Line).
 
@@ -308,15 +308,15 @@ c. momentum_21d: Short-term velocity of the market (Breakout detection).
 
 d. vol_momentum: Rate of change in the VIX (Is fear rising or falling?).
 
-e. corr_spy_tl: Correlation between Stocks and Bonds (Detects "Everything Crashes" like 2022).
+e. qqq_vs_spy: Relative performance of QQQ vs SPY over 63 days (Tech leadership signal).
 
-f. bond_mom: Momentum of TLT (Detects Interest Rate shocks).
+f. tlt_momentum: Momentum of TLT (Detects Interest Rate shocks).
 
-g. erp (Equity Risk Premium): A valuation metric comparing Earnings Yield to Bond Yields.
+g. equity_risk_premium: A valuation metric comparing SPY's mean-reversion ratio to the risk-free rate.
 
-**4. emporal Integrity (The "Time Machine")**
+**4. Temporal Integrity (The "Time Machine")**
 
-The get_data_for_date method ensures the backtest is honest.
+The get_aligned_data method ensures the backtest is honest.
 
 a. The Lag: It strictly uses data up to the close of T-1 (yesterday) to make decisions for T (today).
 
@@ -327,7 +327,7 @@ b. The NaN Handler: It forward-fills missing data (common in Crypto vs. Stock we
 
 The AdaptiveRegimeClassifier is the central nervous system of the strategy, responsible for the binary decision that determines portfolio survival: "Risk-On" (Aggressive Growth) or "Defensive" (Capital Preservation).
 
-In v100.0, this system was upgraded from a pure Machine Learning model to a Hybrid Override Architecture. This solves the "Black Box" problem by enforcing a strict hierarchy: Macro Logic overrules ML Probabilities.
+In v10.0, this system was upgraded from a pure Machine Learning model to a Hybrid Override Architecture. This solves the "Black Box" problem by enforcing a strict hierarchy: Macro Logic overrules ML Probabilities.
 
 **1. The Macro Override (The "Anti-Coward" Switch)**
 
@@ -353,19 +353,19 @@ a. Model Alpha: XGBoost (The Aggressor)
 
 * Strength: Excellent at catching "V-shaped" recoveries where price action snaps back quickly despite high fear levels.
 
-b. Model Beta: Random Forest (The Skeptic)
+b. Model Beta: Decision Tree (The Skeptic)
 
 * Role: Filters out noise and false breakouts.
 
-* Configuration: Shallow trees with high regularization.
+* Configuration: Shallow tree (max_depth=2) with high regularization (min_samples_leaf=200).
 
 * Strength: Prevents the XGBoost model from overreacting to short-term noise.
 
-c.The Consensus Rule:
+c. The Consensus Rule:
 
 To trigger a RISK_ON signal in the absence of a Macro Override, BOTH models must agree with high conviction (Probability > 0.55). If they disagree, the system defaults to safety.
 
-**3.The "Anxiety" & "Panic" States**
+**3. The "Anxiety" & "Panic" States**
 
 The classifier doesn't just look at price; it monitors market psychology via the VIX (Volatility Index).
 To ensure the system remains career-relevant in 2026 and beyond, the classifier uses an Adaptive Walk-Forward Training loop.
@@ -391,7 +391,7 @@ A special logic block designed for the 2022 bear market scenario, where stocks a
 * Trigger: If TLT momentum crashes while Equity Risk Premium is negative, it signals a "Rate Shock."
 
 * Action: Immediate exit to Cash/Gold, bypassing even the standard defensive bonds, as bonds themselves are the danger.
-  
+
 **IV. Portfolio Optimization (AlphaDominatorOptimizer)**
 
 The AlphaDominatorOptimizer is the execution arm of the strategy. While the RegimeClassifier decides if we should take risk, the Optimizer decides how much risk to take and where to put it.
@@ -400,30 +400,19 @@ This is not a standard "Mean-Variance" optimizer (which often produces boring, o
 
 **1. The Mathematical Objective**
 
-The heart of the optimizer is the function it tries to minimize: λ 
-risk
-​	
- ⋅(w^T
- Σw)−λ 
-mom
-​	
- ⋅(w⋅M)−λ 
-entropy
-​	
- ⋅H(w)
+The heart of the optimizer is the function it tries to minimize: lambda_risk * (w^T * Sigma * w) - lambda_mom * (w . M) - lambda_entropy * H(w)
 
-a.Minimizing Variance (w^T
- Σw): It tries to keep the portfolio stable. However, with target_volatility set to 0.25, the "leash" is loose, allowing for high-beta plays.
+a. Minimizing Variance (w^T * Sigma * w): It tries to keep the portfolio stable. However, with target_volatility set to 0.25, the "leash" is loose, allowing for high-beta plays.
 
-b. Maximizing Momentum (−w⋅M): This is the alpha driver. It pushes weights toward assets with the highest "Cubed Momentum" scores (SMH, TAN).
+b. Maximizing Momentum (-w . M): This is the alpha driver. It pushes weights toward assets with the highest "Cubed Momentum" scores (SMH, TAN).
 
-c. Maximizing Entropy (−H(w)): The entropy_lambda (set to 0.01) is the "Anti-Concentration" term. It prevents the math from simply putting 100% into the single best stock. It forces a slight spread across the top 3-4 winners.
+c. Maximizing Entropy (-H(w)): The entropy_lambda (set to 0.02) is the "Anti-Concentration" term. It prevents the math from simply putting 100% into the single best stock. It forces a slight spread across the top 3-4 winners.
 
 **2. The Bifurcated Bounds Engine**
 
 This is where the Crypto vs. Equity separation is strictly enforced. The optimizer doesn't just see a list of tickers; it sees two distinct asset classes with different rules.
 
-a.The Crypto Bounds (Active HODL):
+a. The Crypto Bounds (Active HODL):
 
 * The Check: It looks at Bitcoin's price relative to its 50-day SMA.
 
@@ -437,7 +426,7 @@ Bear Mode (BTC < 50SMA): Locks the crypto bucket to 5%.
 
 b. The Equity Bounds (Growth Anchors):
 
-* The Cap: Every equity asset (SMH, TAN, XBI, IWM) is capped at 30% (max_single_weight). This forces the optimizer to pick a "Starting Lineup" of at least 3 players.
+* The Cap: Every equity asset (SMH, TAN, XBI, IGV) is capped at 30% (max_single_weight). This forces the optimizer to pick a "Starting Lineup" of at least 3 players.
 
 * The Gold Leash: During Risk-On, GLD is mathematically handcuffed to a maximum of 1%. This ensures "Safety" assets don't steal capital from "Growth" assets.
 
@@ -482,33 +471,27 @@ This is the critical logic block implemented in v10.0 to solve the "Churn Proble
 
 a. Logic: Inside the main loop, before executing any rebalance, the engine calculates the Proposed Turnover:
 
-Turnover=∑∣Weight 
-New
-​	
- −Weight 
-Old
-​	
- ∣
+Turnover = SUM(|Weight_new - Weight_old|)
 
 b. The Rule:
 
-* If Turnover < 0.20 (20%) AND the Market Regime is unchanged (e.g., it was Bullish yesterday and is Bullish today): THE TRADE IS REJECTED.
+* If Turnover < 0.12 (12%): THE TRADE IS REJECTED.
 
 * Effect: The engine effectively says, "This change is too small to be worth the fees. Do nothing." It carries forward the existing portfolio weights exactly as they were.
 
 c. The Safety Valve:
 
-If the Regime does change (e.g., Bullish → Defensive): The Gate is lifted. Safety takes priority over fees, and the trade is executed immediately to de-risk the portfolio.
+If the Regime does change (e.g., Bullish to Defensive): The Gate is lifted. Safety takes priority over fees, and the trade is executed immediately to de-risk the portfolio.
 
 **3. Cost Modeling & Friction**
 
-To prevent the optimizer from putting 100% of the capital into a single "best" stock (a common flaw in traditional optimization), the system uses Shannon Entropy.
+The engine uses a tiered, per-asset transaction cost model that reflects real-world trading friction. Each asset has its own cost in basis points (see the fee table in Section I.2), ranging from 1 bps for the most liquid bond ETFs to 30 bps for cryptocurrency. The cost for each rebalance is calculated as:
 
-The Slippage Calculation: Cost=Turnover Value×0.0010
+Cost = Portfolio Value x SUM(|Weight_new - Weight_old| x Cost_bps / 10,000)
 
-For every dollar traded (buy or sell), the engine deducts 10 basis points (0.10%).
+This penalizes high-turnover strategies proportionally to the actual friction of the assets being traded, rewarding the "Lazy" approach mandated by the Fee Guillotine.
 
-This accounts for the spread (bid/ask) and commission, punishing high-frequency strategies and rewarding the "Lazy" approach mandated by the Fee Guillotine.
+To prevent the optimizer from putting 100% of the capital into a single "best" stock (a common flaw in traditional optimization), the system uses Shannon Entropy as an additional diversity penalty in the objective function.
 
 **4. The "Sniper Score"**
 
@@ -522,11 +505,10 @@ b. Calculation:
 
 * Check the 21-Day Forward Return of the S&P 500 from that date.
 
-* If the market went up, it’s a "Hit." If it went down, it’s a "Miss."
+* If the market went up, it's a "Hit." If it went down, it's a "Miss."
 
-c. Formula: Sniper Score= Total Bull Signals / Successful Bull Signals
-​	
- 
+c. Formula: Sniper Score = Successful Bull Signals / Total Bull Signals
+
 d. Target: A score >0.70 (70%) indicates the model is highly selective and only entering when the statistical edge is real.
 
 **5. The "Final Receipt" (Diagnostics)**
@@ -554,7 +536,7 @@ It is designed to answer three questions:
 
 **1. The Sniper Score (Precision Metric)**
 
-This is a proprietary Key Performance Indicator (KPI) specific to the Alpha Dominator framework.
+This is a proprietary Key Performance Indicator (KPI) specific to the Alpha Dual Engine framework.
 
 a. The Problem: Many strategies claim "high returns" but are actually just always long the market (Beta). They buy and hold, taking credit for the market's natural rise.
 
@@ -568,7 +550,7 @@ Calculation:
 
 * Hit: Market went UP. Miss: Market went DOWN.
 
-c. Verdict: A score of 74.4% (current result) means that 3 out of 4 times the model told you to buy, the market actually rallied. This proves the Alpha is real.
+c. Verdict: A high Sniper Score (>70%) means that the majority of the time the model told you to buy, the market actually rallied. This proves the Alpha is real.
 
 **2. Financial Metrics**
 
@@ -592,37 +574,32 @@ c. Effective N Check: Did it maintain the required diversity score (>3.0)?
 
 **4. Visualizing the Alpha Generation**
 
-To make the data accessible for career-level presentations, the engine generates five distinct diagnostic plots:
+To make the data accessible for career-level presentations, the engine generates diagnostic plots:
 
-a. Equity Curve: Compares the strategy against the SPY benchmark, with red/orange shaded regions indicating periods where the "Regime Shield" was active.
+a. Equity Curve: Compares the strategy against the SPY benchmark, with color-coded regions indicating different regime states.
 
 b. Allocation Stack: A historical visualization of how the portfolio rotated between Growth Anchors, Bonds, and Gold across different market cycles.
 
-c. Regime Analysis: A multi-panel view aligning SPY price action with ML probabilities, revealing how the Anxiety Veto and Rate Shock Guard protected the portfolio during crashes.
-
-d. Drawdown Plot: An underwater chart showing the depth and duration of losses.
-
-This analytics layer transforms raw simulation data into actionable intelligence, giving you the confidence to deploy the code live.
+c. Regime Analysis: A multi-panel view aligning SPY price action with ML probabilities, revealing how the regime detection protected the portfolio during crashes.
 
 
 **VII. Tail-Risk Stress Testing (MonteCarloSimulator)**
 
-The Monte Carlo Simulator serves as the final, rigorous validation layer of the Alpha Dominator framework. It transitions the analysis from historical backtesting (what did happen) to stochastic modeling (what could happen), providing an robust framework assessment of tail risk and expected future performance.
+The Monte Carlo Simulator serves as the final, rigorous validation layer of the Alpha Dual Engine framework. It transitions the analysis from historical backtesting (what did happen) to stochastic modeling (what could happen), providing a probabilistic assessment of tail risk and expected future performance.
 
 **1. Stochastic Engine: Geometric Brownian Motion (GBM)**
 
 a. Mathematical Foundation: The simulator utilizes Geometric Brownian Motion, the industry-standard model for projecting asset price paths. This model assumes that the logarithm of the asset price follows a Brownian motion with drift and diffusion components.
 
-b. Drift Component (μ): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag (μ−0.5σ 
-2).
+b. Drift Component (mu): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag (mu - 0.5 * sigma^2).
 
-c. Diffusion Component (σ): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable (Z).
+c. Diffusion Component (sigma): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable (Z).
 
 d. Vectorized Execution: To handle the immense computational load, the simulation logic is fully vectorized using NumPy, allowing for the simultaneous generation of all price paths without slow iterative loops.
 
 e. Sturdy Scale: The 1,000,000-Path Stress Test
 
-f. Statistical Convergence: While standard academic projects run 1,000 to 10,000 simulations, the Alpha Dominator is configured to execute 1,000,000 independent simulations. This scale ensures the Law of Large Numbers applies, minimizing sampling error and producing smooth, reliable probability distributions.
+f. Statistical Convergence: While standard academic projects run 1,000 to 10,000 simulations, the Alpha Dual Engine is configured to execute 1,000,000 independent simulations. This scale ensures the Law of Large Numbers applies, minimizing sampling error and producing smooth, reliable probability distributions.
 
 g. Data Intensity: Projecting 1,000,000 paths over a 5-year horizon (1,260 trading days) generates a matrix containing over 1.26 billion data points. This capability acts as a dual stress test: verifying the financial strategy's robustness and demonstrating the hardware's computational capacity.
 
@@ -636,7 +613,7 @@ b. Risk-Adjusted Expectations: It computes the mean Compound Annual Growth Rate 
 
 **3. Visualization & Interpretation**
 
-a. Path Visualization: The system generates a visual plot of a subset of random paths (e.g., 100 paths), overlaid with the mean trajectory and the 95% Confidence Interval bands. This provides an intuitive visual representation of the range of potential outcomes.
+a. Path Visualization: The system generates a visual plot of simulation paths, overlaid with the mean trajectory and the 95% Confidence Interval bands. This provides an intuitive visual representation of the range of potential outcomes.
 
 b. Distribution Histograms: It plots the frequency distribution of both CAGR and Ending Portfolio Values. These histograms are color-coded to highlight loss zones (red), underperformance zones (orange), and target zones (green), allowing for an immediate visual assessment of the strategy's risk/reward skew.
 
@@ -654,31 +631,37 @@ Streamlit re-runs the entire script on every user interaction (click, toggle, et
 
 * Data Caching: Market data is fetched once and stored.
 
-* Model Caching: The XGBoost and Random Forest models are trained once and persisted across interactions.
+* Model Caching: The XGBoost and Decision Tree models are trained once and persisted across interactions.
+
+* Config Versioning: A built-in version guard automatically resets cached slider state whenever code defaults change, preventing stale configuration from degrading performance.
 
 b. Sidebar Controls
 
 The left-hand sidebar acts as the strategy's control panel, allowing live parameter injection into the StrategyConfig class.
 
-a. Risk Slider: Users can adjust target_volatility from 0.10 to 0.40 to see how the strategy behaves in "Conservative" vs. "Degen" modes.
+a. ML Threshold: Users can adjust the consensus probability threshold for RISK_ON classification (default: 0.55).
 
-b. Date Range: A slider to isolate specific periods (e.g., "Show me only the 2022 Bear Market").
+b. Min Growth Anchor Weight: Controls the minimum combined allocation to growth anchor assets (default: 40%).
+
+c. IR Threshold: Sets the Information Ratio eligibility bar for asset inclusion (default: 0.5).
+
+d. Gold Cap (Risk On): Maximum gold allocation during bull markets (default: 1%).
+
+e. Turnover Penalty: Controls how aggressively the optimizer penalizes portfolio changes (default: 0.3).
 
 **2. The "Command Center" (Main View)**
 
-The central area of the dashboard is organized into tabs to provide different analytical lenses.
+The central area of the dashboard is organized into three tabs to provide different analytical lenses.
 
-a. Tab 1: Performance (The Bottom Line)
+a. Tab 1: Performance Overview (The Bottom Line)
 
-* Equity Curve: A high-definition, interactive line chart comparing the Strategy's cumulative returns against the Benchmark (SPY).
+* Equity Curve: A line chart comparing the Strategy's cumulative returns against the Benchmark (SPY).
 
-Interactive: Users can zoom in on specific crashes or rallies.
-
-Log Scale: An option to view returns on a logarithmic scale to better visualize long-term compounding.
+* Allocation Over Time: A stacked area chart showing how the portfolio's makeup changed over time. Users can see the "Rotation" in action—e.g., the Crypto layer expanding during bull runs and vanishing into TLT (Bonds) during crashes.
 
 * KPI Metrics: Big, bold indicators displaying the "Vital Signs": Total Return, CAGR, Sharpe Ratio, and Max Drawdown.
 
-b. Tab 2: Regime Diagnostics (The Brain)
+b. Tab 2: Regime & ML Diagnostics (The Brain)
 
 * Regime Timeline: A color-coded strip chart showing the strategy's historical state.
 
@@ -690,37 +673,25 @@ Red: Defensive (Cash/Hedges)
 
 * ML Probability Plot: A time-series chart overlaying the Machine Learning model's "Bull Probability" against the S&P 500 price. This allows the user to audit why the model got scared (e.g., "Ah, the probability dropped to 40% right before the COVID crash").
 
-c. Tab 3: Portfolio Composition (The Receipt)
+* SHAP Feature Importance: A bar chart showing which features drove the ML model's decisions.
 
-* Allocation Stack: A stacked area chart showing how the portfolio's makeup changed over time.
+* Model Health Dashboard: Validation curves showing train/test accuracy over time.
 
-Visual Proof: Users can see the "Rotation" in action—e.g., the Crypto layer expanding during bull runs and vanishing into TLT (Bonds) during crashes.
+c. Tab 3: Monte Carlo Stress Test
 
-* Current Holdings Table: A precise snapshot of the current recommended portfolio (e.g., "30% SMH, 30% TAN, 5% ETH"), including the calculated Information Ratios for each asset.
+* 1,000,000-path simulation projecting the portfolio over 5 years.
 
-d. Tab 4: Monthly Returns (The Calendar)
+* Mean Ending Value, Mean CAGR, 95% Confidence Interval, and Probability of Loss metrics.
 
-Heatmap: A "Month-by-Year" grid (like a classic hedge fund report) showing percentage returns. This highlights seasonality and consistency (e.g., "Does it always lose money in September?").
+* Simulation path visualization and return distribution histograms.
 
-**3. Monte Carlo Simulation (The Stress Test)**
+**3. System Logs & Transparency**
 
-A dedicated section allows users to trigger the MonteCarloSimulator.
+Log Console: The dashboard pipes Python's logging output to the screen. Users can see real-time messages like "Switching to DEFENSIVE due to VIX spike" or "Rebalance Skipped: Turnover < 12%," providing complete auditability of the decision-making process.
 
-a. The Button: "Run 1,000 Simulations."
+**IX. Conclusion**
 
-b. The Output: A cone chart projecting 1,000 potential future paths for the portfolio.
-
-* VaR (Value at Risk): Calculates the "Worst Case Scenario" (e.g., "There is a 5% chance you lose 20% next year").
-
-* Probability of Profit: Calculates the likelihood of making money over a 1-year or 5-year horizon.
-
-**4. System Logs & transparency**
-
-Log Console: The dashboard pipes Python's logging output to the screen. Users can see real-time messages like "Switching to DEFENSIVE due to VIX spike" or "Rebalance Skipped: Turnover < 20%," providing complete auditability of the decision-making process.
-
-**VIIII. Conclusion**
-
-The Alpha Dominator v100.0 represents a modern evolution in finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and hearty wealth preservation.
+The Alpha Dual Engine v10.0 represents a modern evolution in finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and hearty wealth preservation.
 
 ====================================================================================
 # **Development Methodology**
@@ -729,4 +700,4 @@ The Alpha Dominator v100.0 represents a modern evolution in finance and asset ma
 
 This project was built using an AI-Accelerated Workflow.
 
-Large Language Models (Gemini, Claude Opus 4.5) were utilized to accelerate syntax generation and boilerplate implementation, allowing the focus to remain on quantitative logic, parameter tuning, and risk management validation.
+Large Language Models (Gemini, Claude Opus 4.6) were utilized to accelerate syntax generation and boilerplate implementation, allowing the focus to remain on quantitative logic, parameter tuning, and risk management validation.

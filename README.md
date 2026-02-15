@@ -34,12 +34,7 @@ cd alpha_dual_engine
 pip install -r requirements.txt
 ```
 
-### 4. Build the Docker Image (This installs the Python 3.9 environment + XGBoost + SHAP.)
-```bash
-docker build --no-cache -t alpha-dual_engine .
-```
-
-### 5. Launching the Dashboard (Choose One Method)
+### 4. Launching the Dashboard (Choose One Method)
 
 Method A: The "One-Click" Launch (Recommended) Best for first-time setup. This script automatically handles the build, cache-clearing, and port mapping to ensure the 1M simulations work correctly.
 

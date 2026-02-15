@@ -259,13 +259,14 @@ a. Growth Anchors (The Engine): SMH (Semiconductors), XBI (Biotech), TAN (Solar)
 
 * Logic: These are "High Beta" sectors. They move faster than the S&P 500. The strategy intentionally designates these as the core growth drivers to maximize acceleration alpha.
 
-b. Crypto Assets (The Turbo): BTC-USD, ETH-USD.
+b. Defensive Assets (The Brakes): TLT (Long-Term Treasuries), IEF (Intermediate Treasuries), SHY (Cash Proxy), GLD (Gold).
+
+* Logic: These are the "Panic Buttons." When the regime flips to DEFENSIVE, capital flees here.
+
+c. Crypto Assets (The Turbo): BTC-USD, ETH-USD.
 
 * Logic: These provide non-correlated, exponential upside potential.
 
-c. Defensive Assets (The Brakes): TLT (Long-Term Treasuries), IEF (Intermediate Treasuries), SHY (Cash Proxy), GLD (Gold).
-
-* Logic: These are the "Panic Buttons." When the regime flips to DEFENSIVE, capital flees here.
 
 **2. The Bifurcated Signal Engine**
 

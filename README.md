@@ -142,13 +142,13 @@ The author assumes no responsibility for hardware failure, system instability, o
 **BY USING THIS SOFTWARE, YOU AGREE TO ASSUME ALL RISKS ASSOCIATED WITH YOUR INVESTMENT DECISIONS AND HARDWARE USAGE, RELEASING THE AUTHOR (PEHC) FROM ANY LIABILITY REGARDING YOUR FINANCIAL OUTCOMES OR SYSTEM INTEGRITY.**
 
 ====================================================================================
-# **Alpha Dual Engine v10.0: The "Alpha Engine" Framework**
+# **Alpha Dual Engine v100.0.0: The "Alpha Engine" Framework**
 
-This documentation details the architecture of Alpha Dual Engine v10.0, a high-performance quantitative trading system refactored to prioritize "Acceleration Alpha" over passive diversification and engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a Bifurcated Logic that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles). Unlike traditional mean-variance models that treat all assets identically, v10.0 utilizes a Bifurcated Logic Engine that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles).
+This documentation details the architecture of Alpha Dual Engine v100.0.0, a high-performance quantitative trading system refactored to prioritize "Acceleration Alpha" over passive diversification and engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PEHC, a Public Finance major at National Chengchi University, the system represents a Bifurcated Logic that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles). Unlike traditional mean-variance models that treat all assets identically, v100.0.0 utilizes a Bifurcated Logic Engine that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles).
 
 **I. Configuration & Constants (StrategyConfig)**
 
-The StrategyConfig class serves as the immutable constitution of the Alpha Dual Engine v10.0. Defined as a Python dataclass, it centralizes every hard-coded rule, risk limit, and execution parameter into a single, modifiable control panel. This design ensures that the strategy's logic remains separated from its parameters, allowing for rapid sensitivity testing without risking code breakage.
+The StrategyConfig class serves as the immutable constitution of the Alpha Dual Engine v100.0.0. Defined as a Python dataclass, it centralizes every hard-coded rule, risk limit, and execution parameter into a single, modifiable control panel. This design ensures that the strategy's logic remains separated from its parameters, allowing for rapid sensitivity testing without risking code breakage.
 
 This section acts as the primary filter for all downstream logic. If a trade or allocation violates these parameters, it is rejected before it ever reaches the optimization engine.
 
@@ -251,7 +251,7 @@ b. anxiety_vix_threshold (18.0)
 
 The DataManager class is the manufacturing plant of the strategy. It is responsible for ingesting raw, noisy market data and refining it into the precise "fuel" needed for both the Machine Learning models and the Portfolio Optimizer.
 
-In v10.0, this class has been radically re-engineered to support the Bifurcated Asset Logic, treating Crypto and Equities as fundamentally different data species.
+In v100.0.0, this class has been radically re-engineered to support the Bifurcated Asset Logic, treating Crypto and Equities as fundamentally different data species.
 
 **1. Universe Construction (The "Alpha Roster")**
 
@@ -324,7 +324,7 @@ b. The NaN Handler: It forward-fills missing data (common in Crypto vs. Stock we
 
 The AdaptiveRegimeClassifier is the central nervous system of the strategy, responsible for the binary decision that determines portfolio survival: "Risk-On" (Aggressive Growth) or "Defensive" (Capital Preservation).
 
-In v10.0, this system was upgraded from a pure Machine Learning model to a Hybrid Override Architecture. This solves the "Black Box" problem by enforcing a strict hierarchy: Macro Logic overrules ML Probabilities.
+In v100.0.0, this system was upgraded from a pure Machine Learning model to a Hybrid Override Architecture. This solves the "Black Box" problem by enforcing a strict hierarchy: Macro Logic overrules ML Probabilities.
 
 **1. The Macro Override (The "Anti-Coward" Switch)**
 
@@ -466,7 +466,7 @@ Before considering any trades, the engine calls the AdaptiveRegimeClassifier to 
 
 **2. The "Fee Guillotine" (The Lazy Trader Protocol)**
 
-This is the critical logic block implemented in v10.0 to solve the "Churn Problem" (where fees were eating 4% of the portfolio).
+This is the critical logic block implemented in v100.0.0 to solve the "Churn Problem" (where fees were eating 4% of the portfolio).
 
 a. Logic: Inside the main loop, before executing any rebalance, the engine calculates the Proposed Turnover:
 
@@ -696,7 +696,7 @@ Log Console: The dashboard pipes Python's logging output to the screen. Users ca
 
 **IX. Conclusion**
 
-The Alpha Dual Engine v10.0 represents a modern evolution in finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and hearty wealth preservation.
+The Alpha Dual Engine v100.0.0 represents a modern evolution in finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. It is a robust asset for firms specializing in infrastructure advisory and hearty wealth preservation.
 
 ====================================================================================
 # **Development Methodology**

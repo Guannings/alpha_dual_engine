@@ -595,11 +595,11 @@ a. Mathematical Foundation: The simulator utilizes Geometric Brownian Motion, th
 
 b. Drift Component ($\mu$): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag:
 
-$$\mu_{\text{adj}} = \mu - \tfrac{1}{2}\sigma^2$$
+$$\mu_{\text{adj}} = \mu - \frac{1}{2}\sigma^2$$
 
 c. Diffusion Component ($\sigma$): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable ($Z$):
 
-$$S_{t+1} = S_t \cdot \exp\!\left(\mu_{\text{adj}} \cdot \Delta t + \sigma \sqrt{\Delta t} \cdot Z\right)$$
+$$S_{t+1} = S_t \exp\left(\mu_{\text{adj}} \Delta t + \sigma \sqrt{\Delta t} Z\right)$$
 
 d. Vectorized Execution: To handle the immense computational load, the simulation logic is fully vectorized using NumPy, allowing for the simultaneous generation of all price paths without slow iterative loops.
 

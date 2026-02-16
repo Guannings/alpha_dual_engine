@@ -702,7 +702,7 @@ The Alpha Dual Engine v100.0.0 represents a modern evolution in finance and asse
 ====================================================================================
 # **Development Methodology**
 
-**The core financial strategy—Mean-Variance Optimization and Machine Learning-driven Regime Detection—was conceptualized and architected by the author.**
+**The core financial strategy was conceptualized and architected by the author.**
 
 This project was built using an AI-Accelerated Workflow.
 

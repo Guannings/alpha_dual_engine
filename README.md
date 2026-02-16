@@ -117,7 +117,7 @@ This software is for educational and research purposes only and was built as a p
 
 **2. No Financial Advice**
 
-Nothing in this repository constitutes professional financial, legal, or tax advice. Investment decisions should be made based on your own research and consultation with a qualified financial professional. The strategies modeled in this software—specifically the 40% Growth Anchor and IR Filter—may not be suitable for your specific financial situation, risk tolerance, or investment goals.
+Nothing in this repository constitutes professional financial, legal, or tax advice. Investment decisions should be made based on your own research and consultation with a qualified financial professional. The strategies modeled in this software may not be suitable for your specific financial situation, risk tolerance, or investment goals.
 
 **3. Risk of Loss**
 

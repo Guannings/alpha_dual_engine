@@ -2,7 +2,7 @@
 """
 Regime-Adaptive Mean-Variance Optimization Strategy - Streamlit Dashboard
 ==========================================================================
-"Alpha Dual Engine" v10.0 - Interactive Dashboard Edition
+"The Alpha Dominator" v10.0 - Interactive Dashboard Edition
 
 This module refactors the terminal-based alpha_dominator_v10.py into a
 Streamlit dashboard with:
@@ -58,7 +58,7 @@ sns.set_palette("husl")
 
 @dataclass
 class StrategyConfig:
-    """Strategy configuration for Alpha Dual Engine, refactored for balanced, high-return diversity."""
+    """Strategy configuration for The Alpha Dominator, refactored for balanced, high-return diversity."""
 
     # 1. Volatility & Growth Configuration
     target_volatility: float = 0.25  # Target 25% vol — allow higher volatility for alpha
@@ -279,11 +279,13 @@ class AdaptiveRegimeClassifier:
 
         # MODEL A: The Aggressor (XGBoost)
         self.model_alpha = XGBClassifier(
-            n_estimators=100,
+            n_estimators=50,
             max_depth=3,
             learning_rate=0.05,
             monotone_constraints=(-1, -1, 0, 1, 1, 1, 0),
-            subsample=0.8,
+            subsample=0.7,
+            colsample_bytree=0.7,
+            reg_lambda=1.0,
             random_state=42,
             n_jobs=-1
         )
@@ -480,7 +482,7 @@ class AdaptiveRegimeClassifier:
 
 class AlphaDominatorOptimizer:
     """
-    Alpha Dual Engine: IR Filter + Growth Anchor + Shannon Entropy
+    The Alpha Dominator: IR Filter + Growth Anchor + Shannon Entropy
     """
 
     def __init__(
@@ -1115,6 +1117,21 @@ class BacktestEngine:
         }
         return np.array([cost_map.get(a, 10.0) for a in assets])
 
+    @staticmethod
+    def _get_market_impact_bps(assets: List[str]) -> np.ndarray:
+        """Market impact coefficient per asset (basis points per sqrt-turnover).
+
+        Larger trades move the order book. Cost scales with sqrt of trade size
+        (Almgren-Chriss model). Less liquid assets have higher impact.
+        """
+        impact_map = {
+            'QQQ': 1.0, 'IWM': 1.5, 'SMH': 2.0,
+            'XBI': 3.0, 'TAN': 4.0, 'IGV': 2.0,
+            'TLT': 1.0, 'IEF': 0.8, 'SHY': 0.3, 'GLD': 1.0,
+            'BTC-USD': 8.0, 'ETH-USD': 10.0,
+        }
+        return np.array([impact_map.get(a, 3.0) for a in assets])
+
     def run(
             self,
             prices: pd.DataFrame,
@@ -1163,6 +1180,7 @@ class BacktestEngine:
 
         # Tiered transaction costs per asset (basis points)
         asset_cost_bps = self._get_asset_cost_bps(optimizer.assets)
+        asset_impact_bps = self._get_market_impact_bps(optimizer.assets)
 
         for i in range(start_idx, len(valid_dates)):
             date = valid_dates[i]
@@ -1195,11 +1213,25 @@ class BacktestEngine:
                 lookback_start = valid_dates[i - lookback_days]
                 lookback_ret = returns.loc[lookback_start:prev_date][optimizer.assets]
 
-                new_weights, success, method, diagnostics = optimizer.optimize(
-                    lookback_ret, current_raw_mom, current_ir, current_vols,
-                    regime, asset_above_sma, ml_prob, current_mom_score,
-                    current_golden_cross, current_log_ret_30d, current_rsi_14
-                )
+                if hasattr(classifier, 'get_weights'):
+                    new_weights = classifier.get_weights(
+                        date=date, ml_prob=ml_prob,
+                        above_sma=asset_above_sma, golden_cross=current_golden_cross,
+                        rsi_14=current_rsi_14, raw_momentum=current_raw_mom,
+                        asset_volatilities=current_vols, information_ratio=current_ir,
+                        log_returns_30d=current_log_ret_30d,
+                    )
+                    # Compute diagnostics for RL weights (diversity score, etc.)
+                    lookback_cov = returns.loc[lookback_start:prev_date][optimizer.assets].cov()
+                    diagnostics = optimizer._calculate_diagnostics(
+                        new_weights, lookback_cov, current_ir)
+                    success, method = True, "hierarchical_rl"
+                else:
+                    new_weights, success, method, diagnostics = optimizer.optimize(
+                        lookback_ret, current_raw_mom, current_ir, current_vols,
+                        regime, asset_above_sma, ml_prob, current_mom_score,
+                        current_golden_cross, current_log_ret_30d, current_rsi_14
+                    )
 
                 if current_weights.sum() > 0:
                     drift = np.abs(new_weights - current_weights)
@@ -1218,9 +1250,11 @@ class BacktestEngine:
                     days_since_rebalance += 1
                     continue
 
-                # Tiered cost: per-asset turnover × per-asset bps
+                # Tiered cost: spread + market impact (Almgren-Chriss sqrt model)
                 per_asset_turnover = np.abs(new_weights - current_weights)
-                cost = portfolio_value * np.sum(per_asset_turnover * asset_cost_bps / 10000)
+                spread_cost = np.sum(per_asset_turnover * asset_cost_bps / 10000)
+                impact_cost = np.sum(np.sqrt(per_asset_turnover) * asset_impact_bps / 10000)
+                cost = portfolio_value * (spread_cost + impact_cost)
                 portfolio_value -= cost
                 total_costs += cost
                 current_weights = new_weights
@@ -1248,6 +1282,10 @@ class BacktestEngine:
             portfolio_value *= (1 + np.dot(current_weights, daily_ret))
             spy_ret = spy_returns.loc[date] if date in spy_returns.index else 0.0
             benchmark_value *= (1 + spy_ret)
+
+            # RL portfolio state hook — allows RLRegimeClassifier to track portfolio evolution
+            if hasattr(classifier, 'update_portfolio_state'):
+                classifier.update_portfolio_state(portfolio_value, benchmark_value, current_weights, date)
 
             self.dates.append(date)
             self.portfolio_values.append(portfolio_value)
@@ -1298,6 +1336,45 @@ class BacktestEngine:
                     correct_buys += 1
 
         self.sniper_score = correct_buys / total_buy_signals
+
+    @staticmethod
+    def _period_metrics(results_slice: pd.DataFrame, risk_free_rate: float) -> Dict:
+        """Compute CAGR / vol / Sharpe / max-DD for an arbitrary results slice."""
+        port = results_slice['Portfolio']
+        bench = results_slice['Benchmark']
+
+        port_ret = port.pct_change().dropna()
+        bench_ret = bench.pct_change().dropna()
+
+        years = max(len(results_slice) / 252, 0.1)
+
+        port_cagr = (port.iloc[-1] / port.iloc[0]) ** (1 / years) - 1
+        bench_cagr = (bench.iloc[-1] / bench.iloc[0]) ** (1 / years) - 1
+
+        port_vol = port_ret.std() * np.sqrt(252)
+        bench_vol = bench_ret.std() * np.sqrt(252)
+
+        port_sharpe = (port_cagr - risk_free_rate) / port_vol if port_vol > 0 else 0
+        bench_sharpe = (bench_cagr - risk_free_rate) / bench_vol if bench_vol > 0 else 0
+
+        port_peak = port.expanding().max()
+        port_dd = ((port - port_peak) / port_peak).min()
+
+        bench_peak = bench.expanding().max()
+        bench_dd = ((bench - bench_peak) / bench_peak).min()
+
+        return {
+            'portfolio': {
+                'final_value': port.iloc[-1],
+                'cagr': port_cagr, 'volatility': port_vol,
+                'sharpe': port_sharpe, 'max_drawdown': port_dd
+            },
+            'benchmark': {
+                'final_value': bench.iloc[-1],
+                'cagr': bench_cagr, 'volatility': bench_vol,
+                'sharpe': bench_sharpe, 'max_drawdown': bench_dd
+            },
+        }
 
     def calculate_metrics(self, results: pd.DataFrame) -> Dict:
         """Calculate metrics."""
@@ -1383,7 +1460,7 @@ class BacktestEngine:
             f"Optimal Rebal: {metrics['optimal_rebalance_period']}d"
         )
 
-        ax.set_title('Alpha Dual Engine v10.0 - IR Filter + Growth Anchor', fontsize=12)
+        ax.set_title('The Alpha Dominator v10.0 - IR Filter + Growth Anchor', fontsize=12)
         ax.set_ylabel('Portfolio Value ($)')
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
         ax.legend(loc='upper left')
@@ -1540,6 +1617,54 @@ class MonteCarloSimulator:
 
         self.ending_values = current_values
         self.sim_cagrs = (self.ending_values / initial_value) ** (1 / self.projection_years) - 1
+
+        return self._calculate_statistics()
+
+    def run_bootstrap(self, portfolio_values: pd.Series, initial_value: float,
+                      block_size: int = 63) -> Dict:
+        """Block bootstrap Monte Carlo using actual backtest daily returns.
+
+        Resamples blocks of realised returns (preserving autocorrelation within
+        each block) and compounds them forward.  Uses the same day-by-day
+        iterative approach as run() to keep memory at ~8 MB instead of ~30 GB.
+        """
+        logger.info(f"Monte Carlo Bootstrap: {self.n_simulations:,} sims, "
+                    f"block={block_size}d")
+
+        self.initial_value = initial_value
+
+        # Daily returns from the backtest equity curve
+        daily_rets = portfolio_values.pct_change().dropna().values
+        n_hist = len(daily_rets)
+        if n_hist == 0:
+            raise ValueError("portfolio_values must have at least 2 data points")
+
+        self.sigma_annual = np.std(daily_rets) * np.sqrt(252)
+
+        n_blocks = int(np.ceil(self.n_days / block_size))
+
+        np.random.seed(42)
+
+        # Pre-draw block starting indices: (n_blocks, n_simulations)
+        starts = np.random.randint(0, n_hist, size=(n_blocks, self.n_simulations))
+
+        # Day-by-day iterative loop (same pattern as run() — saves ~30 GB)
+        current_values = np.full(self.n_simulations, float(initial_value))
+        self.display_paths = np.zeros((self.n_days + 1, self.n_display_paths))
+        self.display_paths[0] = initial_value
+
+        for t in range(self.n_days):
+            b = t // block_size          # which block
+            d = t % block_size           # offset within block
+            idx = (starts[b] + d) % n_hist   # circular index into history
+            day_ret = daily_rets[idx]    # (n_simulations,)
+
+            current_values *= (1.0 + day_ret)
+            self.display_paths[t + 1] = current_values[:self.n_display_paths]
+
+        self.ending_values = current_values
+        self.sim_cagrs = (self.ending_values / initial_value) ** (
+            1 / self.projection_years) - 1
 
         return self._calculate_statistics()
 
@@ -1848,7 +1973,7 @@ def render_detailed_metrics(metrics: Dict, engine: BacktestEngine, classifier: A
         regime_df = pd.DataFrame.from_dict(metrics['regime_counts'], orient='index', columns=['Days'])
         regime_df['Percentage'] = regime_df['Days'] / regime_df['Days'].sum() * 100
         regime_df['Percentage'] = regime_df['Percentage'].apply(lambda x: f"{x:.1f}%")
-        st.dataframe(regime_df, use_container_width=True)
+        st.dataframe(regime_df)
 
         st.markdown("---")
         st.markdown("### Model Health")
@@ -1872,23 +1997,11 @@ def render_detailed_metrics(metrics: Dict, engine: BacktestEngine, classifier: A
 def main():
     """Main Streamlit application."""
     st.set_page_config(
-        page_title="Alpha Dual Engine v10.0",
+        page_title="Alpha Dual Engine v100.0",
         page_icon="📈",
         layout="wide",
         initial_sidebar_state="expanded"
     )
-
-    # ==========================================================================
-    # AUTO-RESET: Clear stale slider state when code defaults change
-    # Bump _CONFIG_VERSION any time you change a slider default value.
-    # ==========================================================================
-    _CONFIG_VERSION = 2
-    if st.session_state.get("_config_version") != _CONFIG_VERSION:
-        # Wipe all widget keys so sliders re-read code defaults
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.session_state["_config_version"] = _CONFIG_VERSION
-        st.rerun()
 
     # ==========================================================================
     # SIDEBAR CONTROLS (must come after set_page_config)
@@ -1900,7 +2013,7 @@ def main():
         st.cache_resource.clear()
         st.rerun()
 
-    st.title("🎯 Alpha Dual Engine v10.0")
+    st.title("🎯 The Alpha Dominator v10.0")
     st.markdown("**IR Filter + Growth Anchor + Regularized ML**")
 
     ml_threshold = st.sidebar.slider(
@@ -1935,6 +2048,20 @@ def main():
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Advanced Settings")
+
+    use_rl_agent = st.sidebar.checkbox(
+        "Use RL Agent (PPO)",
+        value=False,
+        key="use_rl_agent",
+        help="Replace rule-based regime classifier with trained PPO agent (MLX)"
+    )
+
+    use_hierarchical_rl = st.sidebar.checkbox(
+        "Use Hierarchical RL (Regime + Weights)",
+        value=False,
+        key="use_hierarchical_rl",
+        help="Both RL agents: high-level regime + low-level weights"
+    )
 
     ir_threshold = st.sidebar.slider(
         "IR Threshold",
@@ -2006,17 +2133,68 @@ def main():
     # Update classifier config with current sidebar values
     classifier.config = config
 
+    # Save baseline for RL comparison
+    baseline_classifier = classifier
+    baseline_ml_probs = ml_probs
+
+    if use_hierarchical_rl:
+        from rl_weight_agent import HierarchicalRLController
+        hier_controller = HierarchicalRLController(config=config)
+        if hier_controller.regime_agent.model is not None and hier_controller.weight_agent.model is not None:
+            # Keep baseline XGBoost ml_probs (don't overwrite with 0.5 stub)
+            # Real ml_probs flow to get_regime() for consensus filtering
+            classifier = hier_controller
+        else:
+            missing = []
+            if hier_controller.regime_agent.model is None:
+                missing.append("regime model (`python train_100k.py`)")
+            if hier_controller.weight_agent.model is None:
+                missing.append("weight model (`python train_weight_agent.py`)")
+            st.warning(f"Missing trained models: {', '.join(missing)}. Falling back to rule-based.")
+    elif use_rl_agent:
+        from rl_regime_agent import RLRegimeClassifier
+        rl_classifier = RLRegimeClassifier(config=config)
+        if rl_classifier.model is not None:
+            # RL classifier produces its own ml_probs stub (constant 0.5)
+            ml_probs = rl_classifier.walk_forward_train(features, returns['SPY'])
+            classifier = rl_classifier
+        else:
+            st.warning("No trained RL model found. Run `python rl_regime_agent.py --train 100000` first. Falling back to rule-based.")
+
     # ==========================================================================
     # RUN BACKTEST
     # ==========================================================================
     with st.spinner("📊 Running backtest..."):
         optimizer = AlphaDominatorOptimizer(dm.all_tickers, categories, config)
+
+        if hasattr(classifier, 'set_backtest_context'):
+            classifier.set_backtest_context(
+                above_sma=above_sma,
+                raw_momentum=raw_mom,
+                asset_volatilities=vols,
+                information_ratio=info_ratio,
+                golden_cross=golden_cross,
+                features=features,
+                optimizer=optimizer,
+            )
         engine = BacktestEngine(config)
         results = engine.run(
             prices, returns, features, ml_probs, sma_200, above_sma,
             raw_mom, rel_strength, vols, info_ratio, mom_score, golden_cross, log_ret_30d, rsi_14, classifier, optimizer
         )
         metrics = engine.calculate_metrics(results)
+
+    # Run baseline comparison backtest when RL is active
+    baseline_metrics = None
+    if use_rl_agent or use_hierarchical_rl:
+        with st.spinner("Running baseline comparison..."):
+            baseline_engine = BacktestEngine(config)
+            baseline_results = baseline_engine.run(
+                prices, returns, features, baseline_ml_probs, sma_200, above_sma,
+                raw_mom, rel_strength, vols, info_ratio, mom_score, golden_cross,
+                log_ret_30d, rsi_14, baseline_classifier, optimizer
+            )
+            baseline_metrics = baseline_engine.calculate_metrics(baseline_results)
 
     # ==========================================================================
     # HEADER METRICS
@@ -2030,23 +2208,25 @@ def main():
     # ==========================================================================
     st.markdown("### 📋 Current Portfolio Allocation")
     allocation_df = create_allocation_table(engine, optimizer, above_sma, config)
-    st.dataframe(allocation_df, use_container_width='stretch', hide_index=True)
+    st.dataframe(allocation_df, hide_index=True)
 
-    # Constraint status
+    # Constraint status — compute from actual final_weights for accuracy
+    fw = engine.final_weights
     diag = engine.final_diagnostics
-    if diag:
+    if fw is not None and fw.sum() > 0:
         col1, col2, col3 = st.columns(3)
 
-        growth_weight = diag.get('growth_anchor_weight', 0)
+        growth_weight = sum(fw[idx] for idx in optimizer.growth_anchor_idx)
         growth_status = "✅ MET" if growth_weight >= (
                 config.min_growth_anchor - config.constraint_tolerance) else "❌ BELOW"
         col1.info(f"**Growth Anchor:** {growth_weight:.1%} {growth_status} (Min: {config.min_growth_anchor:.0%})")
 
-        gold_weight = diag.get('gold_weight', 0)
+        gold_weight = sum(fw[idx] for idx in optimizer.gold_idx)
         gold_status = "✅ OK" if gold_weight <= (config.gold_cap_risk_on + config.constraint_tolerance) else "❌ OVER"
         col2.info(f"**Gold Cap:** {gold_weight:.1%} {gold_status} (Max: {config.gold_cap_risk_on:.0%})")
 
-        eff_n = diag.get('effective_n', 0)
+        w_pos = fw[fw > 1e-6]
+        eff_n = float(np.exp(-np.sum(w_pos * np.log(w_pos)))) if len(w_pos) > 0 else 0.0
         eff_status = "✅ GOOD" if eff_n >= config.min_effective_n else "⚠️ LOW"
         col3.info(f"**Effective N:** {eff_n:.2f} {eff_status} (Target: {config.min_effective_n}+)")
 
@@ -2055,7 +2235,16 @@ def main():
     # ==========================================================================
     # TABS
     # ==========================================================================
-    tab1, tab2, tab3 = st.tabs(["📈 Performance Overview", "🔬 Regime & ML Diagnostics", "🎲 Monte Carlo Stress Test"])
+    if use_hierarchical_rl or use_rl_agent:
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "📈 Performance Overview", "🔬 Regime & ML Diagnostics",
+            "🎲 Monte Carlo Stress Test", "🤖 RL Diagnostics"
+        ])
+    else:
+        tab1, tab2, tab3 = st.tabs([
+            "📈 Performance Overview", "🔬 Regime & ML Diagnostics",
+            "🎲 Monte Carlo Stress Test"
+        ])
 
     # --------------------------------------------------------------------------
     # TAB 1: Performance Overview
@@ -2086,7 +2275,7 @@ def main():
         st.markdown("---")
         st.markdown("### SHAP Feature Importance")
 
-        shap_fig = classifier.get_shap_figure()
+        shap_fig = baseline_classifier.get_shap_figure()
         if shap_fig:
             st.pyplot(shap_fig)
             plt.close(shap_fig)
@@ -2096,7 +2285,7 @@ def main():
         st.markdown("---")
         st.markdown("### Model Health Dashboard")
 
-        health_fig = classifier.get_validation_curves_figure()
+        health_fig = baseline_classifier.get_validation_curves_figure()
         if health_fig:
             st.pyplot(health_fig)
             plt.close(health_fig)
@@ -2108,6 +2297,10 @@ def main():
     # --------------------------------------------------------------------------
     with tab3:
         st.markdown("### Monte Carlo Simulation")
+        if use_hierarchical_rl:
+            st.caption("Block bootstrap resampling of actual backtest returns (preserves dynamic allocation behavior)")
+        else:
+            st.caption("GBM projection using final portfolio weights and recent return statistics")
         st.write(f"Running {n_simulations:,} simulations over 5 years...")
 
         with st.spinner("Running Monte Carlo simulation..."):
@@ -2116,7 +2309,10 @@ def main():
                 projection_years=5,
                 risk_free_rate=config.risk_free_rate
             )
-            mc_stats = mc.run(returns, engine.final_weights, optimizer.assets, results['Portfolio'].iloc[-1])
+            if use_hierarchical_rl:
+                mc_stats = mc.run_bootstrap(results['Portfolio'], results['Portfolio'].iloc[-1])
+            else:
+                mc_stats = mc.run(returns, engine.final_weights, optimizer.assets, results['Portfolio'].iloc[-1])
 
         # Monte Carlo metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -2142,6 +2338,468 @@ def main():
             st.pyplot(dist_fig)
             plt.close(dist_fig)
 
+    # --------------------------------------------------------------------------
+    # TAB 4: RL Diagnostics (conditional)
+    # --------------------------------------------------------------------------
+    if use_hierarchical_rl or use_rl_agent:
+        with tab4:
+            st.markdown("### RL Agent Diagnostics")
+
+            if use_hierarchical_rl:
+                st.markdown(
+                    "The **Hierarchical RL** system uses two trained neural networks working together: "
+                    "a **regime agent** (high-level) that reads macro conditions and chooses a market stance "
+                    "(RISK_ON, RISK_REDUCED, or DEFENSIVE), and a **weight agent** (low-level) that decides "
+                    "exactly how much to allocate to each of the 12 assets given the chosen regime. "
+                    "Both agents were trained with PPO (Proximal Policy Optimization) on historical data. "
+                    "During training, the weight agent learns from **soft constraint penalties** — it feels "
+                    "the cost of over-concentrating or holding ineligible assets, rather than having its "
+                    "decisions overwritten by hard rules."
+                )
+            else:
+                st.markdown(
+                    "The **RL Regime Agent** is a trained PPO neural network that reads macro features "
+                    "(VIX, SPY momentum, ML probability, drawdown, etc.) and chooses a market regime "
+                    "(RISK_ON, RISK_REDUCED, or DEFENSIVE). Weights are then optimized by the "
+                    "rule-based scipy optimizer."
+                )
+
+            st.markdown("---")
+
+            # 1. Regime comparison: RL vs Rule-based
+            st.markdown("#### Regime Timeline")
+            st.caption(
+                "**How to read:** The colored background shows which regime the RL agent chose over time. "
+                "Green = RISK_ON (bullish, tilting toward equities and crypto). "
+                "Orange = RISK_REDUCED (cautious, reducing aggressive positions). "
+                "Red = DEFENSIVE (bearish, shifting to bonds and safe havens). "
+                "Look for whether regime switches align with market turning points — "
+                "good timing means the agent shifts to DEFENSIVE before major drawdowns and back to RISK_ON for recoveries."
+            )
+            regime_fig = engine.get_regime_figure(results, prices, sma_200)
+            st.pyplot(regime_fig)
+            plt.close(regime_fig)
+
+            # 2. Regime distribution pie chart
+            st.markdown("#### Regime Distribution")
+            st.caption(
+                "**How to read:** Shows the overall time spent in each regime across the backtest. "
+                "A balanced distribution (e.g. 50/25/25) suggests the agent is actively using all three regimes. "
+                "If one regime dominates at 90%+, the agent may not be differentiating market conditions effectively."
+            )
+            regime_data = results.get('Regime', [])
+            regime_series = pd.Series(regime_data) if not isinstance(regime_data, pd.Series) else regime_data
+            if len(regime_series) > 0:
+                counts = regime_series.value_counts()
+                fig, ax = plt.subplots(figsize=(6, 4))
+                colors = {'RISK_ON': '#2ecc71', 'RISK_REDUCED': '#f39c12', 'DEFENSIVE': '#e74c3c'}
+                ax.pie(counts.values, labels=counts.index,
+                       colors=[colors.get(r, '#95a5a6') for r in counts.index],
+                       autopct='%1.1f%%', startangle=90)
+                ax.set_title("RL Agent Regime Allocation")
+                st.pyplot(fig)
+                plt.close(fig)
+
+            # 3. Model info
+            if use_hierarchical_rl:
+                st.markdown("---")
+                st.markdown("#### Model Architecture")
+                st.info(
+                    f"**Backend:** MLX (Apple Silicon native)\n\n"
+                    f"**Architecture:** Hierarchical — 2x64 MLP (regime) + 2x128 MLP (weights)\n\n"
+                    f"**Regime model:** `models/rl_regime_ppo/best_model.safetensors`\n\n"
+                    f"**Weight model:** `models/rl_weight_ppo/best_model.safetensors`\n\n"
+                    f"**Action space:** Regime (Discrete 3) + Weights (Continuous 12-dim softmax)\n\n"
+                    f"**Training:** Soft constraint penalties (agent learns boundaries) + diversity bonus (entropy reward)"
+                )
+
+                # Weight agent diagnostics
+                if hasattr(classifier, 'get_weight_diagnostics_figure'):
+                    st.markdown("---")
+                    st.markdown("#### Weight Agent — Average Allocation")
+                    st.caption(
+                        "**How to read:** Each bar shows the average weight the RL agent assigned to "
+                        "an asset across all rebalances. Green bars = equities (growth assets), "
+                        "blue bars = bonds and gold (safe havens), orange bars = crypto. "
+                        "A well-trained agent shows meaningful spread across multiple assets rather than "
+                        "concentrating in just one or two. Compare this to a naive equal-weight or "
+                        "constraint-forced split — diverse, unequal allocations here mean the agent is "
+                        "making informed, asset-specific decisions."
+                    )
+                    weight_fig = classifier.get_weight_diagnostics_figure()
+                    if weight_fig:
+                        st.pyplot(weight_fig)
+                        plt.close(weight_fig)
+                    else:
+                        st.info("No weight allocation data yet.")
+
+                if hasattr(classifier, 'get_weight_history_figure'):
+                    st.markdown("---")
+                    st.markdown("#### Weight Agent — Allocation Over Time")
+                    st.caption(
+                        "**How to read:** Stacked area chart showing how the RL agent's weights "
+                        "shifted at each rebalance throughout the backtest. Watch for regime-driven "
+                        "rotations (e.g. equities shrinking and bonds expanding during drawdowns)."
+                    )
+                    wh_fig = classifier.get_weight_history_figure()
+                    if wh_fig:
+                        st.pyplot(wh_fig)
+                        plt.close(wh_fig)
+                    else:
+                        st.info("Not enough rebalance data to plot history.")
+
+                    st.markdown("---")
+                    st.markdown("#### Trading Activity")
+                    st.caption(
+                        "**How to read:** *Mean Turnover* is the average fraction of the portfolio "
+                        "that changes at each rebalance (e.g. 40% means almost half the portfolio shifts). "
+                        "Lower turnover = lower transaction costs. *Max Turnover* shows the largest single "
+                        "rebalance — spikes often correspond to regime changes (e.g. RISK_ON to DEFENSIVE)."
+                    )
+                    if hasattr(classifier, 'get_turnover_stats'):
+                        tstats = classifier.get_turnover_stats()
+                        if tstats:
+                            tc1, tc2, tc3, tc4 = st.columns(4)
+                            tc1.metric("Mean Turnover", f"{tstats['mean_turnover']:.2%}")
+                            tc2.metric("Median Turnover", f"{tstats['median_turnover']:.2%}")
+                            tc3.metric("Max Turnover", f"{tstats['max_turnover']:.2%}")
+                            tc4.metric("Total Rebalances", f"{tstats['total_rebalances']}")
+                        else:
+                            st.info("No turnover data yet.")
+
+                    # Safety net stats
+                    if hasattr(classifier, 'get_safety_net_stats'):
+                        sn_stats = classifier.get_safety_net_stats()
+                        if sn_stats:
+                            st.markdown("---")
+                            st.markdown("#### Inference Safety Net")
+                            st.caption(
+                                "**How to read:** At inference, the RL agent's raw weights are "
+                                "soft-clipped at 35% per asset as a lightweight safety net. "
+                                "*Mean Drift* measures how much the clip changes the agent's output on average — "
+                                "low drift (< 5%) means the agent learned to stay within bounds on its own. "
+                                "High drift means the agent still tries to over-concentrate. "
+                                "*% Adjusted* shows how often the safety net activates at all."
+                            )
+                            sn1, sn2, sn3 = st.columns(3)
+                            sn1.metric("Mean Drift", f"{sn_stats['mean_drift']:.2%}")
+                            sn2.metric("Max Drift", f"{sn_stats['max_drift']:.2%}")
+                            sn3.metric("% Rebalances Adjusted", f"{sn_stats['pct_adjusted']:.1f}%")
+
+                            if sn_stats['mean_drift'] < 0.30:
+                                st.success(
+                                    "Low constraint drift — the agent learned to respect portfolio limits. "
+                                    "The constraint layer is barely needed."
+                                )
+                            elif sn_stats['mean_drift'] < 0.80:
+                                st.success(
+                                    "Normal constraint drift — the constraint layer is applying standard "
+                                    "corrections (eligibility, caps, floors). This is expected and healthy."
+                                )
+                            else:
+                                st.warning(
+                                    "High constraint drift — the constraint layer is doing significant "
+                                    "correction. The agent's raw outputs diverge from portfolio rules. "
+                                    "Backtest performance is the true quality metric."
+                                )
+            else:
+                st.markdown("#### Model Info")
+                st.info(
+                    f"**Backend:** MLX (Apple Silicon native)\n\n"
+                    f"**Architecture:** 2x64 MLP Actor-Critic\n\n"
+                    f"**Model path:** `models/rl_regime_ppo/best_model.safetensors`\n\n"
+                    f"**Action space:** RISK_ON / RISK_REDUCED / DEFENSIVE"
+                )
+
+            # 4. Performance comparison: RL vs Rule-Based (with OOS breakdown)
+            if baseline_metrics is not None:
+                st.markdown("---")
+                st.markdown("#### Performance Comparison: RL vs Rule-Based")
+                st.caption(
+                    "**How to read:** Side-by-side comparison of the RL agent against the rule-based "
+                    "strategy. *Sharpe* = risk-adjusted return (higher is better). *Max Drawdown* = "
+                    "worst peak-to-trough loss (closer to 0% is better). *Volatility* = return variability "
+                    "(lower = smoother ride). A good RL agent should match or beat the baseline on Sharpe "
+                    "while keeping drawdowns comparable."
+                )
+
+                # --- Full-period table ---
+                rl_m = metrics['portfolio']
+                bl_m = baseline_metrics['portfolio']
+                comp_df = pd.DataFrame({
+                    'Metric': ['CAGR', 'Sharpe', 'Max Drawdown', 'Volatility', 'Final Value',
+                               'Total Costs'],
+                    'RL Agent': [f"{rl_m['cagr']:.2%}", f"{rl_m['sharpe']:.3f}",
+                                 f"{rl_m['max_drawdown']:.2%}", f"{rl_m['volatility']:.2%}",
+                                 f"${rl_m['final_value']:,.0f}",
+                                 f"${metrics['total_costs']:,.0f}"],
+                    'Rule-Based': [f"{bl_m['cagr']:.2%}", f"{bl_m['sharpe']:.3f}",
+                                   f"{bl_m['max_drawdown']:.2%}", f"{bl_m['volatility']:.2%}",
+                                   f"${bl_m['final_value']:,.0f}",
+                                   f"${baseline_metrics['total_costs']:,.0f}"],
+                })
+                st.dataframe(comp_df, hide_index=True)
+
+                sharpe_diff = rl_m['sharpe'] - bl_m['sharpe']
+                if sharpe_diff >= 0:
+                    st.success(f"RL agent Sharpe is {sharpe_diff:+.3f} vs baseline")
+                else:
+                    st.error(f"RL agent Sharpe is {sharpe_diff:+.3f} vs baseline — consider using rule-based")
+
+                # --- In-Sample vs Out-of-Sample breakdown ---
+                rl_train_cutoff = pd.Timestamp('2024-01-01')
+                rl_oos_mask = results.index >= rl_train_cutoff
+                bl_oos_mask = baseline_results.index >= rl_train_cutoff
+
+                if rl_oos_mask.any() and (~rl_oos_mask).sum() > 50:
+                    st.markdown("---")
+                    st.markdown("#### In-Sample vs Out-of-Sample")
+                    st.caption(
+                        f"**Training cutoff: {rl_train_cutoff.date()}** — Both RL models were trained "
+                        "on data up to this date. Everything after is genuinely out-of-sample. "
+                        "If the RL agent's OOS Sharpe drops significantly vs in-sample, it suggests overfitting."
+                    )
+
+                    rf = config.risk_free_rate
+                    rl_is = BacktestEngine._period_metrics(results[~rl_oos_mask], rf)['portfolio']
+                    rl_oos = BacktestEngine._period_metrics(results[rl_oos_mask], rf)['portfolio']
+                    bl_is = BacktestEngine._period_metrics(baseline_results[~bl_oos_mask], rf)['portfolio']
+                    bl_oos = BacktestEngine._period_metrics(baseline_results[bl_oos_mask], rf)['portfolio']
+
+                    oos_df = pd.DataFrame({
+                        'Metric': ['CAGR', 'Sharpe', 'Max Drawdown', 'Volatility'],
+                        'RL In-Sample': [f"{rl_is['cagr']:.2%}", f"{rl_is['sharpe']:.3f}",
+                                         f"{rl_is['max_drawdown']:.2%}", f"{rl_is['volatility']:.2%}"],
+                        'RL Out-of-Sample': [f"{rl_oos['cagr']:.2%}", f"{rl_oos['sharpe']:.3f}",
+                                             f"{rl_oos['max_drawdown']:.2%}", f"{rl_oos['volatility']:.2%}"],
+                        'Baseline IS': [f"{bl_is['cagr']:.2%}", f"{bl_is['sharpe']:.3f}",
+                                        f"{bl_is['max_drawdown']:.2%}", f"{bl_is['volatility']:.2%}"],
+                        'Baseline OOS': [f"{bl_oos['cagr']:.2%}", f"{bl_oos['sharpe']:.3f}",
+                                         f"{bl_oos['max_drawdown']:.2%}", f"{bl_oos['volatility']:.2%}"],
+                    })
+                    st.dataframe(oos_df, hide_index=True)
+
+                    # Sharpe decay diagnostic
+                    rl_sharpe_decay = rl_is['sharpe'] - rl_oos['sharpe']
+                    bl_sharpe_decay = bl_is['sharpe'] - bl_oos['sharpe']
+                    if rl_sharpe_decay > 0.3 and rl_sharpe_decay > bl_sharpe_decay + 0.15:
+                        st.warning(
+                            f"RL Sharpe drops by {rl_sharpe_decay:.3f} out-of-sample "
+                            f"(baseline drops {bl_sharpe_decay:.3f}). Possible overfitting."
+                        )
+                    elif rl_oos['sharpe'] >= bl_oos['sharpe']:
+                        st.success(
+                            f"RL out-of-sample Sharpe ({rl_oos['sharpe']:.3f}) "
+                            f">= baseline ({bl_oos['sharpe']:.3f}) — good generalization."
+                        )
+
+                    # --- Walk-Forward Validation (rolling 2-year windows) ---
+                    st.markdown("---")
+                    st.markdown("#### Walk-Forward Validation")
+                    st.caption(
+                        "Rolling 2-year evaluation windows. Each row shows RL vs baseline Sharpe "
+                        "for a distinct period. Consistent RL advantage across windows = robust strategy."
+                    )
+
+                    wf_rows = []
+                    all_dates = results.index
+                    start_year = all_dates[0].year
+                    end_year = all_dates[-1].year
+                    for yr_start in range(max(start_year, 2014), end_year - 1, 2):
+                        w_start = pd.Timestamp(f"{yr_start}-01-01")
+                        w_end = pd.Timestamp(f"{yr_start + 2}-01-01")
+                        rl_mask = (results.index >= w_start) & (results.index < w_end)
+                        bl_mask = (baseline_results.index >= w_start) & (baseline_results.index < w_end)
+                        if rl_mask.sum() < 100 or bl_mask.sum() < 100:
+                            continue
+                        rl_m = BacktestEngine._period_metrics(results[rl_mask], rf)['portfolio']
+                        bl_m = BacktestEngine._period_metrics(baseline_results[bl_mask], rf)['portfolio']
+                        is_oos = "OOS" if w_start >= rl_train_cutoff else "IS"
+                        wf_rows.append({
+                            'Period': f"{yr_start}–{yr_start+2}",
+                            'Type': is_oos,
+                            'RL Sharpe': f"{rl_m['sharpe']:.3f}",
+                            'Baseline Sharpe': f"{bl_m['sharpe']:.3f}",
+                            'RL CAGR': f"{rl_m['cagr']:.1%}",
+                            'Baseline CAGR': f"{bl_m['cagr']:.1%}",
+                            'RL Wins': "Yes" if rl_m['sharpe'] > bl_m['sharpe'] else "No",
+                        })
+                    if wf_rows:
+                        wf_df = pd.DataFrame(wf_rows)
+                        st.dataframe(wf_df, hide_index=True)
+                        n_wins = sum(1 for r in wf_rows if r['RL Wins'] == 'Yes')
+                        n_total = len(wf_rows)
+                        n_oos_wins = sum(1 for r in wf_rows if r['RL Wins'] == 'Yes' and r['Type'] == 'OOS')
+                        n_oos_total = sum(1 for r in wf_rows if r['Type'] == 'OOS')
+                        st.caption(
+                            f"RL wins {n_wins}/{n_total} windows overall"
+                            + (f", {n_oos_wins}/{n_oos_total} out-of-sample" if n_oos_total > 0 else "")
+                        )
+
+    # ==========================================================================
+    # ABLATION TEST (inside RL Diagnostics tab4)
+    # ==========================================================================
+    if (use_hierarchical_rl or use_rl_agent) and baseline_metrics is not None:
+        with tab4:
+            st.markdown("---")
+            st.markdown("#### Ablation Test: Is the RL Agent Doing Real Work?")
+            st.caption(
+                "**Purpose:** A common concern with constrained RL systems is whether the learned policy "
+                "actually contributes to performance, or whether the constraint layer and post-processing "
+                "(momentum tilt, growth anchor floor) do all the heavy lifting. This ablation isolates the "
+                "RL agent's contribution by replacing its learned weights with two naive alternatives — "
+                "**random** (Dirichlet-sampled) and **equal** (1/N) — while keeping every other component "
+                "identical: the same regime agent, constraint layer, momentum tilt, growth anchor floor, "
+                "and rebalance schedule. Any performance gap is therefore *solely* attributable to the "
+                "RL agent's learned weight decisions."
+            )
+
+            run_ablation = st.checkbox("Run ablation test (takes ~10 seconds)", key="run_ablation")
+
+            if run_ablation:
+                with st.spinner("Running ablation backtests (Random + Equal weight baselines)..."):
+                    from rl_weight_agent import HierarchicalRLController as _HRL
+
+                    class _RandomModel:
+                        def predict_deterministic(self, obs):
+                            return np.random.dirichlet(np.ones(12))
+
+                    class _EqualModel:
+                        def predict_deterministic(self, obs):
+                            return np.ones(12) / 12
+
+                    def _run_ablation_variant(model_override):
+                        _hier = _HRL(config=config)
+                        _opt = AlphaDominatorOptimizer(dm.all_tickers, categories, config)
+                        _hier.set_backtest_context(
+                            above_sma=above_sma, raw_momentum=raw_mom,
+                            asset_volatilities=vols, information_ratio=info_ratio,
+                            golden_cross=golden_cross, features=features, optimizer=_opt)
+                        _hier.weight_agent.model = model_override
+                        _eng = BacktestEngine(config)
+                        _res = _eng.run(
+                            prices, returns, features, baseline_ml_probs, sma_200, above_sma,
+                            raw_mom, rel_strength, vols, info_ratio, mom_score, golden_cross,
+                            log_ret_30d, rsi_14, _hier, _opt)
+                        _met = _eng.calculate_metrics(_res)
+                        return _res, _met
+
+                    np.random.seed(42)
+                    rand_res, rand_met = _run_ablation_variant(_RandomModel())
+                    eq_res, eq_met = _run_ablation_variant(_EqualModel())
+
+                    _rf = config.risk_free_rate
+                    _oos_cutoff = pd.Timestamp('2024-01-01')
+
+                    def _p_sharpe(r, oos=True):
+                        m = r.index >= _oos_cutoff if oos else r.index < _oos_cutoff
+                        return BacktestEngine._period_metrics(r[m], _rf)['portfolio']['sharpe']
+
+                    rl_pm = metrics['portfolio']
+                    rand_pm = rand_met['portfolio']
+                    eq_pm = eq_met['portfolio']
+                    bl_pm = baseline_metrics['portfolio']
+
+                    abl_df = pd.DataFrame({
+                        'Model': [
+                            'RL Agent (trained)',
+                            'Random + constraints',
+                            'Equal (1/N) + constraints',
+                            'Baseline (rule-based)',
+                        ],
+                        'Sharpe': [
+                            f"{rl_pm['sharpe']:.3f}",
+                            f"{rand_pm['sharpe']:.3f}",
+                            f"{eq_pm['sharpe']:.3f}",
+                            f"{bl_pm['sharpe']:.3f}",
+                        ],
+                        'CAGR': [
+                            f"{rl_pm['cagr']:.2%}",
+                            f"{rand_pm['cagr']:.2%}",
+                            f"{eq_pm['cagr']:.2%}",
+                            f"{bl_pm['cagr']:.2%}",
+                        ],
+                        'OOS Sharpe': [
+                            f"{_p_sharpe(results):.3f}",
+                            f"{_p_sharpe(rand_res):.3f}",
+                            f"{_p_sharpe(eq_res):.3f}",
+                            f"{_p_sharpe(baseline_results):.3f}",
+                        ],
+                        'Max Drawdown': [
+                            f"{rl_pm['max_drawdown']:.2%}",
+                            f"{rand_pm['max_drawdown']:.2%}",
+                            f"{eq_pm['max_drawdown']:.2%}",
+                            f"{bl_pm['max_drawdown']:.2%}",
+                        ],
+                        'Sniper': [
+                            f"{metrics.get('sniper_score', 0):.3f}" if metrics.get('sniper_score') else "N/A",
+                            f"{rand_met.get('sniper_score', 0):.3f}" if rand_met.get('sniper_score') else "N/A",
+                            f"{eq_met.get('sniper_score', 0):.3f}" if eq_met.get('sniper_score') else "N/A",
+                            f"{baseline_metrics.get('sniper_score', 0):.3f}" if baseline_metrics.get('sniper_score') else "N/A",
+                        ],
+                    })
+                    st.dataframe(abl_df, hide_index=True)
+
+                    # Value-add metrics
+                    rl_s = rl_pm['sharpe']
+                    rl_oos = _p_sharpe(results)
+
+                    st.markdown("##### RL Agent Value-Add")
+
+                    va1, va2, va3 = st.columns(3)
+                    va1.metric(
+                        "vs Random+Constraints",
+                        f"{rl_s - rand_pm['sharpe']:+.3f} Sharpe",
+                        delta=f"{_p_sharpe(results) - _p_sharpe(rand_res):+.3f} OOS",
+                    )
+                    va2.metric(
+                        "vs Equal+Constraints",
+                        f"{rl_s - eq_pm['sharpe']:+.3f} Sharpe",
+                        delta=f"{_p_sharpe(results) - _p_sharpe(eq_res):+.3f} OOS",
+                    )
+                    va3.metric(
+                        "vs Baseline",
+                        f"{rl_s - bl_pm['sharpe']:+.3f} Sharpe",
+                        delta=f"{_p_sharpe(results) - _p_sharpe(baseline_results):+.3f} OOS",
+                    )
+
+                    # Interpretation
+                    constraint_only_sharpe = rand_pm['sharpe']
+                    rl_lift = rl_s - constraint_only_sharpe
+                    rl_pct = (rl_lift / rl_s) * 100 if rl_s > 0 else 0
+
+                    st.markdown("##### Interpretation")
+                    st.markdown(
+                        f"The constraint layer alone (with random inputs) produces a Sharpe of "
+                        f"**{constraint_only_sharpe:.3f}**. The trained RL agent pushes this to "
+                        f"**{rl_s:.3f}**, an improvement of **{rl_lift:+.3f}** — meaning "
+                        f"**{rl_pct:.0f}%** of the total Sharpe is attributable to the RL agent's "
+                        f"learned allocation decisions, while {100 - rl_pct:.0f}% comes from the "
+                        f"constraint layer and post-processing pipeline."
+                    )
+
+                    rl_oos_val = _p_sharpe(results)
+                    rand_oos_val = _p_sharpe(rand_res)
+                    eq_oos_val = _p_sharpe(eq_res)
+
+                    if rl_oos_val > rand_oos_val and rl_oos_val > eq_oos_val:
+                        st.success(
+                            f"The RL agent's OOS Sharpe ({rl_oos_val:.3f}) exceeds both "
+                            f"Random ({rand_oos_val:.3f}) and Equal ({eq_oos_val:.3f}) ablations. "
+                            f"The learned policy generalizes to unseen data — this is not constraint overfitting."
+                        )
+                    elif rl_oos_val > rand_oos_val:
+                        st.warning(
+                            f"RL OOS ({rl_oos_val:.3f}) beats Random ({rand_oos_val:.3f}) but not "
+                            f"Equal ({eq_oos_val:.3f}). The agent adds value over noise but 1/N "
+                            f"diversification is competitive out-of-sample."
+                        )
+                    else:
+                        st.error(
+                            f"RL OOS ({rl_oos_val:.3f}) does not beat Random ({rand_oos_val:.3f}). "
+                            f"The constraint layer may be doing most of the work."
+                        )
+
     # ==========================================================================
     # DETAILED METRICS EXPANDER
     # ==========================================================================
@@ -2155,7 +2813,7 @@ def main():
     st.markdown(
         f"""
         <div style='text-align: center; color: gray; font-size: 12px;'>
-        Alpha Dual Engine v10.0 | Data Period: {prices.index[0].date()} to {prices.index[-1].date()} | 
+        The Alpha Dominator v10.0 | Data Period: {prices.index[0].date()} to {prices.index[-1].date()} | 
         Assets: {', '.join(dm.all_tickers)}
         </div>
         """,
@@ -2194,4 +2852,5 @@ The author assumes no responsibility for hardware failure, system instability, o
 # HEADLESS CLI MODE
 # =============================================================================
 
-main()
+if __name__ == '__main__':
+    main()

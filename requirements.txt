@@ -9,3 +9,5 @@ shap
 matplotlib
 seaborn
 plotly
+mlx
+gymnasium>=0.29.0

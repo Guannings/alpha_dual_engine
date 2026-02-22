@@ -2,7 +2,7 @@
 """
 Regime-Adaptive Mean-Variance Optimization Strategy - Streamlit Dashboard
 ==========================================================================
-"The Alpha Dominator" v10.0 - Interactive Dashboard Edition
+"Alpha Dual Engine" v154.6 - Interactive Dashboard Edition
 
 This module refactors the terminal-based alpha_dominator_v10.py into a
 Streamlit dashboard with:
@@ -58,7 +58,7 @@ sns.set_palette("husl")
 
 @dataclass
 class StrategyConfig:
-    """Strategy configuration for The Alpha Dominator, refactored for balanced, high-return diversity."""
+    """Strategy configuration for Alpha Dual Engine v154.6, refactored for balanced, high-return diversity."""
 
     # 1. Volatility & Growth Configuration
     target_volatility: float = 0.25  # Target 25% vol — allow higher volatility for alpha
@@ -482,7 +482,7 @@ class AdaptiveRegimeClassifier:
 
 class AlphaDominatorOptimizer:
     """
-    The Alpha Dominator: IR Filter + Growth Anchor + Shannon Entropy
+    Alpha Dual Engine v154.6: IR Filter + Growth Anchor + Shannon Entropy
     """
 
     def __init__(
@@ -1460,7 +1460,7 @@ class BacktestEngine:
             f"Optimal Rebal: {metrics['optimal_rebalance_period']}d"
         )
 
-        ax.set_title('The Alpha Dominator v10.0 - IR Filter + Growth Anchor', fontsize=12)
+        ax.set_title('Alpha Dual Engine v154.6 - IR Filter + Growth Anchor', fontsize=12)
         ax.set_ylabel('Portfolio Value ($)')
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
         ax.legend(loc='upper left')
@@ -1997,7 +1997,7 @@ def render_detailed_metrics(metrics: Dict, engine: BacktestEngine, classifier: A
 def main():
     """Main Streamlit application."""
     st.set_page_config(
-        page_title="Alpha Dual Engine v100.0",
+        page_title="Alpha Dual Engine v154.6",
         page_icon="📈",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -2013,7 +2013,7 @@ def main():
         st.cache_resource.clear()
         st.rerun()
 
-    st.title("🎯 The Alpha Dominator v10.0")
+    st.title("🎯 Alpha Dual Engine v154.6")
     st.markdown("**IR Filter + Growth Anchor + Regularized ML**")
 
     ml_threshold = st.sidebar.slider(
@@ -2813,7 +2813,7 @@ def main():
     st.markdown(
         f"""
         <div style='text-align: center; color: gray; font-size: 12px;'>
-        The Alpha Dominator v10.0 | Data Period: {prices.index[0].date()} to {prices.index[-1].date()} | 
+        Alpha Dual Engine v154.6 | Data Period: {prices.index[0].date()} to {prices.index[-1].date()} | 
         Assets: {', '.join(dm.all_tickers)}
         </div>
         """,

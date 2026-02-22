@@ -142,13 +142,13 @@ The author assumes no responsibility for hardware failure, system instability, o
 **BY USING THIS SOFTWARE, YOU AGREE TO ASSUME ALL RISKS ASSOCIATED WITH YOUR INVESTMENT DECISIONS AND HARDWARE USAGE, RELEASING THE AUTHOR (PARVAUX) FROM ANY LIABILITY REGARDING YOUR FINANCIAL OUTCOMES OR SYSTEM INTEGRITY.**
 
 ====================================================================================
-# **Alpha Dual Engine v100.0.0: The Framework**
+# **Alpha Dual Engine v154.6: The Framework**
 
-This documentation details the architecture of Alpha Dual Engine v100.0.0, a high-performance quantitative trading system refactored to prioritize "Acceleration Alpha" over passive diversification and engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PARVAUX, a Public Finance major at National Chengchi University, the system represents a Bifurcated Logic that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles). Unlike traditional mean-variance models that treat all assets identically, v100.0.0 utilizes a Bifurcated Logic Engine that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles).
+This documentation details the architecture of Alpha Dual Engine v154.6, a high-performance quantitative trading system refactored to prioritize "Acceleration Alpha" over passive diversification and engineered to navigate complex market regimes through a synthesis of machine learning, macro-economic veto guards, and entropy-weighted optimization. Established by PARVAUX, a Public Finance major at National Chengchi University, the system represents a Bifurcated Logic that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles). Unlike traditional mean-variance models that treat all assets identically, v154.6 utilizes a Bifurcated Logic Engine that applies distinct mathematical strategies to Equities (Growth Flow) and Cryptocurrency (Store of Value Cycles).
 
 **I. Configuration & Constants (StrategyConfig)**
 
-The StrategyConfig class serves as the immutable constitution of the Alpha Dual Engine v100.0.0. Defined as a Python dataclass, it centralizes every hard-coded rule, risk limit, and execution parameter into a single, modifiable control panel. This design ensures that the strategy's logic remains separated from its parameters, allowing for rapid sensitivity testing without risking code breakage.
+The StrategyConfig class serves as the immutable constitution of the Alpha Dual Engine v154.6. Defined as a Python dataclass, it centralizes every hard-coded rule, risk limit, and execution parameter into a single, modifiable control panel. This design ensures that the strategy's logic remains separated from its parameters, allowing for rapid sensitivity testing without risking code breakage.
 
 This section acts as the primary filter for all downstream logic. If a trade or allocation violates these parameters, it is rejected before it ever reaches the optimization engine.
 
@@ -877,7 +877,7 @@ The Streamlit dashboard initially reported "High safety net drift" for the 50K m
 
 **XI. Conclusion**
 
-The Alpha Dual Engine v100.0.0 represents a modern evolution in finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. The addition of Hierarchical Reinforcement Learning extends this foundation with learned, adaptive decision-making that demonstrably generalizes to unseen market conditions. The challenges documented above — and their systematic resolution — underscore that building robust financial RL systems requires not just ML expertise, but disciplined experimentation, honest evaluation, and the willingness to question whether your model is truly contributing.
+The Alpha Dual Engine v154.6 represents a modern evolution in finance and asset management—shifting from reactive rebalancing to proactive, regime-aware navigation. The addition of Hierarchical Reinforcement Learning extends this foundation with learned, adaptive decision-making that demonstrably generalizes to unseen market conditions. The challenges documented above — and their systematic resolution — underscore that building robust financial RL systems requires not just ML expertise, but disciplined experimentation, honest evaluation, and the willingness to question whether your model is truly contributing.
 
 ====================================================================================
 # **Development Methodology**

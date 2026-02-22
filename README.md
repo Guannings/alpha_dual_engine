@@ -886,4 +886,4 @@ The Alpha Dual Engine v154.6 represents a modern evolution in finance and asset 
 
 This project was built using an AI-Accelerated Workflow.
 
-Large Language Models (Gemini, Claude Opus 4.6) were utilized to accelerate syntax generation and boilerplate implementation, allowing the focus to remain on quantitative logic, parameter tuning, and risk management validation.
+Large Language Models (Claude Opus 4.6, Gemini 3 Pro) were utilized to accelerate syntax generation and boilerplate implementation, allowing the focus to remain on quantitative logic, parameter tuning, and risk management validation.

@@ -161,7 +161,8 @@ a. target_volatility (0.25 / 25%)
 * Function: This sets the target annualized standard deviation for the portfolio optimizer.
 
 * Logic: Unlike conservative funds that target 10-12% volatility, this engine is tuned for 0.25, explicitly telling the math to accept significant daily variance in exchange for higher compound growth (CAGR). It prevents the optimizer from "diluting" high-momentum assets like SMH simply because they are volatile.
-b. prob_ema_span (10-day): Probabilities are smoothed using a 10-day Exponential Moving Average (EMA) to filter out daily market noise and prevent "regime flickering," which can lead to excessive and costly trading.
+
+aa. prob_ema_span (10-day): Probabilities are smoothed using a 10-day Exponential Moving Average (EMA) to filter out daily market noise and prevent "regime flickering," which can lead to excessive and costly trading.
 
 > **What is an EMA?** An Exponential Moving Average gives more weight to recent data points. Unlike a Simple Moving Average (where day 1 and day 10 count equally), EMA says "yesterday matters more than 9 days ago." A 10-day EMA span means the weight halves roughly every 5 days. This smooths out the ML model's daily probability jitter so the regime doesn't flip back and forth every other day.
 

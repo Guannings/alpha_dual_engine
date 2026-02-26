@@ -1100,7 +1100,7 @@ Each piece in plain English:
 - Growth anchors must be >= 40% total
 - Crypto + growth anchors <= 95%
 
-It uses Lagrange multipliers on the quadratic subproblem to enforce equality constraints, and an active set method to handle inequality constraints — basically tracking which bounds are "active" (you are pushed right up against them) vs. "inactive" (you are safely inside).
+**Important distinction:** The objective function $\mathcal{L}(\mathbf{w})$ that we wrote is NOT a Lagrangian — it is just a cost function. But internally, at this step, SLSQP constructs its own Lagrangian to solve the constrained quadratic subproblem. The solver introduces Lagrange multipliers as auxiliary variables to enforce the equality constraints (e.g., "weights sum to 1") on the simplified parabola, and uses an active set method to handle inequality constraints — basically tracking which bounds are "active" (you are pushed right up against them) vs. "inactive" (you are safely inside). These are two different levels: our function is the problem definition; the Lagrange multipliers are part of the solver's internal machinery for respecting constraints at each iteration.
 
 **Step 5 — Walk there.** Update the weights to that new position.
 
@@ -1117,9 +1117,9 @@ It uses Lagrange multipliers on the quadratic subproblem to enforce equality con
 
 SLSQP is the go-to for "small-to-medium nonlinear problems with constraints" — which is exactly what portfolio optimization is (12 weights, ~10 constraints, nonlinear objective).
 
-### **The interview-ready version**
+### **Technical Summary**
 
-> "This is a constrained nonlinear optimization problem. The objective function combines a quadratic risk term, a linear momentum term, and a nonlinear entropy regularizer, subject to equality constraints (weights sum to 1) and bound constraints (per-asset caps). It's solved numerically using SLSQP — a sequential quadratic programming method that approximates the problem as a series of simpler quadratic subproblems at each iteration, converging to a local minimum while respecting all constraints. SLSQP iteratively approximates the nonlinear objective as a quadratic subproblem at each step, solves that subproblem subject to linearized constraints, and updates the weights until convergence. It's essentially Newton's method extended to handle equality and inequality constraints via Lagrange multipliers and an active set strategy."
+In formal terms, this is a constrained nonlinear optimization problem. The objective function combines a quadratic risk term, a linear momentum term, and a nonlinear entropy regularizer, subject to equality constraints (weights sum to 1) and bound constraints (per-asset caps). It is solved numerically using SLSQP — a sequential quadratic programming method that approximates the problem as a series of simpler quadratic subproblems at each iteration, converging to a local minimum while respecting all constraints. The objective function itself is not a Lagrangian — it is a cost function to be minimized. Internally, however, SLSQP constructs a Lagrangian at each iteration to enforce the constraints on the quadratic subproblem, using Lagrange multipliers for equality constraints and an active set method for inequality constraints. The method can be understood as Newton's method extended to handle both equality and inequality constraints.
 
 ---
 
@@ -1205,9 +1205,9 @@ The difference is where they are used:
 
 Entropy is the carrot (gentle reward for spreading). Effective N is the stick (reject the portfolio if it is too concentrated).
 
-### **The interview-ready version**
+### **Technical Summary**
 
-> "Shannon Entropy measures how spread out the portfolio weights are on a scale from 0 (fully concentrated) to $\ln(n)$ (equally distributed). It's added to the objective function as a small regularization term — mathematically, it penalizes the optimizer for putting too much weight in too few assets. We use a low lambda of 0.02 because we want concentration in the top momentum stocks, just not extreme concentration in a single name."
+Shannon Entropy measures how spread out the portfolio weights are on a scale from 0 (fully concentrated) to $\ln(n)$ (equally distributed). In the objective function, it serves as a regularization term — mathematically penalizing the optimizer for placing too much weight in too few assets. The deliberately low $\lambda = 0.02$ reflects the strategy's preference for concentration in top-momentum stocks while preventing extreme single-name dominance. This balances the momentum term's tendency to concentrate all capital into one winner against the mathematical requirement for a minimum diversity floor.
 
 ---
 
@@ -1384,9 +1384,9 @@ After all paths complete, you have 1,000,000 final portfolio values. Sort them a
 - Percentage below starting value = probability of loss
 - The full histogram = the complete probability distribution of your financial future
 
-### **The interview-ready version**
+### **Technical Summary**
 
-> "GBM models stock prices as a random walk in log-space. The price change each day has two components: a deterministic drift (expected return adjusted for volatility drag) and a stochastic diffusion (random shock scaled by volatility). The $-\frac{1}{2}\sigma^2$ correction comes from Ito's Lemma — it accounts for the mathematical fact that symmetric percentage gains and losses don't cancel out (going up 50% then down 50% loses you 25%, not 0%). The exp() wrapper ensures prices can never go negative. We simulate 1,000,000 independent paths over 5 years to build a probability distribution of future outcomes."
+GBM models stock prices as a random walk in log-space. The price change each day comprises two components: a deterministic drift (expected return adjusted for volatility drag) and a stochastic diffusion (random shock scaled by volatility). The $-\frac{1}{2}\sigma^2$ correction is a direct consequence of Ito's Lemma — it accounts for the mathematical asymmetry where symmetric percentage gains and losses do not cancel out (a +50% gain followed by a -50% loss results in a net -25% loss, not 0%). The exponential wrapper ensures that simulated prices remain strictly positive regardless of the random draw. By simulating 1,000,000 independent paths over a 5-year horizon, the engine constructs a full probability distribution of future portfolio outcomes — capturing not just the expected case but the complete range of tail risks and upside scenarios.
 
 ---
 
@@ -1615,9 +1615,9 @@ The system operates as a principal-agent hierarchy:
 
 5. In the current production configuration, the Regime Agent's learned policy is **bypassed** in favor of a simple rule (SPY > 200-SMA = RISK_ON) because the learned regime policy exhibited a 71% DEFENSIVE bias that prevented equity participation in bull markets. The Weight Agent still operates, preserving the benefits of learned allocation while using the more reliable rule-based regime signal.
 
-### **The interview-ready version**
+### **Technical Summary**
 
-> "PPO is an on-policy actor-critic algorithm that stabilizes policy gradient updates via a clipped surrogate objective. At each iteration, we collect a rollout of experience, compute GAE advantages (a bias-variance balanced estimate of action quality), then perform multiple epochs of mini-batch gradient descent on the clipped loss. The clipping — $\min(r_t A_t, \text{clip}(r_t, 1 \pm \epsilon) A_t)$ — prevents destructive policy updates by bounding the probability ratio. Our system uses two PPO agents hierarchically: a discrete agent for regime selection (3-action softmax over 25-dim observations) and a continuous agent for weight allocation (12-dim Gaussian over 103-dim observations), both implemented as shared-trunk actor-critic networks trained via Apple MLX on Apple Silicon."
+PPO is an on-policy actor-critic algorithm that stabilizes policy gradient updates via a clipped surrogate objective. At each iteration, the system collects a rollout of experience, computes GAE advantages (a bias-variance balanced estimate of action quality), then performs multiple epochs of mini-batch gradient descent on the clipped loss. The clipping mechanism — $\min(r_t A_t, \text{clip}(r_t, 1 \pm \epsilon) A_t)$ — prevents destructive policy updates by bounding the probability ratio, ensuring the policy evolves gradually rather than making catastrophic jumps. The Alpha Dual Engine deploys two PPO agents in a hierarchical configuration: a discrete agent for regime selection (3-action softmax over 25-dimensional macro observations) and a continuous agent for weight allocation (12-dimensional Gaussian over 103-dimensional per-asset observations). Both are implemented as shared-trunk actor-critic networks and trained natively on Apple Silicon via the MLX framework.
 
 ====================================================================================
 # **Development Methodology**

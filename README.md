@@ -163,6 +163,8 @@ a. target_volatility (0.25 / 25%)
 * Logic: Unlike conservative funds that target 10-12% volatility, this engine is tuned for 0.25, explicitly telling the math to accept significant daily variance in exchange for higher compound growth (CAGR). It prevents the optimizer from "diluting" high-momentum assets like SMH simply because they are volatile.
 b. prob_ema_span (10-day): Probabilities are smoothed using a 10-day Exponential Moving Average (EMA) to filter out daily market noise and prevent "regime flickering," which can lead to excessive and costly trading.
 
+> **What is an EMA?** An Exponential Moving Average gives more weight to recent data points. Unlike a Simple Moving Average (where day 1 and day 10 count equally), EMA says "yesterday matters more than 9 days ago." A 10-day EMA span means the weight halves roughly every 5 days. This smooths out the ML model's daily probability jitter so the regime doesn't flip back and forth every other day.
+
 b. max_single_weight (0.30 / 30%)
 
 * Function: The "Anti-Blowup" Cap. No single asset can exceed 30% of the total portfolio value.
@@ -181,11 +183,23 @@ d. entropy_lambda (0.02)
 
 * Logic: A low lambda value (0.02) tells the optimizer that we prefer concentration over diversification. It allows the weights to cluster near the 30% maximums rather than being flattened out equally across all assets.
 
+> **What is Shannon Entropy here?** Entropy = $-\sum_i w_i \ln(w_i)$. It's a single number that measures how "spread out" the portfolio is. If all 12 assets have equal weight (8.33% each), entropy is at its max (~2.48). If one stock has 100%, entropy = 0. The optimizer adds $0.02 \times \text{entropy}$ as a bonus, gently nudging it away from extreme concentration. But since 0.02 is tiny, momentum still dominates — the portfolio will be concentrated, just not *insanely* concentrated.
+
 **2. Execution & Cost Control (The "Fee Guillotine")**
 
 a. Transaction Cost Calculation & Formula
 
 $$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right| \times \frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$$
+
+> **In Plain English:** This formula answers: *"How much money do I lose in fees every time I rebalance?"*
+>
+> Here's how to read it, piece by piece:
+> - $V_{\text{portfolio}}$ = Your total portfolio value (e.g., $100,000).
+> - $w_i^{\text{new}} - w_i^{\text{old}}$ = How much each asset's weight changed. If SMH went from 20% to 30%, the change is $|0.30 - 0.20| = 0.10$ (10%).
+> - $\sum_{i} | \cdot |$ = Add up all those changes across every asset. The vertical bars $| \cdot |$ mean "absolute value" — we don't care if the weight went up or down, just how much it moved.
+> - $\frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$ = Convert basis points to a decimal. 1 basis point (bps) = 0.01%, so 5 bps = $\frac{5}{10{,}000} = 0.0005$ = 0.05%.
+>
+> **Example:** You have $100,000. You shift 10% of the portfolio into SMH (5 bps fee). Cost = $100{,}000 \times 0.10 \times 0.0005 = \$5$. Cheap! But do that 50 times a year across multiple assets and it adds up fast.
 
 *  Per-Asset Transaction Costs:
 
@@ -278,17 +292,34 @@ a. For Equities: The "Cubed Momentum" Metric
 
 $$M_i = \left(\frac{P_i}{\text{SMA}_{60,i}}\right)^3$$
 
-* The "Soft Filter": By raising the momentum ratio to the third power, the math creates an exponential gap between "Good" and "Great."
+> **In Plain English:** This formula asks: *"How much is this stock outrunning its own 60-day average — and then exaggerate the difference."*
+>
+> Breaking it down:
+> - $P_i$ = Today's price of asset $i$ (e.g., SMH is trading at $220).
+> - $\text{SMA}_{60,i}$ = The average price of that asset over the last 60 trading days (e.g., $200). SMA stands for "Simple Moving Average" — just add up the last 60 closing prices and divide by 60.
+> - $\frac{P_i}{\text{SMA}_{60,i}}$ = The ratio. If the stock is at $220 and the average is $200, that's $\frac{220}{200} = 1.10$, meaning the stock is 10% above its recent trend.
+> - The $( \cdot )^3$ (cubing) is the key trick: it **amplifies the gap** between winners and losers.
+>
+> **Why cube it?** Without cubing, a stock 10% above trend looks only 5x better than one 2% above trend (10% vs 2%). After cubing:
 
 Scenario A: Asset is 2% above trend → $1.02^3 \approx 1.06$
 
 Scenario B: Asset is 10% above trend → $1.10^3 \approx 1.33$
 
-* Result: The optimizer sees Scenario B as 5x better than Scenario A, naturally forcing capital into the fastest-moving sector without needing manual "if/else" exclusions.
+> Now Scenario B looks **5x better** than Scenario A ($0.33 \div 0.06 \approx 5.5$). This makes the optimizer aggressively pile money into the strongest stocks, which is exactly what a momentum strategy wants — ride the winners hard.
+
+* Result: The optimizer sees Scenario B as dramatically better than Scenario A, naturally forcing capital into the fastest-moving sector without needing manual "if/else" exclusions.
 
 b. For Crypto: The "RSI Rotation" Metric
 
 * Formula: 14-Day Relative Strength Index (RSI).
+
+> **What is RSI?** RSI = $100 - \frac{100}{1 + \frac{\text{Avg Gain over 14 days}}{\text{Avg Loss over 14 days}}}$. It produces a number between 0 and 100.
+> - RSI > 70 = "overbought" (gone up too much too fast, might pull back)
+> - RSI < 30 = "oversold" (fallen too much, might bounce)
+> - RSI = 50 = neutral
+>
+> **How is it used here?** The system compares Bitcoin's RSI vs Ethereum's RSI. Whichever coin has the higher RSI (stronger recent momentum) gets the entire crypto allocation. It's a simple "who's pumping harder right now?" switch.
 
 * Logic: Crypto doesn't follow smooth trends like stocks; it moves in manic bursts. RSI measures the internal velocity of price changes.
 
@@ -298,19 +329,21 @@ b. For Crypto: The "RSI Rotation" Metric
 
 This section builds the input vectors for the Machine Learning "Brain." It distills the complex market state into 7 digestible numbers:
 
-a. realized_vol: Realized volatility derived from the VIX (Market Fear).
+> **In Plain English:** These 7 numbers are the "senses" of the ML model — they compress the entire market into 7 inputs that the model uses to decide "bullish or bearish." Here's what each one actually calculates:
 
-b. trend_score: Distance of SPY from its 200-day SMA (The "Bull/Bear" Line).
+a. **realized_vol** = $\frac{\text{VIX}}{100}$. The VIX is a number (say 22) that represents how scared the market is. Dividing by 100 just rescales it to 0.22 so the model can digest it. Higher = more fear.
 
-c. momentum_21d: Short-term velocity of the market (Breakout detection).
+b. **trend_score** = $\frac{\text{SPY Price} - \text{SPY 200-day SMA}}{\text{SPY 200-day SMA}} \times 100$. This asks: "how far is the S&P 500 above or below its 200-day average, in percentage terms?" If SPY is at 500 and the 200-day average is 480, trend_score = $\frac{500 - 480}{480} \times 100 = 4.17$. Positive = bullish, negative = bearish.
 
-d. vol_momentum: Rate of change in the VIX (Is fear rising or falling?).
+c. **momentum_21d** = SPY's percentage return over the last 21 trading days (~1 month). Positive = market has been going up recently.
 
-e. qqq_vs_spy: Relative performance of QQQ vs SPY over 63 days (Tech leadership signal).
+d. **vol_momentum** = $\frac{\text{VIX today}}{\text{VIX 21 days ago}} - 1$. This measures: "is fear increasing or decreasing?" If VIX went from 15 to 20, vol_momentum = $\frac{20}{15} - 1 = 0.33$ (fear jumped 33%). Rising fear = bad.
 
-f. tlt_momentum: Momentum of TLT (Detects Interest Rate shocks).
+e. **qqq_vs_spy** = QQQ return over 63 days minus SPY return over 63 days. This measures: "is tech outperforming the broader market?" If QQQ returned 12% and SPY returned 8% over 3 months, this equals 4%. Positive = tech is leading (usually bullish for growth).
 
-g. equity_risk_premium: A valuation metric comparing SPY's mean-reversion ratio to the risk-free rate.
+f. **tlt_momentum** = TLT's return over 21 days. TLT is a long-term bond fund. If TLT is crashing, it means interest rates are spiking — bad for stocks.
+
+g. **equity_risk_premium** = $\frac{1}{\text{SPY} / \text{SPY 252-day SMA}} - \text{risk-free rate}$. This is a rough valuation check. When SPY is way above its 1-year average, the "premium" for holding stocks shrinks. The model uses this to detect if the market is overvalued.
 
 **4. Temporal Integrity (The "Time Machine")**
 
@@ -349,6 +382,10 @@ a. Model Alpha: XGBoost (The Aggressor)
 
 * Configuration: Tuned with Monotonic Constraints to enforce financial logic (e.g., "Higher Volatility = Lower Probability").
 
+> **What is XGBoost?** It builds hundreds of small decision trees, where each new tree tries to fix the mistakes of the previous ones (this is called "boosting"). The final prediction is the combined vote of all trees.
+>
+> **What are Monotonic Constraints?** They hard-code common-sense rules into the model. For example: "all else equal, if VIX goes up, the probability of a bull market should go down — never up." Without this, the model might learn a weird pattern from the training data like "VIX at 30 = bullish" just because it happened once in 2020. Monotonic constraints prevent such nonsensical learned rules.
+
 * Strength: Excellent at catching "V-shaped" recoveries where price action snaps back quickly despite high fear levels.
 
 b. Model Beta: Decision Tree (The Skeptic)
@@ -357,11 +394,17 @@ b. Model Beta: Decision Tree (The Skeptic)
 
 * Configuration: Shallow tree (max_depth=2) with high regularization (min_samples_leaf=200).
 
+> **What does max_depth=2 mean?** The tree can only ask 2 yes/no questions. For example: "Is trend_score > 0?" → "Is VIX < 25?" → Done. This extreme simplicity makes it almost impossible to overfit — it can only capture the most dominant patterns.
+>
+> **What does min_samples_leaf=200 mean?** Every "answer" at the bottom of the tree must be supported by at least 200 historical examples. This prevents the tree from making decisions based on rare, one-off events.
+
 * Strength: Prevents the XGBoost model from overreacting to short-term noise.
 
 c. The Consensus Rule:
 
 To trigger a RISK_ON signal in the absence of a Macro Override, BOTH models must agree with high conviction (Probability > 0.55). If they disagree, the system defaults to safety.
+
+> **Why two models?** Think of it like a jury: the aggressive model (XGBoost) might see opportunities everywhere, but the skeptic (Decision Tree) keeps it honest. Both must independently conclude "bull market" with >55% confidence. This "innocent until proven guilty" approach means the system only takes risk when the evidence is overwhelming.
 
 **3. The "Anxiety" & "Panic" States**
 
@@ -379,6 +422,10 @@ The "Circuit Breaker." If volatility explodes, the system forces a DEFENSIVE reg
 **4. Explainability via SHAP Values**
 
 Because black-box models are unacceptable in institutional advisory, the classifier integrates SHAP (SHapley Additive exPlanations). This provides a detailed "Feature Importance" report, allowing the user to explain exactly why a decision was made. For instance, the user can point to a SHAP summary plot to show that TLT Momentum was the primary factor that triggered a defensive exit during the bond market crash of 2022.
+
+> **What is SHAP?** Imagine the ML model says "60% chance of a bull market." SHAP breaks that down into contributions: "trend_score pushed the probability UP by 15%, but vol_momentum pushed it DOWN by 8%, and TLT_momentum pushed it DOWN by 3%..." etc. Every feature gets a positive or negative credit for the final prediction.
+>
+> The name comes from **Shapley Values** — a concept from game theory (Nobel Prize in Economics, 2012) that fairly divides credit among players in a cooperative game. Here, the "players" are the 7 input features, and the "game" is making the prediction. SHAP ensures each feature gets exactly the credit it deserves — no more, no less.
 
 **5. The "Regime Shield" (Rate Shock Guard)**
 
@@ -402,11 +449,34 @@ The heart of the optimizer is the function it tries to minimize:
 
 $$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$$
 
-a. Minimizing Variance — $\mathbf{w}^\top \Sigma \mathbf{w}$: It tries to keep the portfolio stable. However, with target_volatility set to 0.25, the "leash" is loose, allowing for high-beta plays.
-
-b. Maximizing Momentum — $-\mathbf{w} \cdot \mathbf{M}$: This is the alpha driver. It pushes weights toward assets with the highest "Cubed Momentum" scores (SMH, TAN).
-
-c. Maximizing Entropy — $-H(\mathbf{w})$: The entropy_lambda (set to 0.02) is the "Anti-Concentration" term. It prevents the math from simply putting 100% into the single best stock. It forces a slight spread across the top 3-4 winners.
+> **In Plain English:** This is the "brain" of the optimizer. It's a single formula that balances three competing goals: *"minimize risk, maximize momentum, and don't put all eggs in one basket."* The optimizer tries different combinations of portfolio weights and picks the one that makes this formula as **small as possible** (that's what "minimize" means).
+>
+> Let's decode each piece:
+>
+> **The variables:**
+> - $\mathbf{w}$ = A list of portfolio weights. For example, $[0.25, 0.30, 0.10, \ldots]$ meaning 25% in SMH, 30% in QQQ, 10% in TLT, etc. This is what the optimizer is trying to find.
+> - $\lambda$ (lambda) = A "volume knob" that controls how much each term matters. Higher lambda = that goal matters more.
+> - $\Sigma$ (capital Sigma) = The **covariance matrix** — a table that captures how much each pair of assets moves together. If SMH and QQQ both go up on the same days, their covariance is high (they're correlated). This matrix is what makes diversification mathematically measurable.
+>
+> **Term 1: Risk — $\lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w}$** (we want this SMALL)
+>
+> - $\mathbf{w}^\top \Sigma \mathbf{w}$ = Portfolio variance (risk squared). Think of it as: "multiply each weight by how much its asset wiggles, accounting for correlations." If you hold 50% in two stocks that always move together, this number is high (risky). If they move opposite, it's low (diversified).
+> - $\mathbf{w}^\top$ means the weight list written sideways (transposed), which is just how matrix multiplication works — you're combining weights with the covariance table to get a single risk number.
+> - The $\lambda_{\text{risk}}$ knob is kept moderate because the target volatility is 25% — we accept more risk than a conservative fund.
+>
+> **Term 2: Momentum — $-\lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M})$** (the minus sign means we want this BIG)
+>
+> - $\mathbf{w} \cdot \mathbf{M}$ = **Dot product** of weights and momentum scores. It multiplies each weight by its asset's Cubed Momentum score, then adds them all up. Example: if SMH has momentum 1.33 and weight 0.30, it contributes $0.30 \times 1.33 = 0.40$ to the total.
+> - The **negative sign** is the trick: since the optimizer minimizes the formula, putting a minus in front of momentum means the optimizer actually **maximizes** it. (Minimizing $-x$ is the same as maximizing $x$.)
+> - This term is what makes the strategy chase winners — it rewards putting more weight in high-momentum stocks.
+>
+> **Term 3: Entropy — $-\lambda_{\text{entropy}} H(\mathbf{w})$** (the minus sign means we want this BIG too)
+>
+> - $H(\mathbf{w})$ = **Shannon Entropy** = $-\sum_i w_i \ln(w_i)$. This measures how "spread out" the weights are. If all money is in one stock, entropy is 0 (concentrated). If money is equally spread across 12 stocks, entropy is at its maximum (diversified).
+> - Again, the negative sign means the optimizer tries to **maximize** entropy — it wants some spread across assets.
+> - But $\lambda_{\text{entropy}} = 0.02$ is deliberately tiny, so this is just a gentle nudge: "please don't put literally everything in one stock," not "spread equally across all 12."
+>
+> **The big picture:** The optimizer finds weights that make Risk small, Momentum big, and Entropy big. The lambda knobs control the trade-off. Since the momentum knob is cranked up and the entropy knob is barely on, the result is an aggressive, concentrated portfolio that bets heavily on the top 3-4 trending stocks — but never 100% in just one.
 
 **2. The Bifurcated Bounds Engine**
 
@@ -433,6 +503,16 @@ b. The Equity Bounds (Growth Anchors):
 c. Diversity Enforcement (Effective N)
 
 After finding a candidate portfolio, the optimizer runs a "Sanity Check" using the Inverse Herfindahl Index (Effective N).
+
+> **In Plain English:** Effective N answers: *"How many stocks is this portfolio really betting on?"*
+>
+> The formula is: $N_{\text{eff}} = \frac{1}{\sum_i w_i^2}$ — take each weight, square it, add them up, then take $\frac{1}{\text{that sum}}$.
+>
+> - If you have 100% in one stock: $\frac{1}{1.0^2} = 1.0$ — effectively 1 bet.
+> - If you split 50/50 between two stocks: $\frac{1}{0.5^2 + 0.5^2} = \frac{1}{0.50} = 2.0$ — effectively 2 bets.
+> - If you have 30%, 30%, 30%, 10%: $\frac{1}{0.09 + 0.09 + 0.09 + 0.01} = \frac{1}{0.28} \approx 3.6$ — effectively 3.6 bets.
+>
+> Why square the weights? Squaring penalizes concentration. A 90% weight contributes $0.81$ to the denominator, which dominates and pushes the score toward 1. The system requires $N_{\text{eff}} \geq 3.0$ — the portfolio must behave like at least 3 independent bets.
 
 * Target: min_effective_n = 3.0
 
@@ -473,6 +553,13 @@ a. Logic: Inside the main loop, before executing any rebalance, the engine calcu
 
 $$\text{Turnover} = \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right|$$
 
+> **In Plain English:** Turnover measures *"how much of the portfolio are we reshuffling today?"*
+>
+> - For each asset, calculate the absolute difference between the new target weight and the current weight.
+> - Add them all up.
+> - Example: If SMH goes from 25% → 30% (change of 5%), QQQ from 20% → 15% (change of 5%), and everything else stays the same, turnover = $0.05 + 0.05 = 0.10$ (10%).
+> - If turnover is below 12%, the trade is too small to justify the fees, so the system does nothing.
+
 b. The Rule:
 
 * If $\text{Turnover} < 0.12$ (12%): THE TRADE IS REJECTED.
@@ -488,6 +575,8 @@ If the Regime does change (e.g., Bullish to Defensive): The Gate is lifted. Safe
 The engine uses a tiered, per-asset transaction cost model that reflects real-world trading friction. Each asset has its own cost in basis points (see the fee table in Section I.2), ranging from 1 bps for the most liquid bond ETFs to 30 bps for cryptocurrency. The cost for each rebalance is calculated as:
 
 $$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right| \times \frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$$
+
+> **In Plain English:** Same fee formula as in Section I.2 — portfolio value × how much you traded × the fee rate per asset. The key insight: crypto (30 bps) costs 30x more to trade than SHY (1 bps), so the system naturally avoids churning crypto positions.
 
 This penalizes high-turnover strategies proportionally to the actual friction of the assets being traded, rewarding the "Lazy" approach mandated by the Fee Guillotine.
 
@@ -510,6 +599,13 @@ b. Calculation:
 c. Formula:
 
 $$\text{Sniper Score} = \frac{\text{Successful Bull Signals}}{\text{Total Bull Signals}}$$
+
+> **In Plain English:** This is just a **win rate** for buy signals. Every time the model said "go aggressive," did the market actually go up over the next 21 trading days (~1 month)?
+>
+> - Numerator = Number of times the model said "BUY" and the market went up.
+> - Denominator = Total number of times the model said "BUY."
+> - Example: The model triggered 100 "RISK_ON" signals. 73 of those times, the S&P 500 went up over the following month. Sniper Score = $\frac{73}{100} = 0.73$ (73%).
+> - A coin flip would give 50%. Anything above 70% means the model genuinely has timing skill — it's not just always bullish.
 
 d. Target: A score >0.70 (70%) indicates the model is highly selective and only entering when the statistical edge is real.
 
@@ -558,11 +654,17 @@ c. Verdict: A high Sniper Score (>70%) means that the majority of the time the m
 
 Standard institutional metrics are calculated to benchmark against the SPY.
 
-a. CAGR (Compound Annual Growth Rate): The geometric mean return. (Target: >20%).
+a. **CAGR** (Compound Annual Growth Rate): The geometric mean return. (Target: >20%).
 
-b. Sharpe Ratio: Return per unit of risk. (Target: ~1.0).
+> **Formula:** $\text{CAGR} = \left(\frac{\text{Final Value}}{\text{Initial Value}}\right)^{1/\text{years}} - 1$. If $10,000 grew to $80,000 over 15 years: $\left(\frac{80000}{10000}\right)^{1/15} - 1 = 8^{0.0667} - 1 \approx 0.149$ = 14.9% per year. It smooths out all the ups and downs into a single "average annual growth" number.
 
-c. Max Drawdown: The deepest peak-to-trough decline. This verifies the "Defensive" logic works during crashes.
+b. **Sharpe Ratio**: Return per unit of risk. (Target: ~1.0).
+
+> **Formula:** $\text{Sharpe} = \frac{R_p - R_f}{\sigma_p}$ where $R_p$ = portfolio return, $R_f$ = risk-free rate (Treasury bills, ~4%), $\sigma_p$ = portfolio volatility. It answers: *"For every unit of risk I took, how much extra return did I get?"* A Sharpe of 1.0 means you earned 1% of excess return for every 1% of volatility you endured. Above 1.0 is excellent; below 0.5 is mediocre.
+
+c. **Max Drawdown**: The deepest peak-to-trough decline. This verifies the "Defensive" logic works during crashes.
+
+> If your portfolio hit $150,000 at its peak and then dropped to $100,000 before recovering, the max drawdown = $\frac{100{,}000 - 150{,}000}{150{,}000} = -33.3\%$. It measures: *"what was the worst losing streak, from the highest high to the lowest low?"* A max drawdown of -40% means at some point you were staring at 40% of your money gone. This is why the defensive regime exists — to limit this number.
 
 **3. Constraint Verification**
 
@@ -597,9 +699,30 @@ b. Drift Component ($\mu$): The engine calculates the annualized drift based on 
 
 $$\mu_{\text{adj}} = \mu - \frac{1}{2}\sigma^2$$
 
+> **In Plain English:** This adjusts the expected growth rate for a mathematical quirk called **volatility drag**.
+>
+> - $\mu$ (mu) = The raw average annual return (e.g., 20% per year = 0.20). Think of it as: "on average, the portfolio grows this much per year."
+> - $\sigma$ (sigma) = Annual volatility, i.e., how wildly the portfolio swings (e.g., 25% = 0.25).
+> - $\frac{1}{2}\sigma^2$ = The "volatility tax." Here's the intuition: if a stock goes up 50% then down 50%, you might think you're back to even. But $100 → $150 → $75. You actually **lost** 25%. The bigger the swings, the more this "drag" eats into your real returns. This term subtracts that drag from the raw return.
+> - With $\mu = 0.20$ and $\sigma = 0.25$: $\mu_{\text{adj}} = 0.20 - \frac{1}{2}(0.25)^2 = 0.20 - 0.03125 = 0.169$. So the "real" growth is ~16.9%, not 20%.
+
 c. Diffusion Component ($\sigma$): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable ($Z$):
 
 $$S_{t+1} = S_t \exp\left(\mu_{\text{adj}} \Delta t + \sigma \sqrt{\Delta t} Z\right)$$
+
+> **In Plain English:** This formula generates one day of simulated price movement. It answers: *"Given today's price, what might tomorrow's price be?"*
+>
+> Breaking it down:
+> - $S_t$ = Today's portfolio value (e.g., $100,000).
+> - $S_{t+1}$ = Tomorrow's simulated portfolio value.
+> - $\exp(\ldots)$ = The exponential function ($e^x$). It ensures the portfolio value can never go negative (you can't have -$50,000). This is why it's called "Geometric" Brownian Motion — it works with percentage changes, not dollar changes.
+> - $\mu_{\text{adj}} \Delta t$ = The **predictable part** — the expected daily growth. $\Delta t = \frac{1}{252}$ (one trading day out of 252 per year). So this is a tiny daily nudge upward.
+> - $\sigma \sqrt{\Delta t} Z$ = The **random part** — daily market noise.
+>   - $Z$ is a random number drawn from a "standard normal distribution" (bell curve centered at 0). Most of the time $Z$ is between -2 and +2, but occasionally it hits -3 or -4 (a crash).
+>   - $\sigma \sqrt{\Delta t}$ scales the randomness to match real-world daily volatility. $\sqrt{\Delta t}$ converts annual volatility to daily (this is why you see $\sqrt{252}$ everywhere in finance — it converts between daily and annual).
+>   - Together: on a good day ($Z = +1.5$), the portfolio jumps up. On a bad day ($Z = -2$), it drops. Over 1,000,000 simulations, you see every possible future.
+>
+> **The full picture:** Each simulated day = yesterday's value × $e^{(\text{tiny expected growth} + \text{random shock})}$. Chain 1,260 days together (5 years) and you get one possible future. Do this 1,000,000 times and you get a probability distribution of outcomes.
 
 d. Vectorized Execution: To handle the immense computational load, the simulation logic is fully vectorized using NumPy, allowing for the simultaneous generation of all price paths without slow iterative loops.
 
@@ -701,6 +824,14 @@ The Alpha Dual Engine now includes an optional **Hierarchical RL** system that r
 
 **1. Architecture: Two-Level PPO Hierarchy**
 
+> **In Plain English:** Think of this like a company hierarchy. The **CEO** (Regime Agent) decides the overall strategy: "Are we attacking, playing safe, or running for cover?" The **Portfolio Manager** (Weight Agent) then executes that strategy by deciding exactly how much money goes into each stock. Both learn from experience using PPO — a training algorithm that says "do more of what worked, less of what didn't, but don't change too drastically between lessons."
+>
+> **What is PPO?** Proximal Policy Optimization. "Policy" = the agent's decision-making rules. "Optimization" = improving those rules. "Proximal" = "don't change too much at once" — this prevents the agent from learning something in one lesson that completely breaks what it learned before.
+>
+> **What is an MLP?** Multi-Layer Perceptron — just a basic neural network. Numbers go in, get multiplied by learned weights, pass through activation functions, and a decision comes out. "2x64" means 2 hidden layers with 64 neurons each. Think of it as a 2-story building where each floor has 64 workers processing information.
+>
+> **What is Actor-Critic?** Two neural networks working together. The **Actor** says "I think we should do X." The **Critic** says "Doing X in this situation is worth Y points." The Actor learns to make better decisions; the Critic learns to evaluate decisions more accurately. They improve together.
+
 a. **High-Level Regime Agent** (`rl_regime_agent.py`)
 
 * Architecture: 2x64 MLP Actor-Critic trained with Proximal Policy Optimization (PPO)
@@ -716,9 +847,17 @@ b. **Low-Level Weight Agent** (`rl_weight_agent.py`)
 * Output: 12-dimensional continuous softmax (portfolio weight for each asset)
 * Training: `python train_weight_agent.py` (300K timestep PPO with Differential Sharpe Reward)
 
+> **What is softmax?** A function that converts any list of numbers into probabilities that add up to 1. If the raw output is $[2.0, 1.0, 0.5, \ldots]$, softmax turns it into something like $[0.45, 0.22, 0.12, \ldots]$ — valid portfolio weights. It does this by computing $\frac{e^{x_i}}{\sum_j e^{x_j}}$ for each asset.
+
 **2. Soft Constraint Training**
 
 Unlike traditional constrained optimization where rules are imposed post-hoc, the weight agent learns from **quadratic soft-constraint penalties** during training. It experiences the cost of violating portfolio rules (concentration limits, gold cap, crypto bounds, growth anchor floor, ineligible asset penalties) as negative reward signals, allowing it to internalize the rules rather than having decisions overwritten.
+
+> **In Plain English:** Instead of hard-coding "you MUST NOT put more than 30% in one stock," the agent learns *why* concentration is bad through pain. Every time it breaks a rule, it gets punished — and the punishment grows **quadratically** (squared), meaning small violations get small penalties but big violations get hammered.
+>
+> **Why quadratic?** If the agent puts 31% in one stock (1% over the limit), the penalty is $(0.01)^2 = 0.0001$ — barely noticeable. But if it puts 50% in one stock (20% over), the penalty is $(0.20)^2 = 0.04$ — 400x worse. This teaches the agent that small limit-pushes are tolerable but big violations are catastrophic.
+>
+> **What does "Scale" mean in the table below?** It's a multiplier on the penalty. A scale of 5.0 means concentration violations are punished 5x as harshly as a scale-1.0 penalty. Higher scale = the system cares more about enforcing that rule.
 
 | Constraint | Scale | Threshold | Purpose |
 |:---|:---:|:---:|:---|
@@ -735,9 +874,15 @@ The training pipeline includes multiple anti-overfitting mechanisms, validated t
 
 a. **Reward Clipping** [-3, +3]: Prevents the agent from exploiting training-specific return patterns by bounding the reward signal.
 
+> The agent's reward each day is capped between -3 and +3. Without this, a single huge market crash day could produce a reward of -50, which would traumatize the model into never taking risk again. Clipping keeps lessons proportional.
+
 b. **Observation Noise** ($\sigma = 0.10$): Gaussian noise injected into training observations to improve generalization to unseen market conditions.
 
+> During training, we add small random fuzz ($\pm$10%) to the input data. This is like studying for an exam with slightly blurry glasses — if you can still pass, you truly understand the material rather than just memorizing the exact questions. It prevents the model from memorizing specific historical patterns like "VIX was exactly 22.3 on March 5, 2020."
+
 c. **Learning Rate Decay**: Linear decay to 20% of initial LR by end of training, reducing late-stage memorization.
+
+> The **learning rate** controls how much the model updates its brain after each lesson. Starting high (big updates, rapid learning) and shrinking to 20% of the initial value (tiny updates, fine-tuning) is like a sculptor: start with a chisel, finish with sandpaper. This prevents the model from making wild last-minute changes that overwrite good early learning.
 
 d. **Checkpoint Evaluation** (`eval_checkpoints.py`): Periodic model snapshots are saved and evaluated on the full backtest to identify the optimal early-stopping point.
 
@@ -776,6 +921,11 @@ All metrics evaluated with training cutoff at 2024-01-01:
 | OOS Sharpe | 1.060 | 0.921 | — | RL wins |
 | Sharpe Decay (IS - OOS) | -0.076 | 0.084 | <0.5 | PASS |
 | Sniper Score | 0.711 | 0.769 | >0.6 | PASS |
+
+> **How to read this table in an interview:**
+> - **IS** (In-Sample) = Performance on data the model trained on (2010-2023). Think of it as "homework grade."
+> - **OOS** (Out-of-Sample) = Performance on data the model has NEVER seen (2024+). Think of it as "exam grade."
+> - **Sharpe Decay** = IS Sharpe minus OOS Sharpe. If positive, the model did better on homework than the exam (overfitting). If **negative** (like the RL agent's -0.076), the model did *better* on the exam than on homework — it genuinely learned transferable patterns, not memorized answers. This is the strongest possible evidence against overfitting.
 
 **7. New Files**
 

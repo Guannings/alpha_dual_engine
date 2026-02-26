@@ -1034,7 +1034,7 @@ The Alpha Dual Engine v154.6 represents a modern evolution in finance and asset 
 
 ====================================================================================
 
-# **XII. Mathematical Foundations — Deep Dive**
+# **Appendix: Mathematical Foundations — Deep Dive**
 
 This section provides rigorous mathematical interpretations of every core formula used in the Alpha Dual Engine. Each subsection starts from first principles, builds the intuition, walks through the derivation, and ends with a concrete numerical example. The goal is to make every symbol, subscript, and Greek letter fully transparent — no hand-waving allowed.
 

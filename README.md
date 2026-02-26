@@ -198,9 +198,9 @@ $$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w
 > - $V_{\text{portfolio}}$ = Your total portfolio value (e.g., \$100,000).
 > - $w_i^{\text{new}} - w_i^{\text{old}}$ = How much each asset's weight changed. If SMH went from 20% to 30%, the change is $|0.30 - 0.20| = 0.10$ (10%).
 > - $\sum_{i} | \cdot |$ = Add up all those changes across every asset. The vertical bars $| \cdot |$ mean "absolute value" — we don't care if the weight went up or down, just how much it moved.
-> - $\frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$ = Convert basis points to a decimal. 1 basis point (bps) = 0.01%, so 5 bps = $\frac{5}{10{,}000} = 0.0005$ = 0.05%.
+> - $\frac{\text{Cost}_i^{\text{bps}}}{10000}$ = Convert basis points to a decimal. 1 basis point (bps) = 0.01%, so 5 bps = $\frac{5}{10000} = 0.0005$ = 0.05%.
 >
-> **Example:** You have \$100,000. You shift 10% of the portfolio into SMH (5 bps fee). Cost = $100{,}000 \times 0.10 \times 0.0005 = \$5$. Cheap! But do that 50 times a year across multiple assets and it adds up fast.
+> **Example:** You have \$100,000. You shift 10% of the portfolio into SMH (5 bps fee). Cost = $100000 \times 0.10 \times 0.0005 = 5$ dollars. Cheap! But do that 50 times a year across multiple assets and it adds up fast.
 
 *  Per-Asset Transaction Costs:
 
@@ -657,7 +657,7 @@ Standard institutional metrics are calculated to benchmark against the SPY.
 
 a. **CAGR** (Compound Annual Growth Rate): The geometric mean return. (Target: >20%).
 
-> **Formula:** $\text{CAGR} = \left(\frac{\text{Final Value}}{\text{Initial Value}}\right)^{1/\text{years}} - 1$. If \$10,000 grew to \$80,000 over 15 years: $\left(\frac{80000}{10000}\right)^{1/15} - 1 = 8^{0.0667} - 1 \approx 0.149$ = 14.9% per year. It smooths out all the ups and downs into a single "average annual growth" number.
+> **Formula:** $\text{CAGR} = \left(\frac{\text{Final Value}}{\text{Initial Value}}\right)^{1/\text{years}} - 1$. If \$10,000 grew to \$80,000 over 15 years: $\left(\frac{80000}{10000}\right)^{1/15} - 1 = 8^{0.0667} - 1 \approx 14.9\%$ per year. It smooths out all the ups and downs into a single "average annual growth" number.
 
 b. **Sharpe Ratio**: Return per unit of risk. (Target: ~1.0).
 
@@ -665,7 +665,7 @@ b. **Sharpe Ratio**: Return per unit of risk. (Target: ~1.0).
 
 c. **Max Drawdown**: The deepest peak-to-trough decline. This verifies the "Defensive" logic works during crashes.
 
-> If your portfolio hit \$150,000 at its peak and then dropped to \$100,000 before recovering, the max drawdown = $\frac{100{,}000 - 150{,}000}{150{,}000} = -33.3\%$. It measures: *"what was the worst losing streak, from the highest high to the lowest low?"* A max drawdown of -40% means at some point you were staring at 40% of your money gone. This is why the defensive regime exists — to limit this number.
+> If your portfolio hit \$150,000 at its peak and then dropped to \$100,000 before recovering, the max drawdown = $\frac{100000 - 150000}{150000} = -33.3\%$. It measures: *"what was the worst losing streak, from the highest high to the lowest low?"* A max drawdown of -40% means at some point you were staring at 40% of your money gone. This is why the defensive regime exists — to limit this number.
 
 **3. Constraint Verification**
 

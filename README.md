@@ -291,7 +291,7 @@ a. For Equities: The "Cubed Momentum" Metric
 
 $$M_i = \left(\frac{P_i}{\text{SMA}_{60,i}}\right)^3$$
 
-Where $P_i$ is the current price of asset $i$ and $\text{SMA}_{60,i}$ is its 60-day Simple Moving Average. The ratio $\frac{P_i}{\text{SMA}_{60,i}}$ measures how far the asset is above or below its recent trend (e.g., $\frac{220}{200} = 1.10$ means 10% above trend). The **cubing operation** nonlinearly amplifies the gap between strong and weak performers:
+Where $P_i$ is the current price of asset $i$ and $SMA_{60,i}$ is its 60-day Simple Moving Average. The ratio $P_i / SMA_{60,i}$ measures how far the asset is above or below its recent trend (e.g., $220/200 = 1.10$ means 10% above trend). The **cubing operation** nonlinearly amplifies the gap between strong and weak performers:
 
 Scenario A: Asset is 2% above trend → $1.02^3 \approx 1.06$
 

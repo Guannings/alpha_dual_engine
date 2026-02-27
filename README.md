@@ -667,7 +667,7 @@ b. Drift Component ($\mu$): The engine calculates the annualized drift based on 
 
 $$\mu_{\text{adj}} = \mu - \frac{1}{2}\sigma^2$$
 
-This adjustment accounts for **volatility drag** — the mathematical asymmetry where symmetric percentage gains and losses do not cancel out. For example, a +50% gain followed by a -50% loss does not return to breakeven: \$100 → \$150 → \$75 (a net 25% loss). The $\frac{1}{2}\sigma^2$ correction subtracts this drag from the raw expected return.
+This adjustment accounts for **volatility drag** — the mathematical asymmetry where symmetric percentage gains and losses do not cancel out. For example, a +50% gain followed by a -50% loss does not return to breakeven: 100 → 150 → 75 (a net 25% loss). The $\sigma^2 / 2$ correction subtracts this drag from the raw expected return.
 
 - $\mu$ = annualized expected return (e.g., 0.20 = 20% per year)
 - $\sigma$ = annualized volatility (e.g., 0.25 = 25% per year)

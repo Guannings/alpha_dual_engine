@@ -1040,6 +1040,56 @@ This section provides rigorous mathematical interpretations of every core formul
 
 ---
 
+## **Table of Contents**
+
+| # | Section | Key Formulas | What It Answers |
+|:---:|:---|:---|:---|
+| 0 | [Foundational Concepts](#foundational-concepts) | $L = (\text{guess} - \text{actual})^2$ | What is a loss function? What is gradient descent? |
+| | | $w_{\text{new}} = w_{\text{old}} - \alpha \nabla L$ | How does the computer minimize any function? |
+| A | [The Objective Function & SLSQP](#a-the-objective-function--slsqp-solver-section-iv) | $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ | How does the optimizer pick portfolio weights? |
+| | | $\mathcal{L} = f(\mathbf{w}) + \mu(\sum w_i - 1)$ | What are Lagrange multipliers and shadow prices? |
+| | | Gaussian elimination, active set method | How do you solve the resulting system of equations? |
+| B | [Shannon Entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification) | $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ | How does the system measure diversification? |
+| | | $N_{\text{eff}} = e^{H(\mathbf{w})}$ | What is "Effective N" and why require at least 3? |
+| C | [Geometric Brownian Motion](#c-geometric-brownian-motion--the-complete-derivation) | $dS = \mu S~dt + \sigma S~dW$ | How are future stock prices simulated? |
+| | | $S_{t+1} = S_t \exp\left[(\mu - \tfrac{1}{2}\sigma^2)\Delta t + \sigma\sqrt{\Delta t}~Z\right]$ | What is Ito's Lemma and why the $-\frac{1}{2}\sigma^2$ correction? |
+| D | [Proximal Policy Optimization (PPO)](#d-proximal-policy-optimization-ppo--the-complete-math) | $L^{\text{CLIP}} = -\mathbb{E}[\min(r_t A_t,~ \text{clip}(r_t, 1 \pm \epsilon) A_t)]$ | How does the RL agent learn without destroying itself? |
+| | | $A_t = \delta_t + (\gamma\lambda)\delta_{t+1} + (\gamma\lambda)^2\delta_{t+2} + \ldots$ | What is GAE and the actor-critic architecture? |
+
+**Detailed sub-sections within each part:**
+
+**Section 0 — Foundational Concepts**
+- [What is a loss function?](#what-is-a-loss-function) — Squared error, loss vs reward, the three losses in this project
+- [What is gradient descent?](#what-is-gradient-descent) — The update rule, learning rate, worked numerical example
+
+**Section A — The Objective Function & SLSQP**
+- [What the formula actually says](#what-the-formula-actually-says) — Breaking down each term (risk, momentum, entropy)
+- [How SLSQP actually solves it](#how-slsqp-actually-solves-it) — The "approximate as a parabola and step" method
+- [Can the quadratic subproblem be solved by hand?](#can-the-quadratic-subproblem-be-solved-by-hand) — Layer-by-layer breakdown from 1 variable to 12
+- [What is a Lagrange multiplier, exactly?](#what-is-a-lagrange-multiplier-exactly) — Buffet analogy, worked example, geometric intuition, shadow prices
+- [Solving the Linear System: Gaussian Elimination](#solving-the-linear-system-gaussian-elimination) — Forward elimination, back-substitution, worked examples
+- [The complete picture](#the-complete-picture) — Summary table: which layer uses which math
+
+**Section B — Shannon Entropy**
+- [The formula](#the-formula) — Step-by-step calculation with real numbers
+- [Why does $\ln$ show up?](#why-does-ln-show-up) — Intuition: "importance-weighted surprise"
+- [Concrete examples with real numbers](#concrete-examples-with-real-numbers) — All-in vs equal-weight vs the actual portfolio
+
+**Section C — Geometric Brownian Motion**
+- [The continuous-time SDE](#the-continuous-time-sde-the-textbook-form) — Drift and diffusion decomposition
+- [Ito's Lemma and the $-\frac{1}{2}\sigma^2$ correction](#from-the-sde-to-the-formula-you-can-actually-compute-itos-lemma) — Why symmetric gains/losses do not cancel
+- [The final simulation formula](#the-final-simulation-formula) — The discrete-time equation the code actually uses
+- [A full worked example](#a-full-worked-example--one-simulated-day) — One simulated day with real numbers
+
+**Section D — Proximal Policy Optimization (PPO)**
+- [Step 1: The Policy](#step-1-the-policy-pi_theta) — Discrete (softmax) vs continuous (Gaussian) action spaces
+- [Step 3: Advantage Estimation (GAE)](#step-3-advantage-estimation--was-this-action-better-than-average) — TD error, bias-variance tradeoff
+- [Step 4: The Clipped Surrogate Objective](#step-4-the-ppo-clipped-surrogate-objective--the-core-formula) — The core PPO innovation
+- [Step 5: The Full Loss Function](#step-5-the-full-loss-function) — Policy loss + value loss + entropy bonus
+- [How the two agents work together](#how-the-two-agents-work-together-hierarchically) — Hierarchical RL: regime agent → weight agent
+
+---
+
 ## **Foundational Concepts**
 
 Before diving into the specific formulas, two ideas underpin everything in this appendix: the **loss function** (what the computer is trying to achieve) and **gradient descent** (how it gets there). Every section that follows — SLSQP, Shannon Entropy, GBM, PPO — is built on these two foundations.

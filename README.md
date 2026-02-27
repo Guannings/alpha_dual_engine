@@ -446,7 +446,7 @@ $\mathbf{w}^\top \Sigma \mathbf{w}$ computes the portfolio variance — a single
 
 **Term 2: Momentum — $-\lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M})$** (maximized via negation)
 
-$\mathbf{w} \cdot \mathbf{M}$ is the dot product of weights and cubed momentum scores. Since the optimizer minimizes the objective, the negative sign converts momentum maximization into an equivalent minimization problem ($\min(-x) \equiv \max(x)$). This term drives the strategy toward high-momentum assets.
+$w \cdot M$ is the dot product of weights and cubed momentum scores. Since the optimizer minimizes the objective, the negative sign converts momentum maximization into an equivalent minimization problem (min$(-x) \equiv$ max$(x)$). This term drives the strategy toward high-momentum assets.
 
 **Term 3: Entropy — $-\lambda_{\text{entropy}} H(\mathbf{w})$** (maximized via negation)
 

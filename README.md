@@ -835,7 +835,7 @@ Daily rewards are capped to the range [-3, +3]. Without clipping, extreme market
 
 b. **Observation Noise** ($\sigma = 0.10$): Gaussian noise injected into training observations to improve generalization to unseen market conditions.
 
-Adding $\pm$10% Gaussian noise to observations during training forces the agent to learn robust policies that generalize across noisy inputs rather than memorizing exact historical values (e.g., "VIX was 22.3 on March 5, 2020"). This is a standard regularization technique — the agent must learn transferable patterns, not overfit to specific data points.
+Adding $\pm 10\%$ Gaussian noise to observations during training forces the agent to learn robust policies that generalize across noisy inputs rather than memorizing exact historical values (e.g., "VIX was 22.3 on March 5, 2020"). This is a standard regularization technique — the agent must learn transferable patterns, not overfit to specific data points.
 
 c. **Learning Rate Decay**: Linear decay to 20% of initial LR by end of training, reducing late-stage memorization.
 

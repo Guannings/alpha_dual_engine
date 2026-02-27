@@ -1003,7 +1003,7 @@ This section provides rigorous mathematical interpretations of every core formul
 
 | # | Section | Formula Name | Key Formulas | What It Answers |
 |:---:|:---|:---|:---|:---|
-| 0 | [Foundational Concepts](#foundational-concepts) | Mean Squared Error (Loss) | $L = (\text{guess} - \text{actual})^2$ | What is a loss function? |
+| 0 | [Foundational Concepts](#0-foundational-concepts) | Mean Squared Error (Loss) | $L = (\text{guess} - \text{actual})^2$ | What is a loss function? |
 | | | Gradient Descent Update | $w_{\text{new}} = w_{\text{old}} - \alpha \nabla L$ | How does the computer minimize any function? |
 | A | [The Objective Function & SLSQP](#a-the-objective-function--slsqp-solver-section-iv) | Portfolio Objective Function | $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ | How does the optimizer pick portfolio weights? |
 | | | Lagrangian | $\mathcal{L} = f(\mathbf{w}) + \mu(\sum w_i - 1)$ | What are Lagrange multipliers and shadow prices? |

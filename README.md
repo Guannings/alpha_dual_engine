@@ -1155,7 +1155,62 @@ $$\mathcal{L}_{\text{sub}} = f(\mathbf{w}) + \mu \cdot \left(\sum w_i - 1\right)
 
 Taking derivatives with respect to all 12 weights AND $\mu$ and setting them to zero yields **13 equations with 13 unknowns** (12 weights + 1 multiplier). Still a linear system. Still solvable by Gaussian elimination — just one row larger.
 
-The multiplier $\mu$ has a concrete meaning: it measures how much the minimum would improve if the constraint were slightly relaxed. A large $\mu$ means the constraint is actively holding the solution back from the unconstrained optimum.
+The multiplier $\mu$ has a concrete meaning: it measures how much the minimum would improve if the constraint were slightly relaxed. A large $\mu$ means the constraint is actively holding the solution back from the unconstrained optimum. The following subsection explains this concept in full detail.
+
+#### **What is a Lagrange multiplier, exactly?**
+
+**The real-world intuition:** You are at a buffet. You want to eat the most delicious combination of food possible. But you have one rule: your plate can only hold 1 kg total. Without the rule, you would pile on infinite amounts of the best dish. But the 1 kg limit forces tradeoffs — more steak means less dessert. The Lagrange multiplier answers a very specific question: "If my plate could hold 1.01 kg instead of 1 kg, how much more deliciousness could I get?" If the answer is "a lot" — the plate size is really constraining you. If the answer is "barely any" — the plate size does not matter much. The multiplier is a number that measures how much the constraint is costing you.
+
+**A worked example from scratch:** Find the $x$ and $y$ that minimize $f(x, y) = x^2 + y^2$ (distance from the origin) subject to the constraint $x + y = 1$ (you must stay on a specific line).
+
+Without the constraint, the answer is obviously $x = 0, y = 0$ (the origin). But the constraint says you cannot be at the origin — you must be somewhere on the line $x + y = 1$.
+
+**The geometric picture:** Imagine concentric circles centered at the origin (a bullseye), getting bigger. The constraint is a diagonal line cutting through. You want the smallest circle that still touches the line. The point where the smallest circle is tangent to the line is the answer.
+
+**Step 1 — Write the constraint as "something = 0":**
+
+$$g(x, y) = x + y - 1 = 0$$
+
+**Step 2 — Build the Lagrangian** (the original function plus the multiplier times the constraint):
+
+$$\mathcal{L}(x, y, \mu) = x^2 + y^2 + \mu(x + y - 1)$$
+
+**Step 3 — Take partial derivatives with respect to every variable (including $\mu$) and set them all to zero:**
+
+$$\frac{\partial \mathcal{L}}{\partial x} = 2x + \mu = 0$$
+
+$$\frac{\partial \mathcal{L}}{\partial y} = 2y + \mu = 0$$
+
+$$\frac{\partial \mathcal{L}}{\partial \mu} = x + y - 1 = 0$$
+
+The third equation is just the original constraint coming back. This always happens — the derivative with respect to $\mu$ always recovers the constraint. That is by design.
+
+**Step 4 — Solve the system.** From equation 1: $x = -\mu/2$. From equation 2: $y = -\mu/2$. So $x = y$. Plug into equation 3:
+
+$$x + x = 1 \quad \Rightarrow \quad x = 0.5, \quad y = 0.5, \quad \mu = -1$$
+
+The answer: $x = 0.5$, $y = 0.5$, and $f = 0.25 + 0.25 = 0.5$.
+
+**What does $\mu = -1$ mean?** If the constraint were relaxed from $x + y = 1$ to $x + y = 1.01$, the minimum value of $f$ would improve by approximately $0.01 \times |\mu| = 0.01$. The multiplier measures the "price" of the constraint.
+
+**Why this trick works — the deep geometric intuition:** At the optimum on the constraint, two things must be true simultaneously: (1) you are ON the constraint line, and (2) you cannot improve by sliding along the line in either direction. Condition 2 means the gradient (slope) of $f$ must be perpendicular to the constraint line at the solution. If it were not perpendicular, there would be a component along the line — meaning you could slide along the line and get a better value, contradicting that you are at the optimum. The equation $\nabla f = -\mu \nabla g$ says exactly this: the gradient of the objective must point in the same direction as the gradient of the constraint (perpendicular to the constraint surface). The multiplier $\mu$ is just the scaling factor between them.
+
+**Applied to the portfolio:** The objective is $f(\mathbf{w}) = \text{risk} - \text{momentum} - \text{entropy}$, and the constraint is $\sum w_i = 1$. The Lagrangian becomes:
+
+$$\mathcal{L} = f(\mathbf{w}) + \mu\left(\sum_{i=1}^{12} w_i - 1\right)$$
+
+Take 13 partial derivatives (12 weights + $\mu$), set all to zero, solve the 13x13 linear system. The multiplier $\mu$ tells you: "If you were allowed to use 101% of your capital instead of 100%, how much better could the portfolio be?"
+
+**Multiple constraints = multiple multipliers.** The portfolio has more than one constraint, and each one gets its own multiplier:
+
+| Constraint | Multiplier | What it measures |
+|:---|:---|:---|
+| Weights sum to 1 | $\mu_1$ | "How much would a 101% budget help?" |
+| SMH <= 30% | $\mu_2$ | "How much is the SMH cap costing me?" |
+| Growth anchors >= 40% | $\mu_3$ | "How much is the 40% floor costing me?" |
+| Crypto <= 15% | $\mu_4$ | "How much is the crypto cap costing me?" |
+
+If $\mu_2$ is large, the SMH cap is really constraining the optimizer — it desperately wants to put more into SMH but the 30% cap is blocking it. If $\mu_4$ is near zero, the crypto cap does not matter — the optimizer would not put more than 15% in crypto even without the rule. This is why Lagrange multipliers are sometimes called **shadow prices** — they tell you the price of each constraint, i.e., how much performance you are sacrificing to follow each rule.
 
 #### **Layer 4: Add inequality constraints (0% to 30% per asset)**
 

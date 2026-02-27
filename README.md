@@ -1121,6 +1121,83 @@ SLSQP is the go-to for "small-to-medium nonlinear problems with constraints" —
 
 In formal terms, this is a constrained nonlinear optimization problem. The objective function combines a quadratic risk term, a linear momentum term, and a nonlinear entropy regularizer, subject to equality constraints (weights sum to 1) and bound constraints (per-asset caps). It is solved numerically using SLSQP — a sequential quadratic programming method that approximates the problem as a series of simpler quadratic subproblems at each iteration, converging to a local minimum while respecting all constraints. The objective function itself is not a Lagrangian — it is a cost function to be minimized. Internally, however, SLSQP constructs a Lagrangian at each iteration to enforce the constraints on the quadratic subproblem, using Lagrange multipliers for equality constraints and an active set method for inequality constraints. The method can be understood as Newton's method extended to handle both equality and inequality constraints.
 
+### **Can the quadratic subproblem be solved by hand?**
+
+Yes — and that is the entire point of SLSQP. It converts one impossible problem into a chain of easy problems. Each individual subproblem is solvable with high school and early university math. Here is how it breaks down, layer by layer.
+
+#### **Layer 1: One variable, no constraints**
+
+The simplest optimization problem: $y = 3x^2 - 12x + 5$. Take the derivative, set it to zero:
+
+$$\frac{dy}{dx} = 6x - 12 = 0 \quad \Rightarrow \quad x = 2$$
+
+The parabola's bottom is at $x = 2$. This is high school calculus.
+
+#### **Layer 2: Twelve variables, no constraints**
+
+Instead of one $x$, the optimizer works with 12 weights: $w_1, w_2, \ldots, w_{12}$. The quadratic approximation becomes a 12-dimensional bowl — it still has exactly one bottom.
+
+To find it, take 12 partial derivatives (one per weight), set them all to zero, and solve the resulting system of equations simultaneously. This reduces to:
+
+$$B \mathbf{d} = -\nabla \mathcal{L}$$
+
+Where $B$ is a 12x12 matrix (how curvy the bowl is), $\nabla \mathcal{L}$ is a list of 12 slopes, and $\mathbf{d}$ is the step direction to solve for. This is a system of 12 linear equations with 12 unknowns — solvable by Gaussian elimination (systematically manipulating equations to isolate each variable). Tedious with 12 variables, but each operation is just addition, subtraction, multiplication, and division.
+
+#### **Layer 3: Add the constraint "weights must sum to 1"**
+
+Without constraints, the bottom of the bowl might be at weights like $[0.5, 0.5, 0.0, \ldots, -0.3]$ — a negative weight is nonsensical for a portfolio.
+
+The constraint $\sum w_i = 1$ defines a flat plane slicing through the 12-dimensional bowl. The goal becomes: find the lowest point where the bowl and the plane intersect.
+
+This is where the Lagrange multiplier enters. A new variable $\mu$ is introduced along with a new equation:
+
+$$\mathcal{L}_{\text{sub}} = f(\mathbf{w}) + \mu \cdot \left(\sum w_i - 1\right)$$
+
+Taking derivatives with respect to all 12 weights AND $\mu$ and setting them to zero yields **13 equations with 13 unknowns** (12 weights + 1 multiplier). Still a linear system. Still solvable by Gaussian elimination — just one row larger.
+
+The multiplier $\mu$ has a concrete meaning: it measures how much the minimum would improve if the constraint were slightly relaxed. A large $\mu$ means the constraint is actively holding the solution back from the unconstrained optimum.
+
+#### **Layer 4: Add inequality constraints (0% to 30% per asset)**
+
+At the solution, each inequality constraint is either **active** (the solution is pressed right against the boundary) or **inactive** (the solution is safely inside and the constraint has no effect).
+
+The **active set method** solves this through intelligent guessing:
+
+**Step 1 — Guess** which constraints are active. For example: "SMH is at the 30% cap, TAN is at the 0% floor, everything else is free."
+
+**Step 2 — Convert the guess into equality constraints.** If SMH is active at 30%, set $w_{\text{SMH}} = 0.30$ as a fixed number. This reduces the number of unknowns.
+
+**Step 3 — Solve** the reduced system (fewer variables, only equality constraints). This is the Lagrange multiplier problem from Layer 3 — solvable by hand.
+
+**Step 4 — Check the guess.** Are any "free" weights outside their bounds? Is any active constraint being pushed the wrong way (indicated by its multiplier's sign)? If the guess is inconsistent, update the active set and return to Step 2.
+
+Each iteration is just solving a system of linear equations. The process typically converges in 3-10 rounds.
+
+#### **Why the FULL optimization cannot be done by hand**
+
+Everything above solves ONE quadratic subproblem — one parabola approximation at one point in weight-space. The full SLSQP process chains 20-50 of these subproblems together, where each depends on the previous answer:
+
+1. Stand at initial weights, build a parabola approximation, solve it (doable by hand)
+2. Walk to the answer, build a NEW parabola at the new position, solve it (doable by hand)
+3. Repeat until the answer stops changing (20-50 iterations)
+
+Each iteration involves computing 12 derivatives, updating a 12x12 matrix, and solving a 13x13 linear system — roughly 2,000 arithmetic operations per step. One iteration takes approximately 30 minutes by hand. The full optimization would require 10-25 hours of continuous arithmetic.
+
+Every single step uses math from high school or early university (derivatives, solving linear systems). Nothing is conceptually difficult. It is simply an enormous volume of basic calculations. The computer completes the entire process in approximately 0.01 seconds.
+
+#### **The complete picture**
+
+| Level | Math required | Hand-solvable? | Time by hand |
+|:---|:---|:---:|:---|
+| Bottom of $y = 3x^2 - 12x + 5$ | High school derivative | Yes | 30 seconds |
+| 12-variable quadratic, no constraints | Solve 12 linear equations | Yes | 20 minutes |
+| Add "weights sum to 1" | +1 Lagrange multiplier, 13 equations | Yes | 30 minutes |
+| Add per-asset bounds (0%-30%) | Active set: guess, solve, check, repeat | Yes | 1-2 hours |
+| Full SLSQP (20-50 iterations of the above) | Same math, repeated many times | Technically yes | 10-25 hours |
+| The original nonlinear objective (entropy + momentum) | Cannot be solved directly | No | Impossible |
+
+The genius of SLSQP is converting an impossible problem (nonlinear with constraints) into a long series of easy problems (quadratic with linear constraints). Each easy problem is just high school math applied repeatedly. The computer does not do hard math — it does easy math very fast, very many times.
+
 ---
 
 ## **B. Shannon Entropy — From Information Theory to Portfolio Diversification**

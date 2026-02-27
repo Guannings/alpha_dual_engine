@@ -1021,12 +1021,12 @@ This section provides rigorous mathematical interpretations of every core formul
 
 **Section B — Shannon Entropy**
 - [The formula](#the-formula) — Step-by-step calculation with real numbers
-- [Why does $\ln$ show up?](#why-does-ln-show-up) — Intuition: "importance-weighted surprise"
+- [Why does ln show up?](#why-does-ln-show-up) — Intuition: "importance-weighted surprise"
 - [Concrete examples with real numbers](#concrete-examples-with-real-numbers) — All-in vs equal-weight vs the actual portfolio
 
 **Section C — Geometric Brownian Motion**
 - [The continuous-time SDE](#the-continuous-time-sde-the-textbook-form) — Drift and diffusion decomposition
-- [Ito's Lemma and the $-\frac{1}{2}\sigma^2$ correction](#from-the-sde-to-the-formula-you-can-actually-compute-itos-lemma) — Why symmetric gains/losses do not cancel
+- [Ito's Lemma and the volatility drag correction](#from-the-sde-to-the-formula-you-can-actually-compute-itos-lemma) — Why symmetric gains/losses do not cancel
 - [The final simulation formula](#the-final-simulation-formula) — The discrete-time equation the code actually uses
 - [A full worked example](#a-full-worked-example--one-simulated-day) — One simulated day with real numbers
 

@@ -919,15 +919,17 @@ The training reward at 500K was nearly 3x higher than at 300K, yet the backtest 
 
 **2. The Regularization Overcorrection**
 
-The first attempt at fixing overfitting was too aggressive:
+The first attempt at fixing overfitting applied all regularization techniques simultaneously at maximum strength:
 - Reward clipping tightened to [-3, +3]
 - Observation noise increased from 0.05 to 0.10
 - Early stopping with patience=5 evaluations
 - Learning rate decay to 20% of initial
 
-Result: The model early-stopped at just 60K steps with a full-period Sharpe of **0.572** and CAGR of **14.44%** — massive *underfitting*. The agent barely learned anything before being shut down.
+Result: The run early-stopped at just 60K steps. The **final model at 60K** showed a full-period Sharpe of **0.572** and CAGR of **14.44%** — apparent massive *underfitting*. The run was initially dismissed as a failure.
 
-**Lesson:** Anti-overfitting measures must be calibrated carefully. Applying every regularization technique at maximum strength simultaneously can be worse than no regularization at all.
+However, the checkpoint saved at 50K steps — just before early stopping triggered — turned out to be the best model across all training configurations (see Lesson 3 below). The aggressive regularization settings were not wrong; the run simply needed to be stopped even earlier. These same settings are now the production configuration described in the Overfitting Prevention section above.
+
+**Lesson:** A training run that appears to fail can still contain high-quality intermediate checkpoints. Systematic checkpoint evaluation is essential — judging a run solely by its final model can discard the best result.
 
 **3. The Checkpoint Sweep Breakthrough**
 

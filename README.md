@@ -1239,7 +1239,7 @@ This is the "Geometric" part — the randomness is **multiplicative**, not addit
 
 In finance textbooks, GBM is written as a stochastic differential equation (SDE):
 
-$$dS = \mu S \, dt + \sigma S \, dW$$
+$$dS = \mu S  \; dt + \sigma S  \; dW$$
 
 Here is what every symbol means:
 
@@ -1258,7 +1258,7 @@ Reading it as a sentence: "The change in price = (expected drift times price tim
 
 Think of the stock price being pulled by two forces simultaneously:
 
-**Force 1: The Drift — $\mu S \, dt$**
+**Force 1: The Drift — $\mu S  \; dt$**
 
 This is the predictable, deterministic part. If there were zero randomness, the stock would grow smoothly at rate $\mu$ per year, like a savings account. Over a tiny time step $dt$:
 
@@ -1270,7 +1270,7 @@ $$= 0.20 \times 100 \times \frac{1}{252} = 0.0794$$
 
 About 8 cents of upward drift per day. Boring but reliable.
 
-**Force 2: The Diffusion — $\sigma S \, dW$**
+**Force 2: The Diffusion — $\sigma S  \; dW$**
 
 This is the random part. $dW$ is a random draw from $\mathcal{N}(0, dt)$ — a bell curve with variance equal to the time step. In practice:
 
@@ -1288,7 +1288,7 @@ The stock jumps up 2.36 dollars. Notice: **the random part (2.36) completely dwa
 
 ### **From the SDE to the formula you can actually compute: Ito's Lemma**
 
-The SDE $dS = \mu S \, dt + \sigma S \, dW$ is in continuous time — infinitely small time steps. To actually simulate it on a computer, we need a discrete formula. This is where **Ito's Lemma** comes in.
+The SDE $dS = \mu S  \; dt + \sigma S  \; dW$ is in continuous time — infinitely small time steps. To actually simulate it on a computer, we need a discrete formula. This is where **Ito's Lemma** comes in.
 
 #### **The $-\frac{1}{2}\sigma^2$ correction**
 
@@ -1296,7 +1296,7 @@ This is the part everyone finds mysterious. Here is where it comes from.
 
 Take the logarithm of the stock price: $\ln(S)$. If you apply calculus rules to find how $\ln(S)$ changes over time (using Ito's Lemma, which is just the chain rule but for random processes), you get:
 
-$$d(\ln S) = \left(\mu - \frac{1}{2}\sigma^2\right) dt + \sigma \, dW$$
+$$d(\ln S) = \left(\mu - \frac{1}{2}\sigma^2\right) dt + \sigma  \; dW$$
 
 **Where did the $-\frac{1}{2}\sigma^2$ come from?**
 
@@ -1305,9 +1305,9 @@ In normal calculus, if $f(x) = \ln(x)$, then $f'(x) = 1/x$ and you are done. But
 - Normal chain rule: $d(\ln S) = \frac{1}{S} dS$
 - **Ito's chain rule:** $d(\ln S) = \frac{1}{S} dS - \frac{1}{2} \frac{1}{S^2} (dS)^2$
 
-That extra $-\frac{1}{2} \frac{1}{S^2}(dS)^2$ term exists because $(dW)^2 = dt$ — a fundamental property of Brownian Motion where the square of a random step equals the time step, not zero. When you expand $(dS)^2 = (\sigma S \, dW)^2 = \sigma^2 S^2 \, dt$, you get:
+That extra $-\frac{1}{2} \frac{1}{S^2}(dS)^2$ term exists because $(dW)^2 = dt$ — a fundamental property of Brownian Motion where the square of a random step equals the time step, not zero. When you expand $(dS)^2 = (\sigma S  \; dW)^2 = \sigma^2 S^2  \; dt$, you get:
 
-$$-\frac{1}{2} \frac{1}{S^2} \times \sigma^2 S^2 \, dt = -\frac{1}{2}\sigma^2 \, dt$$
+$$-\frac{1}{2} \frac{1}{S^2} \times \sigma^2 S^2  \; dt = -\frac{1}{2}\sigma^2  \; dt$$
 
 That is the **volatility drag**.
 
@@ -1328,15 +1328,15 @@ With $\sigma = 0.25$: drag = $\frac{1}{2}(0.25)^2 = 0.03125$ = 3.125% per year e
 
 Integrating the log-price equation over a discrete time step $\Delta t$:
 
-$$\ln S_{t+1} - \ln S_t = \left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t} \, Z$$
+$$\ln S_{t+1} - \ln S_t = \left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t}  \; Z$$
 
 Exponentiate both sides (because $e^{\ln(a) - \ln(b)} = a/b$):
 
-$$\frac{S_{t+1}}{S_t} = \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t} \, Z\right]$$
+$$\frac{S_{t+1}}{S_t} = \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t}  \; Z\right]$$
 
 Rearrange:
 
-$$\boxed{S_{t+1} = S_t \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t} \, Z\right]}$$
+$$\boxed{S_{t+1} = S_t \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t}  \; Z\right]}$$
 
 This is the exact formula used in the Monte Carlo simulation code. Here is every piece labeled:
 

@@ -1011,7 +1011,7 @@ This section provides rigorous mathematical interpretations of every core formul
 | | | Effective N | $N_{\text{eff}} = e^{H(\mathbf{w})}$ | What is "Effective N" and why require at least 3? |
 | C | [Geometric Brownian Motion](#c-geometric-brownian-motion--the-complete-derivation) | GBM Stochastic Differential Equation | $dS = \mu S \cdot dt + \sigma S \cdot dW$ | How are future stock prices simulated? |
 | | | Discrete Simulation (Ito's Lemma) | $\Delta S = S \cdot e^{(\mu - \sigma^2/2)\Delta t + \sigma \sqrt{\Delta t} \cdot Z}$ | What is the $-\sigma^2/2$ correction? |
-| D | [Proximal Policy Optimization (PPO)](#d-proximal-policy-optimization-ppo--the-complete-math) | PPO Clipped Surrogate Objective | $L^{\text{CLIP}} = -\mathbb{E}[\min(r_t A_t,~ \text{clip}(r_t, 1 \pm \epsilon) A_t)]$ | How does the RL agent learn without destroying itself? |
+| D | [Proximal Policy Optimization (PPO)](#d-proximal-policy-optimization-ppo--the-complete-math) | PPO Clipped Surrogate Objective | $L^{CLIP} = -E[\min(r_t A_t, \text{clip}(r_t, 1 \pm \epsilon) A_t)]$ | How does the RL agent learn without destroying itself? |
 | | | Generalized Advantage Estimation | $A_t = \delta_t + (\gamma\lambda)\delta_{t+1} + (\gamma\lambda)^2\delta_{t+2} + \ldots$ | What is GAE and the actor-critic architecture? |
 
 **Detailed sub-sections within each part:**

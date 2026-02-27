@@ -1089,7 +1089,7 @@ This section provides rigorous mathematical interpretations of every core formul
 
 ---
 
-## **Foundational Concepts**
+## **0. Foundational Concepts**
 
 Before diving into the specific formulas, two ideas underpin everything in this appendix: the **loss function** (what the computer is trying to achieve) and **gradient descent** (how it gets there). Every section that follows — SLSQP, Shannon Entropy, GBM, PPO — is built on these two foundations.
 

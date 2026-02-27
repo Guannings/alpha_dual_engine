@@ -1212,6 +1212,122 @@ Take 13 partial derivatives (12 weights + $\mu$), set all to zero, solve the 13x
 
 If $\mu_2$ is large, the SMH cap is really constraining the optimizer — it desperately wants to put more into SMH but the 30% cap is blocking it. If $\mu_4$ is near zero, the crypto cap does not matter — the optimizer would not put more than 15% in crypto even without the rule. This is why Lagrange multipliers are sometimes called **shadow prices** — they tell you the price of each constraint, i.e., how much performance you are sacrificing to follow each rule.
 
+#### **Solving the Linear System: Gaussian Elimination**
+
+Every Lagrange multiplier problem ends with a system of linear equations — set all partial derivatives to zero, and you get something like "13 equations with 13 unknowns." **Gaussian elimination** is the method for solving these systems. It is one of the oldest algorithms in mathematics, used by Carl Friedrich Gauss in 1809 to compute the orbit of the asteroid Ceres from noisy telescope observations.
+
+The idea is simple: **use one equation to eliminate one variable from all the others, repeat until each equation has only one variable, then read off the answers backwards.**
+
+##### **Warm-up: 1 equation, 1 unknown**
+
+$$2x = 10 \quad \Rightarrow \quad x = 5$$
+
+No method needed. Just divide.
+
+##### **2 equations, 2 unknowns — worked example**
+
+$$x + y = 10$$
+
+$$2x + 3y = 26$$
+
+**Phase 1 — Forward elimination (kill $x$ from the second equation):**
+
+Multiply the first equation by 2:
+
+$$2x + 2y = 20$$
+
+Subtract from the second equation:
+
+$$(2x + 3y) - (2x + 2y) = 26 - 20$$
+
+$$y = 6$$
+
+Now the system looks like a triangle (upper triangular form):
+
+$$x + y = 10$$
+
+$$y = 6$$
+
+**Phase 2 — Back-substitution (work upward):**
+
+From the second equation: $y = 6$.
+
+Plug into the first: $x + 6 = 10$, so $x = 4$.
+
+**Answer:** $x = 4$, $y = 6$.
+
+##### **3 equations, 3 unknowns — the full pattern**
+
+$$x + 2y + z = 9$$
+
+$$2x + 5y + 2z = 21$$
+
+$$3x + 7y + 4z = 30$$
+
+**Phase 1 — Forward elimination:**
+
+**Step 1:** Eliminate $x$ from equations 2 and 3.
+
+Equation 2 $-$ 2 $\times$ Equation 1:
+
+$$(2x + 5y + 2z) - 2(x + 2y + z) = 21 - 18$$
+
+$$y + 0z = 3 \quad \Rightarrow \quad y = 3$$
+
+Equation 3 $-$ 3 $\times$ Equation 1:
+
+$$(3x + 7y + 4z) - 3(x + 2y + z) = 30 - 27$$
+
+$$y + z = 3$$
+
+**Step 2:** Eliminate $y$ from equation 3 using the new equation 2.
+
+New Equation 3 $-$ New Equation 2:
+
+$$(y + z) - (y) = 3 - 3$$
+
+$$z = 0$$
+
+Now the system is triangular:
+
+$$x + 2y + z = 9$$
+
+$$y = 3$$
+
+$$z = 0$$
+
+**Phase 2 — Back-substitution (bottom to top):**
+
+From equation 3: $z = 0$.
+
+From equation 2: $y = 3$.
+
+From equation 1: $x + 6 + 0 = 9$, so $x = 3$.
+
+**Answer:** $x = 3$, $y = 3$, $z = 0$.
+
+##### **The general pattern for $N$ unknowns**
+
+1. **Forward elimination:** Use equation 1 to eliminate variable 1 from equations 2 through $N$. Then use the modified equation 2 to eliminate variable 2 from equations 3 through $N$. Continue until the system forms a triangle — each equation has one fewer variable than the one above it.
+
+2. **Back-substitution:** The bottom equation now has one variable — solve it directly. Plug that answer into the equation above to find the next variable. Work upward until all $N$ variables are solved.
+
+For $N$ unknowns, forward elimination requires roughly $\frac{2}{3}N^3$ arithmetic operations, and back-substitution requires roughly $N^2$. For the portfolio's 13x13 system: approximately $\frac{2}{3}(13)^3 = 1,\!465$ multiplications and additions — tedious but entirely feasible by hand in about 20-30 minutes.
+
+##### **How Gaussian elimination connects to the portfolio**
+
+When the SLSQP solver builds a quadratic subproblem with Lagrange multipliers, the result of setting all partial derivatives to zero is a system of linear equations — 12 weight unknowns + 1 (or more) multiplier unknowns. The solver uses Gaussian elimination (or a computationally equivalent method like LU decomposition) to solve this system at every iteration. The entire chain:
+
+| Step | What happens | Method |
+|:---|:---|:---|
+| 1. Original problem | Nonlinear objective with constraints | Cannot be solved directly |
+| 2. SLSQP approximation | Replace with quadratic subproblem | Taylor expansion |
+| 3. Lagrange multipliers | Convert constraints into derivatives | Set all partials to zero |
+| 4. Linear system | $N$ equations, $N$ unknowns | **Gaussian elimination** |
+| 5. Basic arithmetic | Multiply, add, subtract, divide | **High school math** |
+
+Every layer converts an unsolvable problem into a solvable one. At the very bottom, the entire optimization reduces to nothing more than multiplication and addition — the same operations taught in primary school. The computer's advantage is not intelligence; it is speed.
+
 #### **Layer 4: Add inequality constraints (0% to 30% per asset)**
 
 At the solution, each inequality constraint is either **active** (the solution is pressed right against the boundary) or **inactive** (the solution is safely inside and the constraint has no effect).

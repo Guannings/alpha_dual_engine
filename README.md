@@ -646,7 +646,7 @@ c. Effective N Check: Did it maintain the required diversity score (>3.0)?
 
 **4. Visualizing the Alpha Generation**
 
-To make the data accessible for career-level presentations, the engine generates diagnostic plots:
+To facilitate interpretation and communication of results, the engine generates diagnostic plots:
 
 a. Equity Curve: Compares the strategy against the SPY benchmark, with color-coded regions indicating different regime states.
 

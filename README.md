@@ -264,7 +264,7 @@ b. anxiety_vix_threshold (18.0)
 
 The DataManager class is the manufacturing plant of the strategy. It is responsible for ingesting raw, noisy market data and refining it into the precise "fuel" needed for both the Machine Learning models and the Portfolio Optimizer.
 
-In v100.0.0, this class has been radically re-engineered to support the Bifurcated Asset Logic, treating Crypto and Equities as fundamentally different data species.
+In v154.6, this class has been radically re-engineered to support the Bifurcated Asset Logic, treating Crypto and Equities as fundamentally different data species.
 
 **1. Universe Construction (The "Alpha Roster")**
 
@@ -344,7 +344,7 @@ b. The NaN Handler: It forward-fills missing data (common in Crypto vs. Stock we
 
 The AdaptiveRegimeClassifier is the central nervous system of the strategy, responsible for the binary decision that determines portfolio survival: "Risk-On" (Aggressive Growth) or "Defensive" (Capital Preservation).
 
-In v100.0.0, this system was upgraded from a pure Machine Learning model to a Hybrid Override Architecture. This solves the "Black Box" problem by enforcing a strict hierarchy: Macro Logic overrules ML Probabilities.
+In v154.6, this system was upgraded from a pure Machine Learning model to a Hybrid Override Architecture. This solves the "Black Box" problem by enforcing a strict hierarchy: Macro Logic overrules ML Probabilities.
 
 **1. The Macro Override (The "Anti-Coward" Switch)**
 
@@ -519,7 +519,7 @@ Before considering any trades, the engine calls the AdaptiveRegimeClassifier to 
 
 **2. The "Fee Guillotine" (The Lazy Trader Protocol)**
 
-This is the critical logic block implemented in v100.0.0 to solve the "Churn Problem" (where fees were eating 4% of the portfolio).
+This is the critical logic block implemented in v154.6 to solve the "Churn Problem" (where fees were eating 4% of the portfolio).
 
 a. Logic: Inside the main loop, before executing any rebalance, the engine calculates the Proposed Turnover:
 

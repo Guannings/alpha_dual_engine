@@ -925,10 +925,10 @@ All metrics evaluated with training cutoff at 2024-01-01:
 | Sharpe Decay (IS - OOS) | -0.076 | 0.084 | <0.5 | PASS |
 | Sniper Score | 0.711 | 0.769 | >0.6 | PASS |
 
-> **How to read this table in an interview:**
-> - **IS** (In-Sample) = Performance on data the model trained on (2010-2023). Think of it as "homework grade."
-> - **OOS** (Out-of-Sample) = Performance on data the model has NEVER seen (2024+). Think of it as "exam grade."
-> - **Sharpe Decay** = IS Sharpe minus OOS Sharpe. If positive, the model did better on homework than the exam (overfitting). If **negative** (like the RL agent's -0.076), the model did *better* on the exam than on homework — it genuinely learned transferable patterns, not memorized answers. This is the strongest possible evidence against overfitting.
+**Key definitions:**
+- **IS (In-Sample):** Performance evaluated on the training period (2010-2023) — measures how well the model fits known historical data.
+- **OOS (Out-of-Sample):** Performance evaluated on data the model has never seen (2024+) — measures generalization to unseen market conditions.
+- **Sharpe Decay (IS $-$ OOS):** The difference between in-sample and out-of-sample Sharpe ratios. A positive value indicates potential overfitting, where the model performs worse on new data than on training data. The RL agent's **negative** decay of $-0.076$ indicates that the model performed *better* on unseen data than on training data — the strongest possible evidence against overfitting, suggesting the learned policy captures genuinely transferable market patterns rather than memorized historical noise.
 
 **7. New Files**
 

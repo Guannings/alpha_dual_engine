@@ -850,8 +850,11 @@ e. **Key Finding**: The best model (checkpoint at 50K steps) was found through s
 At inference time, the weight agent's raw outputs pass through a multi-stage pipeline:
 
 a. **Constraint Layer**: Hard eligibility enforcement, per-asset caps, gold/crypto bounds
+
 b. **Momentum Tilt**: 50% RL allocation + 50% momentum-proportional blending in RISK_ON
+
 c. **Growth Anchor Floor**: Ensures >= 40% in eligible growth anchors (SMH/XBI/TAN/IGV)
+
 d. **Lazy Drift Gate**: Suppresses micro-rebalances below a per-asset threshold
 
 **5. Ablation Test: Proving the RL Agent's Value**

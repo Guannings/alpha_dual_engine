@@ -671,7 +671,7 @@ This adjustment accounts for **volatility drag** — the mathematical asymmetry 
 
 - $\mu$ = annualized expected return (e.g., 0.20 = 20% per year)
 - $\sigma$ = annualized volatility (e.g., 0.25 = 25% per year)
-- With $\mu = 0.20$ and $\sigma = 0.25$: $\mu_{\text{adj}} = 0.20 - \frac{1}{2}(0.25)^2 = 0.20 - 0.03125 = 0.169$, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in Appendix Section C.
+- With $\mu = 0.20$ and $\sigma = 0.25$: $\mu_{adj} = 0.20 - (0.25)^2 / 2 = 0.20 - 0.03125 = 0.169$, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in [Appendix Section C](#c-geometric-brownian-motion--the-complete-derivation).
 
 c. Diffusion Component ($\sigma$): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable ($Z$):
 

@@ -305,7 +305,11 @@ b. For Crypto: The "RSI Rotation" Metric
 
 * Formula: 14-Day Relative Strength Index (RSI).
 
-RSI is computed as $100 - \frac{100}{1 + \frac{\text{Avg Gain over 14 days}}{\text{Avg Loss over 14 days}}}$, producing a bounded oscillator between 0 and 100. Values above 70 indicate overbought conditions; below 30 indicates oversold; 50 is neutral. The system compares Bitcoin's RSI against Ethereum's RSI and allocates the entire crypto bucket to whichever coin exhibits stronger recent momentum.
+RSI is computed as:
+
+$$\text{RSI} = 100 - \frac{100}{1 + \frac{\text{Avg Gain over 14 days}}{\text{Avg Loss over 14 days}}}$$
+
+This produces a bounded oscillator between 0 and 100. Values above 70 indicate overbought conditions; below 30 indicates oversold; 50 is neutral. The system compares Bitcoin's RSI against Ethereum's RSI and allocates the entire crypto bucket to whichever coin exhibits stronger recent momentum.
 
 * Logic: Crypto doesn't follow smooth trends like stocks; it moves in manic bursts. RSI measures the internal velocity of price changes.
 

@@ -1040,6 +1040,65 @@ This section provides rigorous mathematical interpretations of every core formul
 
 ---
 
+## **Foundational Concept: What Is a Loss Function?**
+
+A loss function is a single number that measures **how wrong the current answer is.** The entire purpose of optimization — whether it is portfolio construction, neural network training, or anything else — is to make this number as small as possible.
+
+### **The simplest example**
+
+Suppose you are predicting house prices. Your model guesses \$500K. The real price is \$450K. How wrong are you?
+
+$$L = (\text{guess} - \text{actual})^2 = (500{,}000 - 450{,}000)^2 = 2{,}500{,}000{,}000$$
+
+If the model guesses \$460K instead:
+
+$$L = (460{,}000 - 450{,}000)^2 = 100{,}000{,}000$$
+
+Lower loss means a better guess. The computer tries many guesses and walks downhill toward the lowest loss — this process is called **gradient descent.**
+
+### **Why squared?**
+
+Two reasons:
+
+1. **Squaring makes negatives positive.** A guess that is \$50K too high and one that is \$50K too low are equally bad. Squaring treats them the same.
+2. **Squaring punishes big mistakes disproportionately.** Being off by \$100K is not twice as bad as being off by \$50K — it is **four times** as bad ($100^2 = 10{,}000$ vs $50^2 = 2{,}500$). This forces the model to avoid large errors even at the expense of small ones.
+
+### **"Loss" vs "reward" — same idea, opposite sign**
+
+In optimization, you **minimize** loss (lower = better). In reinforcement learning, you **maximize** reward (higher = better). They are the same concept with the sign flipped:
+
+$$\text{loss} = -\text{reward}$$
+
+This is why PPO's policy loss has a negative sign in front — the optimizer minimizes, but we want to maximize the expected advantage.
+
+### **The three loss functions in the Alpha Dual Engine**
+
+The system uses three distinct loss functions, each driving a different component:
+
+#### **1. The portfolio objective function** (in `alpha_engine.py`)
+
+$$L_{\text{portfolio}} = \lambda_{\text{risk}} \cdot \mathbf{w}^\top \Sigma \mathbf{w} \;-\; \lambda_{\text{mom}} \cdot (\mathbf{w} \cdot \mathbf{M}) \;-\; \lambda_{\text{entropy}} \cdot H(\mathbf{w})$$
+
+This tells the SLSQP optimizer: "find portfolio weights that minimize risk while maximizing momentum exposure and diversification." The three terms fight each other — risk wants conservative weights, momentum wants aggressive weights, entropy wants spread-out weights. The optimizer finds the compromise that produces the lowest total score.
+
+#### **2. PPO's policy loss** (in both RL agents)
+
+$$L^{\text{CLIP}} = -\mathbb{E}\left[\min\left(r_t \cdot A_t, \;\text{clip}(r_t, 1-\epsilon, 1+\epsilon) \cdot A_t\right)\right]$$
+
+This tells the PPO optimizer: "make good actions more likely and bad actions less likely, but do not change the policy too drastically in one step." The clipping mechanism caps how much the probability of any action can change, preventing catastrophic updates.
+
+#### **3. PPO's value loss** (the critic network)
+
+$$L^{\text{VF}} = \frac{1}{N}\sum_{t}\left(V_\theta(s_t) - R_t\right)^2$$
+
+This is the house price example again, applied to the critic. The critic predicts "how much future reward will I get from this state?" The value loss measures how wrong that prediction was — it is mean squared error, the most basic loss function in all of machine learning.
+
+### **Technical Summary**
+
+A loss function (also called cost function or objective function) is a scalar-valued function that quantifies the discrepancy between a model's current output and the desired output. All optimization-based systems — from linear regression to deep reinforcement learning — operate by minimizing a loss function via iterative parameter adjustment. The Alpha Dual Engine employs three loss functions: a composite portfolio objective combining risk, momentum, and entropy terms (minimized by SLSQP), a clipped surrogate policy loss (minimized by PPO's actor), and a mean squared error value loss (minimized by PPO's critic). The distinction between "loss" (minimized) and "reward" (maximized) is purely a sign convention; both formulations drive the same underlying optimization process.
+
+---
+
 ## **A. The Objective Function & SLSQP Solver (Section IV)**
 
 ### **What the formula actually says**

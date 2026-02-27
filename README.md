@@ -198,7 +198,7 @@ This formula computes the total transaction cost per rebalance:
 - $\sum_i |\cdot|$ = total turnover across all assets
 - $\frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$ = per-asset fee rate converted from basis points to decimal (1 bps = 0.01%)
 
-**Example:** A \$100,000 portfolio shifting 10% into SMH (5 bps) incurs a cost of $100{,}000 \times 0.10 \times 0.0005 = $ \$5 per rebalance.
+**Example:** A \$100,000 portfolio shifting 10% into SMH (5 bps) incurs a cost of $100{,}000 \times 0.10 \times 0.0005 = 5$ dollars per rebalance.
 
 *  Per-Asset Transaction Costs:
 
@@ -1670,7 +1670,7 @@ $$\frac{S_{t+1}}{S_t} = \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t
 
 Rearrange:
 
-$$\boxed{S_{t+1} = S_t \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t}  ~ Z\right]}$$
+$$S_{t+1} = S_t \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t} ~ Z\right]$$
 
 This is the exact formula used in the Monte Carlo simulation code. Here is every piece labeled:
 

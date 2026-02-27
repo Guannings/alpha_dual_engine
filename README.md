@@ -1040,13 +1040,15 @@ This section provides rigorous mathematical interpretations of every core formul
 
 ---
 
-## **Foundational Concept: What Is a Loss Function?**
+## **Foundational Concepts**
+
+Before diving into the specific formulas, two ideas underpin everything in this appendix: the **loss function** (what the computer is trying to achieve) and **gradient descent** (how it gets there). Every section that follows — SLSQP, Shannon Entropy, GBM, PPO — is built on these two foundations.
+
+### **What is a loss function?**
 
 A loss function is a single number that measures **how wrong the current answer is.** The entire purpose of optimization — whether it is portfolio construction, neural network training, or anything else — is to make this number as small as possible.
 
-### **The simplest example**
-
-Suppose you are predicting house prices. Your model guesses \$500K. The real price is \$450K. How wrong are you?
+**The simplest example:** Suppose you are predicting house prices. Your model guesses \$500K. The real price is \$450K.
 
 $$L = (\text{guess} - \text{actual})^2 = (500{,}000 - 450{,}000)^2 = 2{,}500{,}000{,}000$$
 
@@ -1054,48 +1056,74 @@ If the model guesses \$460K instead:
 
 $$L = (460{,}000 - 450{,}000)^2 = 100{,}000{,}000$$
 
-Lower loss means a better guess. The computer tries many guesses and walks downhill toward the lowest loss — this process is called **gradient descent.**
+Lower loss means a better guess. The computer tries many guesses and adjusts to make the loss smaller — the method for doing this is gradient descent (explained below).
 
-### **Why squared?**
+**Why squared?** Two reasons: (1) squaring makes negatives positive — a guess that is \$50K too high and one that is \$50K too low are equally bad. (2) Squaring punishes big mistakes disproportionately — being off by \$100K is **four times** as bad as being off by \$50K ($100^2 = 10{,}000$ vs $50^2 = 2{,}500$), which forces the model to avoid large errors.
 
-Two reasons:
+**"Loss" vs "reward" — same idea, opposite sign.** In optimization, you **minimize** loss (lower = better). In reinforcement learning, you **maximize** reward (higher = better). They are the same concept with the sign flipped: $\text{loss} = -\text{reward}$. This is why PPO's policy loss has a negative sign in front.
 
-1. **Squaring makes negatives positive.** A guess that is \$50K too high and one that is \$50K too low are equally bad. Squaring treats them the same.
-2. **Squaring punishes big mistakes disproportionately.** Being off by \$100K is not twice as bad as being off by \$50K — it is **four times** as bad ($100^2 = 10{,}000$ vs $50^2 = 2{,}500$). This forces the model to avoid large errors even at the expense of small ones.
+**The three loss functions in the Alpha Dual Engine:**
 
-### **"Loss" vs "reward" — same idea, opposite sign**
+| Loss function | What it measures | Minimized by | Detailed in |
+|:---|:---|:---|:---|
+| Portfolio objective | Risk minus momentum minus diversification | SLSQP solver | Section A below |
+| PPO policy loss | How much to adjust action probabilities | PPO actor (gradient descent) | Section D below |
+| PPO value loss | How wrong the critic's prediction was (mean squared error) | PPO critic (gradient descent) | Section D below |
 
-In optimization, you **minimize** loss (lower = better). In reinforcement learning, you **maximize** reward (higher = better). They are the same concept with the sign flipped:
+Each is explained with its full formula in the referenced section. The key insight: all three do the same thing conceptually — define "what is wrong" as a number, then make that number smaller.
 
-$$\text{loss} = -\text{reward}$$
+### **What is gradient descent?**
 
-This is why PPO's policy loss has a negative sign in front — the optimizer minimizes, but we want to maximize the expected advantage.
+Gradient descent is how the computer actually makes the loss function smaller. The loss function tells you "how wrong am I?" — gradient descent tells you "which direction should I adjust to be less wrong?"
 
-### **The three loss functions in the Alpha Dual Engine**
+**The hiking analogy:** You are blindfolded on a mountain. You want to reach the bottom of the valley. You cannot see, but you can feel the slope under your feet.
 
-The system uses three distinct loss functions, each driving a different component:
+1. **Feel which direction is downhill** (compute the gradient)
+2. **Take a step that way** (update your parameters)
+3. **Repeat until the ground is flat** (loss stopped decreasing)
 
-#### **1. The portfolio objective function** (in `alpha_engine.py`)
+**What is a "gradient"?** The gradient is the slope, generalized to multiple dimensions. With one variable, the slope tells you: "if I nudge $x$ to the right, does the function go up or down?" With 12 variables (like portfolio weights), the gradient is a vector of 12 slopes — one per variable:
 
-$$L_{\text{portfolio}} = \lambda_{\text{risk}} \cdot \mathbf{w}^\top \Sigma \mathbf{w} \;-\; \lambda_{\text{mom}} \cdot (\mathbf{w} \cdot \mathbf{M}) \;-\; \lambda_{\text{entropy}} \cdot H(\mathbf{w})$$
+$$\nabla L = \left[\frac{\partial L}{\partial w_1},~ \frac{\partial L}{\partial w_2},~ \ldots,~ \frac{\partial L}{\partial w_{12}}\right]$$
 
-This tells the SLSQP optimizer: "find portfolio weights that minimize risk while maximizing momentum exposure and diversification." The three terms fight each other — risk wants conservative weights, momentum wants aggressive weights, entropy wants spread-out weights. The optimizer finds the compromise that produces the lowest total score.
+Each slope says "if I nudge THIS weight slightly, does the loss go up or down?" The gradient points **uphill**, so you go the opposite direction.
 
-#### **2. PPO's policy loss** (in both RL agents)
+**The update rule — the entire algorithm:**
 
-$$L^{\text{CLIP}} = -\mathbb{E}\left[\min\left(r_t \cdot A_t, \;\text{clip}(r_t, 1-\epsilon, 1+\epsilon) \cdot A_t\right)\right]$$
+$$w_{\text{new}} = w_{\text{old}} - \alpha \cdot \nabla L$$
 
-This tells the PPO optimizer: "make good actions more likely and bad actions less likely, but do not change the policy too drastically in one step." The clipping mechanism caps how much the probability of any action can change, preventing catastrophic updates.
+Three pieces: $w_{\text{old}}$ is the current guess, $\nabla L$ is the slope (which direction is uphill), and $\alpha$ is the **learning rate** (how big of a step to take). The minus sign means "go opposite to the slope" — i.e., go downhill.
 
-#### **3. PPO's value loss** (the critic network)
+**The learning rate matters:** Too big and you overshoot the valley and bounce around forever. Too small and you creep toward the answer in a million steps. In the RL agents, $\alpha = 0.0003$ — very small steps, because large steps in RL can destroy the policy.
 
-$$L^{\text{VF}} = \frac{1}{N}\sum_{t}\left(V_\theta(s_t) - R_t\right)^2$$
+**Concrete example:** Minimize $f(x) = x^2$. The answer is obviously $x = 0$, but the computer does not know that.
 
-This is the house price example again, applied to the critic. The critic predicts "how much future reward will I get from this state?" The value loss measures how wrong that prediction was — it is mean squared error, the most basic loss function in all of machine learning.
+Derivative: $f'(x) = 2x$. Start at $x = 10$, learning rate $\alpha = 0.1$:
+
+| Step | $x$ | $f(x)$ | Slope $2x$ | Update: $x - 0.1 \times 2x$ |
+|:---|:---|:---|:---|:---|
+| 0 | 10.0 | 100.0 | 20.0 | 8.0 |
+| 1 | 8.0 | 64.0 | 16.0 | 6.4 |
+| 2 | 6.4 | 40.96 | 12.8 | 5.12 |
+| 3 | 5.12 | 26.21 | 10.24 | 4.10 |
+| ... | ... | ... | ... | ... |
+| 20 | 0.115 | 0.013 | 0.23 | 0.092 |
+
+Each step: compute slope, step opposite. The loss shrinks every time. After enough steps, $x \approx 0$.
+
+**How gradient descent connects to the project:**
+
+| Component | Uses gradient descent? | What it does instead |
+|:---|:---|:---|
+| SLSQP (portfolio optimizer) | No | Quadratic subproblems (Section A) — more sophisticated but same spirit |
+| PPO actor (policy network) | **Yes** | Adam optimizer (a fancier gradient descent with momentum) |
+| PPO critic (value network) | **Yes** | Adam optimizer — adjusts predictions to match actual returns |
+
+The neural networks in the RL agents have thousands of parameters. Gradient descent adjusts all of them simultaneously — each one nudged in the direction that reduces the loss.
 
 ### **Technical Summary**
 
-A loss function (also called cost function or objective function) is a scalar-valued function that quantifies the discrepancy between a model's current output and the desired output. All optimization-based systems — from linear regression to deep reinforcement learning — operate by minimizing a loss function via iterative parameter adjustment. The Alpha Dual Engine employs three loss functions: a composite portfolio objective combining risk, momentum, and entropy terms (minimized by SLSQP), a clipped surrogate policy loss (minimized by PPO's actor), and a mean squared error value loss (minimized by PPO's critic). The distinction between "loss" (minimized) and "reward" (maximized) is purely a sign convention; both formulations drive the same underlying optimization process.
+A **loss function** (also called cost function or objective function) is a scalar-valued function that quantifies the discrepancy between a model's current output and the desired output. **Gradient descent** is the iterative algorithm that minimizes the loss by computing the gradient (the vector of partial derivatives indicating the direction of steepest ascent) and stepping in the opposite direction, scaled by a learning rate $\alpha$. The Alpha Dual Engine employs three loss functions: a composite portfolio objective combining risk, momentum, and entropy terms (minimized by SLSQP via quadratic subproblems), a clipped surrogate policy loss (minimized by the PPO actor via gradient descent), and a mean squared error value loss (minimized by the PPO critic via gradient descent). SLSQP does not use gradient descent directly — it uses a more sophisticated quadratic programming approach — but the underlying principle is identical: compute which direction improves the answer, step that way, repeat.
 
 ---
 
@@ -1809,7 +1837,7 @@ $$r_t = \exp(\log\pi_{\theta}(a_t|s_t) - \log\pi_{\theta_{\text{old}}}(a_t|s_t))
 
 Now, the **clipped surrogate objective**:
 
-$$L^{\text{CLIP}} = -\mathbb{E}\left[\min\left(r_t \cdot A_t, \;\; \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \cdot A_t\right)\right]$$
+$$L^{\text{CLIP}} = -\mathbb{E}\left[\min\left(r_t \cdot A_t,~ \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \cdot A_t\right)\right]$$
 
 Where $\epsilon = 0.2$ (the `clip_range`). Here is how the clipping works:
 

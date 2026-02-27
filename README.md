@@ -632,7 +632,7 @@ b. **Sharpe Ratio**: Return per unit of risk. (Target: ~1.0).
 
 c. **Max Drawdown**: The deepest peak-to-trough decline. This verifies the "Defensive" logic works during crashes.
 
-For example, if the portfolio reached a peak of \$150,000 and subsequently declined to \$100,000 before recovering, the max drawdown is $\frac{100{,}000 - 150{,}000}{150{,}000} = -33.3\%$. This metric captures the worst cumulative loss from any peak to its subsequent trough — it represents the maximum capital loss an investor would have experienced at any point during the backtest. The defensive regime is specifically designed to limit this figure.
+For example, if the portfolio reached a peak of 150,000 dollars and subsequently declined to 100,000 dollars before recovering, the max drawdown is $(100{,}000 - 150{,}000) / 150{,}000 = -33.3\%$. This metric captures the worst cumulative loss from any peak to its subsequent trough — it represents the maximum capital loss an investor would have experienced at any point during the backtest. The defensive regime is specifically designed to limit this figure.
 
 **3. Constraint Verification**
 

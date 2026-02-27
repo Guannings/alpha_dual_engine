@@ -440,17 +440,17 @@ This objective function balances three competing goals — minimize risk, maximi
 - $\lambda$ = Scaling coefficients controlling the relative importance of each term.
 - $\Sigma$ = The **covariance matrix** — a symmetric matrix capturing pairwise co-movement between all 12 assets. High covariance between two assets means they tend to move together, reducing the diversification benefit of holding both.
 
-**Term 1: Risk — $\lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w}$** (minimized)
+**Term 1: Risk** — $\lambda_{risk} \cdot w^\top \Sigma w$ (minimized)
 
-$\mathbf{w}^\top \Sigma \mathbf{w}$ computes the portfolio variance — a single scalar quantifying total risk, accounting for all pairwise correlations. Concentrated positions in correlated assets produce high variance; diversified positions across uncorrelated assets produce low variance. The $\lambda_{\text{risk}}$ coefficient is kept moderate to accommodate the 25% target volatility.
+$w^\top \Sigma w$ computes the portfolio variance — a single scalar quantifying total risk, accounting for all pairwise correlations. Concentrated positions in correlated assets produce high variance; diversified positions across uncorrelated assets produce low variance. The $\lambda_{risk}$ coefficient is kept moderate to accommodate the 25% target volatility.
 
-**Term 2: Momentum — $-\lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M})$** (maximized via negation)
+**Term 2: Momentum** — $-\lambda_{mom} (w \cdot M)$ (maximized via negation)
 
 $w \cdot M$ is the dot product of weights and cubed momentum scores. Since the optimizer minimizes the objective, the negative sign converts momentum maximization into an equivalent minimization problem (minimizing $-x$ is equivalent to maximizing $x$). This term drives the strategy toward high-momentum assets.
 
-**Term 3: Entropy — $-\lambda_{\text{entropy}} H(\mathbf{w})$** (maximized via negation)
+**Term 3: Entropy** — $-\lambda_{entropy} \cdot H(w)$ (maximized via negation)
 
-$H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum ($\ln 12 \approx 2.48$) when equally distributed. The coefficient $\lambda_{\text{entropy}} = 0.02$ is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals.
+$H(w) = -\sum_i w_i \ln(w_i)$ is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum ($\ln 12 \approx 2.48$) when equally distributed. The coefficient $\lambda_{entropy} = 0.02$ is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section B: Shannon Entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification).
 
 **Net effect:** The optimizer produces aggressive, momentum-driven portfolios concentrated in the top 3-4 trending assets, while the entropy term and bound constraints prevent full single-asset concentration.
 

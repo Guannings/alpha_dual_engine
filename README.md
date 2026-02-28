@@ -1577,6 +1577,12 @@ $$w^\top \Sigma w = 2w_1^2 + 2w_2^2 + 2w_3^2$$
 
 The zeros in the covariance matrix killed all the cross terms. If the matrix had non-zero off-diagonals (say 0.5 where Asset A meets Asset B), Step 1 Row 1 would give $2w_1 + 0.5w_2$ instead of just $2w_1$, and Step 2 would produce extra terms like $0.5 \times w_1 w_2$ — capturing the additional risk from holding two correlated assets together.
 
+**Why the weights appear twice — the intuition behind the sandwich $w^\top \Sigma w$:**
+
+The two multiplications capture two different things. Step 1 ($\Sigma \times w$) answers: "how much risk does each asset bring to this specific portfolio?" — not just each asset's own volatility, but including its correlations with everything else you hold, scaled by how much you hold of those other assets. After Step 1, you have a vector of risk contributions — one number per asset. Step 2 ($w^\top \times$ result) then answers: "now weight those contributions by how much I actually hold of each." If an asset contributes a lot of risk but you only hold 5% of it, its impact on total portfolio risk is small.
+
+Consider a single cross term in the final expansion: $2\sigma_{A,B} \cdot w_A \cdot w_B$. This term needs three ingredients — the correlation $\sigma_{A,B}$ (from the matrix), the weight of asset A $w_A$ (from one multiplication), and the weight of asset B $w_B$ (from the other multiplication). You need both weights because correlation risk only matters proportional to how much you hold of each asset in the pair. If you hold 30% of A but 0% of B, their correlation is irrelevant — and indeed $w_B = 0$ kills that term. If you only multiplied once ($w \cdot \sigma$), you would get each asset's individual risk scaled by its weight, but you would completely miss the correlations. The sandwich structure $w^\top \Sigma w$ is the mathematical way to say "account for every pairwise interaction, weighted by how much I hold of both sides."
+
 **Momentum term** $w \cdot M$ — this is a dot product. Multiply each weight by its momentum score and add up:
 
 $$w \cdot M = w_1 \times 3 + w_2 \times 1 + w_3 \times 2 = 3w_1 + w_2 + 2w_3$$

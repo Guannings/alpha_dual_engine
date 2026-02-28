@@ -1026,6 +1026,7 @@ This section provides rigorous mathematical interpretations of every core formul
 - [What the formula actually says](#what-the-formula-actually-says) — Breaking down each term (risk, momentum, entropy)
 - [How SLSQP actually solves it](#how-slsqp-actually-solves-it) — The "approximate as a parabola and step" method
 - [What is the Hessian matrix?](#what-is-the-hessian-matrix-b) — Second derivatives, curvature, and the BFGS approximation
+- [How the covariance matrix is computed from data](#how-the-covariance-matrix-is-computed-from-data) — Variance, covariance formulas, and annualization
 - [Can the quadratic subproblem be solved by hand?](#can-the-quadratic-subproblem-be-solved-by-hand) — Layer-by-layer breakdown from 1 variable to 12
 - [What is a Lagrange multiplier, exactly?](#what-is-a-lagrange-multiplier-exactly) — Intuition, worked example, geometric interpretation, shadow prices
 - [Solving the Linear System: Gaussian Elimination](#solving-the-linear-system-gaussian-elimination) — Forward elimination, back-substitution, worked examples
@@ -1517,7 +1518,7 @@ The **off-diagonal** entries are everything else — the six zeros. Each one rep
 
 In the real portfolio, these off-diagonals would be non-zero: SMH and QQQ would have a large positive covariance (they tend to rise and fall together), while TLT might have a negative covariance with SMH (bonds often rise when tech falls). But setting them to zero here removes the cross terms and keeps the arithmetic simple.
 
-**How the covariance matrix is computed from data:**
+#### **How the covariance matrix is computed from data**
 
 The code calculates the covariance matrix from historical daily returns:
 

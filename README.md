@@ -1781,13 +1781,13 @@ Now expand each piece with the actual numbers:
 - Row 2: $0 \times w_1 + 2 \times w_2 + 0 \times w_3 = 2w_2$
 - Row 3: $0 \times w_1 + 0 \times w_2 + 2 \times w_3 = 2w_3$
 
-Result: a column vector:
+Result: a column vector (one number per asset, stacked vertically):
 
-| |
-|:---:|
-| $2w_1$ |
-| $2w_2$ |
-| $2w_3$ |
+| Asset | Value |
+|:---:|:---:|
+| A | $2w_1$ |
+| B | $2w_2$ |
+| C | $2w_3$ |
 
 **Step 2 — Multiply the weight row by that result** ($w^\top \times$ result). Multiply element-by-element and add up:
 

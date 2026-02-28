@@ -1647,6 +1647,45 @@ The variance of 2 used in the simplified worked example below is chosen for clea
 
 - Constraint: $w_1 + w_2 + w_3 = 1$
 
+#### **What is $w$? — scalars, vectors, and matrices**
+
+Before expanding the objective function, it helps to clarify what the symbols mean, because the same letter $w$ appears in different forms throughout the formula.
+
+**A scalar is a single number.** Each individual weight is a scalar:
+
+- $w_1 = 0.583$ → "put 58.3% in Asset A"
+- $w_2 = 0.083$ → "put 8.3% in Asset B"
+- $w_3 = 0.333$ → "put 33.3% in Asset C"
+
+These are just ordinary numbers — you can add, subtract, and multiply them the same way you would in normal arithmetic. The momentum scores are also scalars: $M_1 = 3$, $M_2 = 1$, $M_3 = 2$.
+
+**A vector is a list of scalars stacked together.** When you see $\mathbf{w}$ (bold, no subscript), it means all 12 weights as a group:
+
+$$\mathbf{w} = [w_1, w_2, w_3] = [0.583, 0.083, 0.333]$$
+
+A vector has only one dimension — it is either a single row or a single column of numbers. The superscript $\top$ means "transpose" (flip from column to row or vice versa): $w$ by itself is a column (numbers stacked vertically), and $w^\top$ is a row (numbers laid out horizontally). The momentum scores are also a vector: $M = [3, 1, 2]$.
+
+**A matrix is a table of scalars with rows AND columns.** The covariance matrix $\Sigma$ is 3x3 (or 12x12 in the real portfolio) — it has both rows and columns because it stores the relationship between every pair of assets:
+
+| | A | B | C |
+|:---:|:---:|:---:|:---:|
+| **A** | 2 | 0 | 0 |
+| **B** | 0 | 2 | 0 |
+| **C** | 0 | 0 | 2 |
+
+**Why does the distinction matter?** Because the risk formula $w^\top \Sigma w$ is doing something specific with the shapes:
+
+- $w^\top$ = weights as a **row**: shape (1 x 3) — one row, three columns
+- $\Sigma$ = covariance **matrix**: shape (3 x 3) — three rows, three columns
+- $w$ = weights as a **column**: shape (3 x 1) — three rows, one column
+- Result: (1 x 3) $\times$ (3 x 3) $\times$ (3 x 1) = **(1 x 1)** = a single number
+
+The whole point of the sandwich is to take a list of simple numbers (your portfolio weights), run them through a table of 78 pairwise interactions (the covariance matrix), and collapse everything into **one single number** — total portfolio risk. That single number is what the optimizer tries to make as small as possible.
+
+By contrast, the momentum term $w \cdot M$ is simpler — it is a **dot product** between two vectors (multiply each pair and add up), which also produces a single number: $w_1 \times M_1 + w_2 \times M_2 + w_3 \times M_3$. No matrix involved.
+
+So the entire objective function takes in 12 simple numbers (weights), processes them through the covariance matrix and momentum scores, and outputs **one single number** — the "score" that the optimizer is trying to minimize.
+
 **Building the objective function step by step:**
 
 The full objective from the main README has three terms: risk, momentum, and entropy. For this example, entropy is omitted to keep the arithmetic simple. That leaves:
@@ -1657,7 +1696,7 @@ The minus sign is the key: the optimizer **minimizes** this expression. Minimizi
 
 Now expand each piece with the actual numbers:
 
-**Risk term** $w^\top \Sigma w$ — this is matrix multiplication that measures total portfolio risk. The notation means: take the weights as a row ($w^\top$), multiply by the covariance matrix ($\Sigma$), then multiply by the weights as a column ($w$). Here is the calculation broken into two steps:
+**Risk term** $w^\top \Sigma w$ — this is the matrix sandwich described above. The notation means: take the weights as a row ($w^\top$), multiply by the covariance matrix ($\Sigma$), then multiply by the weights as a column ($w$). The result is a single number measuring total portfolio risk. Here is the calculation broken into two steps:
 
 **Step 1 — Multiply the covariance matrix by the weight column** ($\Sigma \times w$). Each row of the matrix gets multiplied element-by-element with the weights, then added up:
 

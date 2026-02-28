@@ -3,3 +3,5 @@ __pycache__/
 .DS_Store
 INTERVIEW_PREP.md
 SESSION_STATE.md
+debug_*.py
+generate_*.py

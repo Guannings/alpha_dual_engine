@@ -2013,7 +2013,7 @@ Everything above solves ONE quadratic subproblem — one parabola approximation 
 2. Walk to the answer, build a NEW parabola at the new position, solve it (doable by hand)
 3. Repeat until the answer stops changing (20-50 iterations)
 
-Each iteration involves computing 12 derivatives, updating a 12x12 matrix, and solving a 13x13 linear system — roughly 2,000 arithmetic operations per step. One iteration takes approximately 30 minutes by hand. The full optimization would require 10-25 hours of continuous arithmetic.
+Each iteration involves computing 12 partial derivatives, updating a 12×12 Hessian approximation, and solving a 13×13 linear system (12 weights + 1 Lagrange multiplier) via Gaussian elimination — roughly 2,000 arithmetic operations per step. At ~30 minutes per iteration by hand, and 20–50 iterations to converge, the full optimization would take 10–25 hours of continuous arithmetic: 40,000–100,000 multiply-add operations with no errors allowed, since each iteration's starting point depends on the previous iteration's answer.
 
 The conceptual framework here — Lagrange multipliers, Hessian approximation via BFGS, active-set methods for inequality constraints — is upper-level undergraduate or graduate-level mathematics, the kind taught in financial derivatives and numerical optimization courses. These are not trivial topics. However, once the framework is set up, the *execution* at each iteration reduces to operations that are individually mechanical: partial derivatives, matrix-vector products, and Gaussian elimination. The difficulty is not any single operation — it is the volume and the interdependence. The computer completes the entire process in approximately 0.01 seconds.
 

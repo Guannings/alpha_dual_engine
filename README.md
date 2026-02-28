@@ -1505,22 +1505,37 @@ $$\Sigma = \begin{bmatrix} 2 & 0 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{bmatrix}$$
 
 The diagonal entries (2, 2, 2) are each asset's variance — how much it moves on its own. The off-diagonal entries (all zeros) are the covariances between pairs of assets — zero means they move independently. In the real portfolio, these off-diagonals would be non-zero because assets like SMH and QQQ are correlated, but zeros keep this example tractable.
 
-- Objective: risk minus momentum (omitting entropy for clarity)
 - Constraint: $w_1 + w_2 + w_3 = 1$
 
-**Where the objective function comes from:**
+**Building the objective function step by step:**
 
-The risk term $w^\top \Sigma w$ is matrix multiplication, but because the off-diagonals are all zero, it simplifies to each weight squared times its variance:
+The full objective from the main README has three terms: risk, momentum, and entropy. For this example, entropy is omitted to keep the arithmetic simple. That leaves:
 
-$$w^\top \Sigma w = 2w_1^2 + 2w_2^2 + 2w_3^2$$
+$$\text{Objective} = \underbrace{w^\top \Sigma w}_{\text{risk (want small)}} - \underbrace{w \cdot M}_{\text{momentum (want large)}}$$
 
-The momentum term $w \cdot M$ is a dot product — each weight times its momentum score, added up:
+The minus sign is the key: the optimizer **minimizes** this expression. Minimizing "risk minus momentum" simultaneously pushes risk **down** and momentum **up** — because subtracting a larger momentum number makes the whole expression smaller. (This is explained in detail in the "Why minimization achieves three goals at once" subsection above.)
 
-$$w \cdot M = 3w_1 + 1 \cdot w_2 + 2w_3$$
+Now expand each piece with the actual numbers:
 
-Subtract momentum from risk (the negative sign converts maximization into minimization, as explained in the "Why minimization achieves three goals at once" subsection above):
+**Risk term** $w^\top \Sigma w$ — this is matrix multiplication that measures total portfolio risk. Because the covariance matrix is diagonal (all zeros off the diagonal), it simplifies to each weight squared times its variance:
+
+$$w^\top \Sigma w = 2 \times w_1^2 + 2 \times w_2^2 + 2 \times w_3^2$$
+
+(If the off-diagonals were non-zero, there would be additional cross terms like $2 \times \text{cov}_{AB} \times w_1 w_2$, capturing the risk from correlated assets. Here they are zero, so those terms vanish.)
+
+**Momentum term** $w \cdot M$ — this is a dot product. Multiply each weight by its momentum score and add up:
+
+$$w \cdot M = w_1 \times 3 + w_2 \times 1 + w_3 \times 2 = 3w_1 + w_2 + 2w_3$$
+
+**Subtract** momentum from risk to get the objective:
+
+$$\mathcal{L}(\mathbf{w}) = \underbrace{2w_1^2 + 2w_2^2 + 2w_3^2}_{\text{from risk}} - \underbrace{(3w_1 + w_2 + 2w_3)}_{\text{from momentum}}$$
+
+Which simplifies to:
 
 $$\mathcal{L}(\mathbf{w}) = 2w_1^2 + 2w_2^2 + 2w_3^2 - 3w_1 - w_2 - 2w_3$$
+
+Every number in this formula traces back to either the covariance matrix (the 2's in front of the squared terms) or the momentum scores (the 3, 1, 2 being subtracted). Nothing is arbitrary.
 
 **Step 1 — Build the Lagrangian** (add the multiplier $\mu$ times the constraint, as described in the Lagrange multiplier section above):
 

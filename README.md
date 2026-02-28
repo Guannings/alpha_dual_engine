@@ -1222,7 +1222,7 @@ For a function of one variable, say $f(x) = 3x^2$:
 
 For a function of two variables, say $f(x, y) = 3x^2 + 2xy + 5y^2$, there is not just one second derivative but **four** — one for each pair of variables:
 
-$$H = \begin{bmatrix} \frac{\partial^2 f}{\partial x^2} & \frac{\partial^2 f}{\partial x \, \partial y} \\[6pt] \frac{\partial^2 f}{\partial y \, \partial x} & \frac{\partial^2 f}{\partial y^2} \end{bmatrix} = \begin{bmatrix} 6 & 2 \\ 2 & 10 \end{bmatrix}$$
+$$H = \begin{bmatrix} \frac{\partial^2 f}{\partial x^2} & \frac{\partial^2 f}{\partial x \, \partial y} \\ \frac{\partial^2 f}{\partial y \, \partial x} & \frac{\partial^2 f}{\partial y^2} \end{bmatrix} = \begin{bmatrix} 6 & 2 \\ 2 & 10 \end{bmatrix}$$
 
 What each entry means:
 

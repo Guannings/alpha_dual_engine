@@ -1721,9 +1721,19 @@ $$0.5 \times 0 + 0.3 \times 2 + 0.2 \times 0 = 0 + 0.6 + 0 = 0.6$$
 
 $$0.5 \times 0 + 0.3 \times 0 + 0.2 \times 2 = 0 + 0 + 0.4 = 0.4$$
 
-Result: $[1.0, 0.6, 0.4]$ — shape (1 x 3). Three columns in the matrix produced three numbers in the result. Each number represents one asset's risk contribution to the portfolio.
+Result — shape (1 x 3). Three columns in the matrix produced three numbers in the result. Each number represents one asset's risk contribution to the portfolio:
 
-**Then, $[1.0, 0.6, 0.4] \times w$** — multiply the (1 x 3) result by $w$ as a column (3 x 1). Same rule: multiply each pair and add up:
+| Asset A | Asset B | Asset C |
+|:---:|:---:|:---:|
+| 1.0 | 0.6 | 0.4 |
+
+**Then, multiply that result by $w$ as a column (3 x 1).** Same rule: multiply each pair and add up:
+
+| | Weight |
+|:---:|:---:|
+| **A** | 0.5 |
+| **B** | 0.3 |
+| **C** | 0.2 |
 
 $$1.0 \times 0.5 + 0.6 \times 0.3 + 0.4 \times 0.2 = 0.50 + 0.18 + 0.08 = 0.76$$
 
@@ -1771,7 +1781,13 @@ Now expand each piece with the actual numbers:
 - Row 2: $0 \times w_1 + 2 \times w_2 + 0 \times w_3 = 2w_2$
 - Row 3: $0 \times w_1 + 0 \times w_2 + 2 \times w_3 = 2w_3$
 
-Result: a column of $[2w_1, 2w_2, 2w_3]$.
+Result: a column vector:
+
+| |
+|:---:|
+| $2w_1$ |
+| $2w_2$ |
+| $2w_3$ |
 
 **Step 2 — Multiply the weight row by that result** ($w^\top \times$ result). Multiply element-by-element and add up:
 

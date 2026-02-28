@@ -1568,11 +1568,11 @@ Notice the pattern: when SMH goes up, TLT tends to go down, and vice versa. They
 
 TLT average $= (-1 + 2 - 2 + 3 + 0) / 5 = +0.4\%$
 
-- Mon: SMH deviation $= +1.4$, TLT deviation $= -1.4$, product $= 1.4 \times (-1.4) = -1.96$
-- Tue: SMH deviation $= -1.6$, TLT deviation $= +1.6$, product $= (-1.6) \times 1.6 = -2.56$
-- Wed: SMH deviation $= +2.4$, TLT deviation $= -2.4$, product $= 2.4 \times (-2.4) = -5.76$
-- Thu: SMH deviation $= -2.6$, TLT deviation $= +2.6$, product $= (-2.6) \times 2.6 = -6.76$
-- Fri: SMH deviation $= +0.4$, TLT deviation $= -0.4$, product $= 0.4 \times (-0.4) = -0.16$
+- Mon: SMH deviation $= 2 - 0.6 = +1.4$, TLT deviation $= -1 - 0.4 = -1.4$, product $= (+1.4) \times (-1.4) = -1.96$
+- Tue: SMH deviation $= -1 - 0.6 = -1.6$, TLT deviation $= 2 - 0.4 = +1.6$, product $= (-1.6) \times (+1.6) = -2.56$
+- Wed: SMH deviation $= 3 - 0.6 = +2.4$, TLT deviation $= -2 - 0.4 = -2.4$, product $= (+2.4) \times (-2.4) = -5.76$
+- Thu: SMH deviation $= -2 - 0.6 = -2.6$, TLT deviation $= 3 - 0.4 = +2.6$, product $= (-2.6) \times (+2.6) = -6.76$
+- Fri: SMH deviation $= 1 - 0.6 = +0.4$, TLT deviation $= 0 - 0.4 = -0.4$, product $= (+0.4) \times (-0.4) = -0.16$
 
 Covariance $= (-1.96 - 2.56 - 5.76 - 6.76 - 0.16) / 4 = -4.30$
 

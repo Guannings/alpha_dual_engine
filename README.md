@@ -1070,13 +1070,13 @@ graph TD
         D["Cubed Momentum Scores M³<br/>Trend strength, cubed to amplify winners<br/>(Section A)"]
     end
 
-    subgraph MATH ["MATHEMATICAL OPTIMIZATION"]
-        E["Objective Function<br/>minimize: risk − momentum − entropy<br/>102 terms: 78 risk + 12 momentum + 12 entropy"]
-        F["SLSQP Solver<br/>(Section A)"]
-        G["Approximate as Quadratic<br/>Treat objective as parabola at current point"]
-        H["Build Lagrangian<br/>Bake 'weights sum to 1' into the formula<br/>(Section A)"]
+    subgraph MATH ["OPTIMIZATION · Section A"]
+        E["Objective Function<br/>risk − momentum − entropy · 102 terms"]
+        F["SLSQP Solver · iterates 20–50 times"]
+        G["Approximate as Quadratic"]
+        H["Build Lagrangian<br/>Bake 'weights sum to 1' into formula"]
         I["Partial Derivatives → Set to Zero<br/>13 equations, 13 unknowns"]
-        J["Gaussian Elimination<br/>Solve for weight numbers<br/>(Section A)"]
+        J["Gaussian Elimination → solve for weights"]
         K["Optimal Weights<br/>w₁, w₂, ..., w₁₂"]
     end
 

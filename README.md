@@ -1528,11 +1528,25 @@ The minus sign is the key: the optimizer **minimizes** this expression. Minimizi
 
 Now expand each piece with the actual numbers:
 
-**Risk term** $w^\top \Sigma w$ — this is matrix multiplication that measures total portfolio risk. Because the covariance matrix is diagonal (all zeros off the diagonal), it simplifies to each weight squared times its variance:
+**Risk term** $w^\top \Sigma w$ — this is matrix multiplication that measures total portfolio risk. The notation means: take the weights as a row ($w^\top$), multiply by the covariance matrix ($\Sigma$), then multiply by the weights as a column ($w$). Here is the calculation broken into two steps:
 
-$$w^\top \Sigma w = 2 \times w_1^2 + 2 \times w_2^2 + 2 \times w_3^2$$
+**Step 1 — Multiply the covariance matrix by the weight column** ($\Sigma \times w$). Each row of the matrix gets multiplied element-by-element with the weights, then added up:
 
-(If the off-diagonals were non-zero, there would be additional cross terms like $2 \times \text{cov}_{AB} \times w_1 w_2$, capturing the risk from correlated assets. Here they are zero, so those terms vanish.)
+- Row 1: $2 \times w_1 + 0 \times w_2 + 0 \times w_3 = 2w_1$
+- Row 2: $0 \times w_1 + 2 \times w_2 + 0 \times w_3 = 2w_2$
+- Row 3: $0 \times w_1 + 0 \times w_2 + 2 \times w_3 = 2w_3$
+
+Result: a column of $[2w_1, 2w_2, 2w_3]$.
+
+**Step 2 — Multiply the weight row by that result** ($w^\top \times$ result). Multiply element-by-element and add up:
+
+$$w_1 \times 2w_1 + w_2 \times 2w_2 + w_3 \times 2w_3 = 2w_1^2 + 2w_2^2 + 2w_3^2$$
+
+So:
+
+$$w^\top \Sigma w = 2w_1^2 + 2w_2^2 + 2w_3^2$$
+
+The zeros in the covariance matrix killed all the cross terms. If the matrix had non-zero off-diagonals (say 0.5 where Asset A meets Asset B), Step 1 Row 1 would give $2w_1 + 0.5w_2$ instead of just $2w_1$, and Step 2 would produce extra terms like $0.5 \times w_1 w_2$ — capturing the additional risk from holding two correlated assets together.
 
 **Momentum term** $w \cdot M$ — this is a dot product. Multiply each weight by its momentum score and add up:
 

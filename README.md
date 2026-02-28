@@ -1730,9 +1730,25 @@ Result: $0.76$ — shape (1 x 1). One single number. This is the total portfolio
 
 The whole point of the sandwich is to take a list of simple numbers (your portfolio weights), run them through a table of 78 pairwise interactions (the covariance matrix), and collapse everything into **one single number** — total portfolio risk. That single number is what the optimizer tries to make as small as possible.
 
-By contrast, the momentum term $w \cdot M$ is simpler — it is a **dot product** between two vectors (multiply each pair and add up), which also produces a single number: $w_1 \times M_1 + w_2 \times M_2 + w_3 \times M_3$. No matrix involved.
+**By contrast, the momentum term $w \cdot M$ is much simpler.** It is a **dot product** — two vectors of the same length, multiplied pair by pair and added up. No matrix involved, no sandwich, no two-step process. Just one step:
 
-So the entire objective function takes in 12 simple numbers (weights), processes them through the covariance matrix and momentum scores, and outputs **one single number** — the "score" that the optimizer is trying to minimize.
+The weights vector: $w = [0.5, 0.3, 0.2]$
+
+The momentum scores vector: $M = [3, 1, 2]$ (Asset A trending strongest, B weakest)
+
+Multiply each weight by the corresponding momentum score, then add up:
+
+$$w \cdot M = 0.5 \times 3 + 0.3 \times 1 + 0.2 \times 2$$
+
+$$= 1.50 + 0.30 + 0.40$$
+
+$$= 2.20$$
+
+That single number (2.20) measures "how much total momentum is the portfolio exposed to?" A higher number means the portfolio is tilted toward high-momentum assets — which is what the optimizer wants. Since the optimizer **minimizes** the objective, this term is **subtracted**: minimizing "risk $- 2.20$" pushes the optimizer to make 2.20 as large as possible (because subtracting a bigger number makes the result smaller).
+
+**Why risk needs a matrix but momentum does not:** Risk depends on how assets interact with **each other** — SMH crashing together with QQQ is worse than SMH crashing while TLT rises. That pairwise interaction is what the covariance matrix captures, and why the weights must be multiplied twice (once for each side of every pair). Momentum, on the other hand, is an **individual** property — Asset A's momentum score does not depend on Asset B's. Each asset contributes independently, so a simple one-pass multiplication is enough.
+
+**Putting it together:** The objective function computes two numbers — portfolio risk ($0.76$) and momentum exposure ($2.20$) — then subtracts: $0.76 - 2.20 = -1.44$. The optimizer's job is to find the weights that make this as small (as negative) as possible, which means simultaneously pushing risk down and momentum up.
 
 **Building the objective function step by step:**
 

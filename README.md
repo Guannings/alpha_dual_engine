@@ -1525,6 +1525,22 @@ The code calculates the covariance matrix from historical daily returns:
 3. **Annualize** — multiply by $\sqrt{252}$ (there are 252 trading days per year). The square root comes from a statistical property: variance scales linearly with time, so standard deviation scales with the square root. For example, if daily volatility is 1.5%, annual volatility is $1.5\% \times \sqrt{252} \approx 24\%$.
 4. **Covariance matrix** — compute `returns.cov()` across all assets, then multiply by 252 to annualize (covariance is variance-like, so it scales linearly with time, not with the square root). The diagonal of this matrix contains each asset's variance; the off-diagonals contain pairwise covariances.
 
+**The formulas:**
+
+The **variance** of asset $i$ (diagonal entry) measures how much its returns fluctuate around the mean:
+
+$$\sigma_i^2 = \frac{1}{N-1} \sum_{t=1}^{N} (r_{i,t} - \bar{r}_i)^2$$
+
+Where $r_{i,t}$ is the return of asset $i$ on day $t$, $\bar{r}_i$ is the average return over the period, and $N$ is the number of days. Each daily return's deviation from the mean is squared (so positive and negative deviations both count), then averaged. The result is a single number: large variance means the asset's returns swing widely, small variance means they stay close to the average.
+
+The **covariance** between assets $i$ and $j$ (off-diagonal entry) measures whether they tend to move in the same direction:
+
+$$\sigma_{ij} = \frac{1}{N-1} \sum_{t=1}^{N} (r_{i,t} - \bar{r}_i)(r_{j,t} - \bar{r}_j)$$
+
+Instead of squaring one asset's deviation, you multiply the deviations of two different assets together. If both tend to be above their means on the same days (both positive deviations), the product is positive → positive covariance (they move together). If one tends to be above when the other is below (opposite signs), the product is negative → negative covariance (they move oppositely). If there is no consistent pattern, the positives and negatives cancel out → covariance near zero (independent).
+
+Notice that when $i = j$, the covariance formula becomes the variance formula (multiplying a deviation by itself is the same as squaring it). This is why the diagonal entries are variances — they are just the special case of covariance of an asset with itself.
+
 The variance of 2 used in this worked example is chosen for clean arithmetic. In real markets, equity ETFs have annualized variances closer to 0.04-0.09 (corresponding to volatilities of 20-30%).
 
 - Constraint: $w_1 + w_2 + w_3 = 1$

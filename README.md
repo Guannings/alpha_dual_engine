@@ -1753,6 +1753,8 @@ That single number (2.20) measures "how much total momentum is the portfolio exp
 
 **Building the objective function step by step:**
 
+The section above used concrete numbers ($w = [0.5, 0.3, 0.2]$) to show what the matrix multiplication and dot product physically do — and got risk = 0.76 and momentum = 2.20 for that specific allocation. But the optimizer does not start with fixed weights — it needs to **find** the best weights. To do that, it keeps the weights as unknowns ($w_1, w_2, w_3$) and builds a formula in terms of those unknowns, then uses calculus to find the values that minimize the formula. That is what we do next.
+
 The full objective from the main README has three terms: risk, momentum, and entropy. For this example, entropy is omitted to keep the arithmetic simple. That leaves:
 
 $$\text{Objective} = \underbrace{w^\top \Sigma w}_{\text{risk (want small)}} - \underbrace{w \cdot M}_{\text{momentum (want large)}}$$

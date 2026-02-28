@@ -1226,11 +1226,9 @@ $$H = \begin{bmatrix} \frac{\partial^2 f}{\partial x^2} & \frac{\partial^2 f}{\p
 
 What each entry means:
 
-| Entry | Value | Meaning |
-|:---|:---:|:---|
-| Top-left (6) | $\partial^2 f / \partial x^2$ | Curvature in the $x$ direction alone — how fast the $x$-slope changes as you move in $x$ |
-| Bottom-right (10) | $\partial^2 f / \partial y^2$ | Curvature in the $y$ direction alone — the bowl is narrower in $y$ than in $x$ (10 > 6) |
-| Off-diagonal (2) | $\partial^2 f / \partial x \, \partial y$ | The **interaction** — changing $x$ affects the slope in the $y$ direction. If this were 0, the two variables would be independent |
+- **Top-left = 6** ($\partial^2 f / \partial x^2$): Curvature in the $x$ direction alone — how fast the $x$-slope changes as you move in $x$.
+- **Bottom-right = 10** ($\partial^2 f / \partial y^2$): Curvature in the $y$ direction alone. Since 10 > 6, the bowl is narrower in $y$ than in $x$ — the optimizer needs a smaller step in $y$ to reach the bottom.
+- **Off-diagonals = 2** ($\partial^2 f / \partial x \, \partial y$): The **interaction** between variables — changing $x$ affects the slope in the $y$ direction. If this were 0, the two variables would be completely independent.
 
 The off-diagonal entries are always symmetric (the top-right and bottom-left are equal). This is why the Hessian is always a symmetric matrix.
 

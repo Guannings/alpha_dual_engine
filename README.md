@@ -1698,7 +1698,13 @@ Again the bold 3's match, and the outer numbers (1 and 1) give a (1 x 1) result 
 
 **First, $w^\top \times \Sigma$** — the (1 x 3) row times the (3 x 3) matrix. Here is exactly what this multiplication looks like written out:
 
-$$[0.5, 0.3, 0.2] \times \begin{array}{|c|c|c|} 2 & 0 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{array}$$
+Row: $[0.5, 0.3, 0.2]$ multiplied by the covariance matrix:
+
+| | A | B | C |
+|:---:|:---:|:---:|:---:|
+| **A** | 2 | 0 | 0 |
+| **B** | 0 | 2 | 0 |
+| **C** | 0 | 0 | 2 |
 
 The rule: take the row, and multiply it against each **column** of the matrix one at a time. Each column produces one number in the result:
 

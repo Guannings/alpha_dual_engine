@@ -1520,6 +1520,96 @@ In the real portfolio, these off-diagonals would be non-zero: SMH and QQQ would 
 
 #### **How the covariance matrix is computed from data**
 
+Before the formulas, here is a concrete worked example showing exactly what variance and covariance mean with actual numbers.
+
+**Step 1 — Start with one asset: variance**
+
+Suppose SMH (semiconductors) has the following daily returns over 5 days:
+
+| Day | SMH return |
+|:---:|:---:|
+| Mon | +2% |
+| Tue | -1% |
+| Wed | +3% |
+| Thu | -2% |
+| Fri | +1% |
+
+The average return is $(+2 - 1 + 3 - 2 + 1) / 5 = +0.6\%$.
+
+**Variance** answers one question: "how jumpy is this asset?" To compute it, take each day's return, subtract the average, and square the result:
+
+| Day | Return | Deviation from average | Squared |
+|:---:|:---:|:---:|:---:|
+| Mon | +2% | $2 - 0.6 = +1.4$ | $1.96$ |
+| Tue | -1% | $-1 - 0.6 = -1.6$ | $2.56$ |
+| Wed | +3% | $3 - 0.6 = +2.4$ | $5.76$ |
+| Thu | -2% | $-2 - 0.6 = -2.6$ | $6.76$ |
+| Fri | +1% | $1 - 0.6 = +0.4$ | $0.16$ |
+
+Variance $= (1.96 + 2.56 + 5.76 + 6.76 + 0.16) / 4 = 4.30$
+
+(We divide by 4 instead of 5 — this is called "N-1" or Bessel's correction, a statistical adjustment that gives a better estimate when working with a sample rather than the entire population.)
+
+The squaring serves two purposes: (1) it makes negative deviations positive — being 2% below average is equally "jumpy" as being 2% above average, and (2) it punishes large deviations more — a 3% swing contributes more to variance than three 1% swings combined. A large variance means the asset's returns swing widely; a small variance means they stay close to the average.
+
+**Step 2 — Add a second asset: covariance**
+
+Now add TLT (bonds) alongside SMH:
+
+| Day | SMH | TLT |
+|:---:|:---:|:---:|
+| Mon | +2% | -1% |
+| Tue | -1% | +2% |
+| Wed | +3% | -2% |
+| Thu | -2% | +3% |
+| Fri | +1% | 0% |
+
+Notice the pattern: when SMH goes up, TLT tends to go down, and vice versa. They move in **opposite directions**. This is exactly the relationship between stocks and bonds that makes them useful together in a portfolio — when one crashes, the other cushions you.
+
+**Covariance** answers: "do these two move together or opposite?" Instead of squaring one asset's deviation, you multiply the deviations of **both assets** together:
+
+TLT average $= (-1 + 2 - 2 + 3 + 0) / 5 = +0.4\%$
+
+| Day | SMH deviation | TLT deviation | Product |
+|:---:|:---:|:---:|:---:|
+| Mon | $2 - 0.6 = +1.4$ | $-1 - 0.4 = -1.4$ | $1.4 \times (-1.4) = -1.96$ |
+| Tue | $-1 - 0.6 = -1.6$ | $2 - 0.4 = +1.6$ | $(-1.6) \times 1.6 = -2.56$ |
+| Wed | $3 - 0.6 = +2.4$ | $-2 - 0.4 = -2.4$ | $2.4 \times (-2.4) = -5.76$ |
+| Thu | $-2 - 0.6 = -2.6$ | $3 - 0.4 = +2.6$ | $(-2.6) \times 2.6 = -6.76$ |
+| Fri | $1 - 0.6 = +0.4$ | $0 - 0.4 = -0.4$ | $0.4 \times (-0.4) = -0.16$ |
+
+Covariance $= (-1.96 - 2.56 - 5.76 - 6.76 - 0.16) / 4 = -4.30$
+
+The result is **negative**, confirming what we saw in the table: they move in opposite directions. Here is why the sign works:
+- When SMH is **above** average and TLT is **below** average, the product is (positive) $\times$ (negative) $=$ **negative**
+- When SMH is **below** average and TLT is **above** average, the product is (negative) $\times$ (positive) $=$ **negative**
+- Either way, opposite movement produces negative products → negative covariance
+
+If instead both assets tended to be above average on the same days and below average on the same days, the products would be (positive) $\times$ (positive) or (negative) $\times$ (negative) — both **positive** → positive covariance, meaning they crash together. This is what happens with SMH and QQQ (both are tech-heavy), which is bad for diversification.
+
+If there is no consistent pattern (some days same direction, some days opposite), the positive and negative products cancel out → covariance near **zero**, meaning the assets move independently.
+
+**Step 3 — Build the full table: the covariance "matrix"**
+
+With 3 assets (SMH, TLT, QQQ), you compute the variance/covariance for every pair and arrange them in a table:
+
+| | SMH | TLT | QQQ |
+|:---:|:---:|:---:|:---:|
+| **SMH** | var(SMH) = 4.30 | cov(SMH,TLT) = -4.30 | cov(SMH,QQQ) = +3.80 |
+| **TLT** | cov(TLT,SMH) = -4.30 | var(TLT) = 4.30 | cov(TLT,QQQ) = -3.50 |
+| **QQQ** | cov(QQQ,SMH) = +3.80 | cov(QQQ,TLT) = -3.50 | var(QQQ) = 3.90 |
+
+(The QQQ numbers are illustrative — the key point is the sign pattern.)
+
+Reading this table:
+- **Diagonal** (top-left to bottom-right): each asset's variance — how jumpy it is on its own
+- **Off-diagonal**: covariance between each pair — positive means they move together, negative means they move opposite, near zero means independent
+- **Symmetric**: cov(SMH,TLT) = cov(TLT,SMH), because "how SMH moves relative to TLT" is the same question as "how TLT moves relative to SMH"
+
+That is the entire covariance matrix. It is a lookup table that answers, for any pair of assets: "do these two tend to crash together, hedge each other, or not care about each other?" With 12 assets, it is a 12x12 table with 78 unique numbers (12 variances on the diagonal + 66 unique covariances off the diagonal). The optimizer reads this entire table when computing portfolio risk via $w^\top \Sigma w$.
+
+**Step 4 — How the code computes it from real data**
+
 The code calculates the covariance matrix from historical daily returns:
 
 1. **Daily returns** — for each asset, compute the percentage change each day (e.g., the price went from 100 to 102, so the daily return is +2%)
@@ -1527,23 +1617,23 @@ The code calculates the covariance matrix from historical daily returns:
 3. **Annualize** — multiply by $\sqrt{252}$ (there are 252 trading days per year). The square root comes from a statistical property: variance scales linearly with time, so standard deviation scales with the square root. For example, if daily volatility is 1.5%, annual volatility is $1.5\% \times \sqrt{252} \approx 24\%$.
 4. **Covariance matrix** — compute `returns.cov()` across all assets, then multiply by 252 to annualize (covariance is variance-like, so it scales linearly with time, not with the square root). The diagonal of this matrix contains each asset's variance; the off-diagonals contain pairwise covariances.
 
-**The formulas:**
+**The formulas (the general versions of what we just computed by hand):**
 
 The **variance** of asset $i$ (diagonal entry) measures how much its returns fluctuate around the mean:
 
 $$\sigma_i^2 = \frac{1}{N-1} \sum_{t=1}^{N} (r_{i,t} - \bar{r}_i)^2$$
 
-Where $r_{i,t}$ is the return of asset $i$ on day $t$, $\bar{r}_i$ is the average return over the period, and $N$ is the number of days. Each daily return's deviation from the mean is squared (so positive and negative deviations both count), then averaged. The result is a single number: large variance means the asset's returns swing widely, small variance means they stay close to the average.
+Where $r_{i,t}$ is the return of asset $i$ on day $t$, $\bar{r}_i$ is the average return over the period, and $N$ is the number of days. This is exactly the same calculation as the SMH example above — subtract the mean, square, average — but written in compact notation. Each daily return's deviation from the mean is squared (so positive and negative deviations both count), then averaged. The result is a single number: large variance means the asset's returns swing widely, small variance means they stay close to the average.
 
 The **covariance** between assets $i$ and $j$ (off-diagonal entry) measures whether they tend to move in the same direction:
 
 $$\sigma_{ij} = \frac{1}{N-1} \sum_{t=1}^{N} (r_{i,t} - \bar{r}_i)(r_{j,t} - \bar{r}_j)$$
 
-Instead of squaring one asset's deviation, you multiply the deviations of two different assets together. If both tend to be above their means on the same days (both positive deviations), the product is positive → positive covariance (they move together). If one tends to be above when the other is below (opposite signs), the product is negative → negative covariance (they move oppositely). If there is no consistent pattern, the positives and negatives cancel out → covariance near zero (independent).
+This is exactly the SMH-TLT calculation above in compact notation — subtract each asset's mean, multiply the two deviations together, average. Instead of squaring one asset's deviation, you multiply the deviations of two different assets together. If both tend to be above their means on the same days (both positive deviations), the product is positive → positive covariance (they move together). If one tends to be above when the other is below (opposite signs), the product is negative → negative covariance (they move oppositely). If there is no consistent pattern, the positives and negatives cancel out → covariance near zero (independent).
 
 Notice that when $i = j$, the covariance formula becomes the variance formula (multiplying a deviation by itself is the same as squaring it). This is why the diagonal entries are variances — they are just the special case of covariance of an asset with itself.
 
-The variance of 2 used in this worked example is chosen for clean arithmetic. In real markets, equity ETFs have annualized variances closer to 0.04-0.09 (corresponding to volatilities of 20-30%).
+The variance of 2 used in the simplified worked example below is chosen for clean arithmetic. In real markets, equity ETFs have annualized variances closer to 0.04-0.09 (corresponding to volatilities of 20-30%).
 
 - Constraint: $w_1 + w_2 + w_3 = 1$
 

@@ -1982,6 +1982,13 @@ The optimizer allocated capital proportional to momentum strength — exactly th
 
 **Why entropy forces iteration:** The risk term ($w^2$) is already a parabola and the momentum term ($w$) is a straight line — SLSQP can represent both exactly inside its quadratic subproblem. But the entropy term ($w \ln w$) contains a logarithm, which is a curve that is *not* a parabola. SLSQP can only approximate $\ln$ as a parabola that matches the true curve *near the current point.* That approximation drifts as you move away, so the solution to the subproblem is slightly off. SLSQP moves to that approximate solution, draws a *new* parabola that matches the $\ln$ curve at the new point, solves again, and repeats until the answer stops changing. Without the entropy term, risk + momentum is purely quadratic-plus-linear, and SLSQP could solve it in a single step. Each iteration is the same sequence shown above: build Lagrangian → take derivatives → solve linear system → update weights.
 
+<p align="center">
+  <img src="assets/slsqp_iteration.gif" alt="SLSQP iteratively approximating w·ln(w) with parabolas" width="700"/>
+  <br/>
+  <em>SLSQP iteration visualized: the orange parabola approximates the true blue curve at each point,
+  jumps to the parabola's minimum (green square), then re-approximates — converging to the true minimum at w = 1/e ≈ 0.368.</em>
+</p>
+
 #### **Layer 4: Add inequality constraints (0% to 30% per asset)**
 
 At the solution, each inequality constraint is either **active** (the solution is pressed right against the boundary) or **inactive** (the solution is safely inside and the constraint has no effect).

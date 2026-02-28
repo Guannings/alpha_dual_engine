@@ -1682,6 +1682,34 @@ A vector has only one dimension — it is either a single row or a single column
 - $w$ = weights as a **column**: shape (3 x 1) — three rows, one column
 - Result: (1 x 3) $\times$ (3 x 3) $\times$ (3 x 1) = **(1 x 1)** = a single number
 
+**How matrix dimension multiplication works:** The rule is simple — the **inner** dimensions must match, and you keep the **outer** dimensions:
+
+$$(\underline{1} \times \mathbf{3}) \times (\mathbf{3} \times \underline{3}) = (\underline{1} \times \underline{3})$$
+
+The bold 3's match (this is what makes the multiplication valid — you are pairing each column of the first with each row of the second). The underlined numbers (1 and 3) survive as the result's shape. If the inner numbers do not match, the multiplication is impossible.
+
+Then multiply that (1 x 3) result by $w$ which is (3 x 1):
+
+$$(\underline{1} \times \mathbf{3}) \times (\mathbf{3} \times \underline{1}) = (\underline{1} \times \underline{1})$$
+
+Again the bold 3's match, and the outer numbers (1 and 1) give a (1 x 1) result — a single number.
+
+**Concrete example with actual numbers.** Suppose $w = [0.5, 0.3, 0.2]$ (50% in A, 30% in B, 20% in C):
+
+First, $w^\top \times \Sigma$ — the (1 x 3) row times the (3 x 3) matrix. Each result comes from multiplying the row element-by-element with one column of the matrix, then adding up:
+
+- Column 1: $0.5 \times 2 + 0.3 \times 0 + 0.2 \times 0 = 1.0$
+- Column 2: $0.5 \times 0 + 0.3 \times 2 + 0.2 \times 0 = 0.6$
+- Column 3: $0.5 \times 0 + 0.3 \times 0 + 0.2 \times 2 = 0.4$
+
+Result: $[1.0, 0.6, 0.4]$ — shape (1 x 3). Three columns in the matrix produced three numbers in the result.
+
+Then, multiply that (1 x 3) result by $w$ as a column (3 x 1) — element-by-element and add up:
+
+$$1.0 \times 0.5 + 0.6 \times 0.3 + 0.4 \times 0.2 = 0.50 + 0.18 + 0.08 = 0.76$$
+
+Result: $0.76$ — shape (1 x 1). One single number. This is the total portfolio risk for the allocation [50%, 30%, 20%] given the covariance matrix above.
+
 The whole point of the sandwich is to take a list of simple numbers (your portfolio weights), run them through a table of 78 pairwise interactions (the covariance matrix), and collapse everything into **one single number** — total portfolio risk. That single number is what the optimizer tries to make as small as possible.
 
 By contrast, the momentum term $w \cdot M$ is simpler — it is a **dot product** between two vectors (multiply each pair and add up), which also produces a single number: $w_1 \times M_1 + w_2 \times M_2 + w_3 \times M_3$. No matrix involved.

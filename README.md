@@ -1503,7 +1503,11 @@ To see exactly what the solver computes at each iteration, here is a complete wo
 
 $$\Sigma = \begin{bmatrix} 2 & 0 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{bmatrix}$$
 
-The diagonal entries (2, 2, 2) are each asset's variance — how much it moves on its own. The off-diagonal entries (all zeros) are the covariances between pairs of assets — zero means they move independently. In the real portfolio, these off-diagonals would be non-zero because assets like SMH and QQQ are correlated, but zeros keep this example tractable.
+The **diagonal** entries are the ones running from top-left to bottom-right (row 1 column 1, row 2 column 2, row 3 column 3) — these are each asset's **variance**, measuring how much it moves on its own. All three are 2 here, meaning equal volatility.
+
+The **off-diagonal** entries are everything else — the six zeros. Each one represents the **covariance** between a pair of assets: row 1 column 2 = how A and B move together, row 1 column 3 = how A and C move together, row 2 column 3 = how B and C move together (the remaining three are mirrors — the matrix is always symmetric). Zero means the assets move independently of each other.
+
+In the real portfolio, these off-diagonals would be non-zero: SMH and QQQ would have a large positive covariance (they tend to rise and fall together), while TLT might have a negative covariance with SMH (bonds often rise when tech falls). But setting them to zero here removes the cross terms and keeps the arithmetic simple.
 
 - Constraint: $w_1 + w_2 + w_3 = 1$
 

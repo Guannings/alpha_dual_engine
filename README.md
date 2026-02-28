@@ -1696,15 +1696,27 @@ Again the bold 3's match, and the outer numbers (1 and 1) give a (1 x 1) result 
 
 **Concrete example with actual numbers.** Suppose $w = [0.5, 0.3, 0.2]$ (50% in A, 30% in B, 20% in C):
 
-First, $w^\top \times \Sigma$ — the (1 x 3) row times the (3 x 3) matrix. Each result comes from multiplying the row element-by-element with one column of the matrix, then adding up:
+**First, $w^\top \times \Sigma$** — the (1 x 3) row times the (3 x 3) matrix. Here is exactly what this multiplication looks like written out:
 
-- Column 1: $0.5 \times 2 + 0.3 \times 0 + 0.2 \times 0 = 1.0$
-- Column 2: $0.5 \times 0 + 0.3 \times 2 + 0.2 \times 0 = 0.6$
-- Column 3: $0.5 \times 0 + 0.3 \times 0 + 0.2 \times 2 = 0.4$
+$$[0.5, 0.3, 0.2] \times \begin{array}{|c|c|c|} 2 & 0 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{array}$$
 
-Result: $[1.0, 0.6, 0.4]$ — shape (1 x 3). Three columns in the matrix produced three numbers in the result.
+The rule: take the row, and multiply it against each **column** of the matrix one at a time. Each column produces one number in the result:
 
-Then, multiply that (1 x 3) result by $w$ as a column (3 x 1) — element-by-element and add up:
+- **Column 1** — multiply the row by the first column of the matrix, then add up:
+
+$$0.5 \times 2 + 0.3 \times 0 + 0.2 \times 0 = 1.0 + 0 + 0 = 1.0$$
+
+- **Column 2** — multiply the row by the second column, then add up:
+
+$$0.5 \times 0 + 0.3 \times 2 + 0.2 \times 0 = 0 + 0.6 + 0 = 0.6$$
+
+- **Column 3** — multiply the row by the third column, then add up:
+
+$$0.5 \times 0 + 0.3 \times 0 + 0.2 \times 2 = 0 + 0 + 0.4 = 0.4$$
+
+Result: $[1.0, 0.6, 0.4]$ — shape (1 x 3). Three columns in the matrix produced three numbers in the result. Each number represents one asset's risk contribution to the portfolio.
+
+**Then, $[1.0, 0.6, 0.4] \times w$** — multiply the (1 x 3) result by $w$ as a column (3 x 1). Same rule: multiply each pair and add up:
 
 $$1.0 \times 0.5 + 0.6 \times 0.3 + 0.4 \times 0.2 = 0.50 + 0.18 + 0.08 = 0.76$$
 

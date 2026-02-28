@@ -1029,7 +1029,7 @@ This section provides rigorous mathematical interpretations of every core formul
 **Section A — The Objective Function & SLSQP**
 - [What the formula actually says](#what-the-formula-actually-says) — Breaking down each term (risk, momentum, entropy)
 - [How SLSQP actually solves it](#how-slsqp-actually-solves-it) — The "approximate as a parabola and step" method
-- [What is the Hessian matrix?](#what-is-the-hessian-matrix-b) — Second derivatives, curvature, and the BFGS approximation
+- [What is the Hessian matrix?](#what-is-the-hessian-matrix-b) — Second partial derivatives, curvature, and the BFGS approximation
 - [How the covariance matrix is computed from data](#how-the-covariance-matrix-is-computed-from-data) — Concrete worked example (SMH variance, SMH-TLT covariance), formulas, and annualization
 - [What is w? — scalars, vectors, and matrices](#what-is-w--scalars-vectors-and-matrices) — Single numbers vs lists vs tables, the sandwich $w^\top \Sigma w$, the dot product $w \cdot M$, and why risk needs a matrix but momentum does not
 - [Can the quadratic subproblem be solved by hand?](#can-the-quadratic-subproblem-be-solved-by-hand) — Layer-by-layer breakdown from 1 variable to 12

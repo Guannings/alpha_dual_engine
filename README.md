@@ -1795,13 +1795,43 @@ So:
 
 $$w^\top \Sigma w = 2w_1^2 + 2w_2^2 + 2w_3^2$$
 
-The zeros in the covariance matrix killed all the cross terms. If the matrix had non-zero off-diagonals (say 0.5 where Asset A meets Asset B), Step 1 Row 1 would give $2w_1 + 0.5w_2$ instead of just $2w_1$, and Step 2 would produce extra terms like $0.5 \times w_1 w_2$ — capturing the additional risk from holding two correlated assets together.
+The zeros in the covariance matrix killed all the cross terms. To see where cross terms come from, suppose Asset A and Asset B have a non-zero covariance of 0.5 (they are somewhat correlated):
+
+| | A | B | C |
+|:---:|:---:|:---:|:---:|
+| **A** | 2 | **0.5** | 0 |
+| **B** | **0.5** | 2 | 0 |
+| **C** | 0 | 0 | 2 |
+
+Notice that 0.5 appears **twice** — at position (A,B) and at position (B,A) — because the covariance matrix is always symmetric.
+
+Now redo Step 1 with this matrix — Row 1 picks up a $w_2$ term that was not there before:
+
+- Row 1: $2 \times w_1 + 0.5 \times w_2 + 0 \times w_3 = 2w_1 + 0.5w_2$
+- Row 2: $0.5 \times w_1 + 2 \times w_2 + 0 \times w_3 = 0.5w_1 + 2w_2$
+- Row 3: $0 \times w_1 + 0 \times w_2 + 2 \times w_3 = 2w_3$
+
+And redo Step 2 — multiply each weight by its corresponding row result:
+
+- $w_1 \times (2w_1 + 0.5w_2) = 2w_1^2 + 0.5 w_1 w_2$
+- $w_2 \times (0.5w_1 + 2w_2) = 0.5 w_1 w_2 + 2w_2^2$
+- $w_3 \times (2w_3) = 2w_3^2$
+
+Add them all up:
+
+$$2w_1^2 + 2w_2^2 + 2w_3^2 + 0.5 w_1 w_2 + 0.5 w_1 w_2$$
+
+The cross term $w_1 w_2$ appeared **twice** — once from Row 1 (the 0.5 at position A,B) and once from Row 2 (the 0.5 at position B,A). They add up:
+
+$$0.5 w_1 w_2 + 0.5 w_1 w_2 = 2 \times 0.5 \times w_1 w_2 = 2\sigma_{A,B} \cdot w_A \cdot w_B$$
+
+That is where the $2\sigma_{A,B} \cdot w_A \cdot w_B$ cross term comes from. The factor of 2 in front exists because the covariance matrix is symmetric — every off-diagonal covariance appears in two positions, and each position contributes one copy of $\sigma_{A,B} w_A w_B$, which double up. In the real 12-asset portfolio, every pair of correlated assets produces one of these cross terms: SMH-QQQ would give a large positive $2\sigma_{SMH,QQQ} w_{SMH} w_{QQQ}$ (they crash together = more total risk), while TLT-SMH would give a negative $2\sigma_{TLT,SMH} w_{TLT} w_{SMH}$ (they hedge each other = less total risk).
 
 **Why the weights appear twice — the intuition behind the sandwich $w^\top \Sigma w$:**
 
 The two multiplications capture two different things. Step 1 ($\Sigma \times w$) answers: "how much risk does each asset bring to this specific portfolio?" — not just each asset's own volatility, but including its correlations with everything else you hold, scaled by how much you hold of those other assets. After Step 1, you have a vector of risk contributions — one number per asset. Step 2 ($w^\top \times$ result) then answers: "now weight those contributions by how much I actually hold of each." If an asset contributes a lot of risk but you only hold 5% of it, its impact on total portfolio risk is small.
 
-Consider a single cross term in the final expansion: $2\sigma_{A,B} \cdot w_A \cdot w_B$. This term needs three ingredients — the correlation $\sigma_{A,B}$ (from the matrix), the weight of asset A $w_A$ (from one multiplication), and the weight of asset B $w_B$ (from the other multiplication). You need both weights because correlation risk only matters proportional to how much you hold of each asset in the pair. If you hold 30% of A but 0% of B, their correlation is irrelevant — and indeed $w_B = 0$ kills that term. If you only multiplied once ($w \cdot \sigma$), you would get each asset's individual risk scaled by its weight, but you would completely miss the correlations. The sandwich structure $w^\top \Sigma w$ is the mathematical way to say "account for every pairwise interaction, weighted by how much I hold of both sides."
+The cross term derivation above shows exactly why both weights are needed: $2\sigma_{A,B} \cdot w_A \cdot w_B$ has three ingredients — the covariance $\sigma_{A,B}$ (from the matrix), weight $w_A$ (from one multiplication), and weight $w_B$ (from the other multiplication). If you hold 30% of A but 0% of B, their correlation is irrelevant — and indeed $w_B = 0$ kills the entire term. If you only multiplied once ($w \cdot \sigma$), you would get each asset's individual risk scaled by its weight, but you would completely miss the correlations. The sandwich structure $w^\top \Sigma w$ is the mathematical way to say "account for every pairwise interaction, weighted by how much I hold of both sides."
 
 **Momentum term** $w \cdot M$ — this is a dot product. Multiply each weight by its momentum score and add up:
 

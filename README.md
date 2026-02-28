@@ -1238,11 +1238,7 @@ $$\frac{\partial}{\partial x}(2x + 10y) = 2 \qquad \frac{\partial}{\partial y}(2
 
 **Finally, arrange the four numbers into a grid — that is the Hessian:**
 
-```
-    x    y
-x [ 6    2 ]
-y [ 2   10 ]
-```
+$$H = \begin{pmatrix} 6 & 2 \\ 2 & 10 \end{pmatrix}$$
 
 The "matrix" is just bookkeeping — four numbers placed in a 2x2 table. There is no matrix multiplication or linear algebra involved in *computing* the Hessian. You take derivatives twice and write the results in a grid. Notice the off-diagonals are both 2 — this always happens (the order of differentiation does not matter), which is why the Hessian is always symmetric.
 
@@ -1505,12 +1501,7 @@ To see exactly what the solver computes at each iteration, here is a complete wo
 - 3 assets (A, B, C) with momentum scores $M = [3, 1, 2]$ (Asset A trending strongest, B weakest)
 - Covariance matrix (all variances = 2, all correlations = 0):
 
-```
-        Asset A  Asset B  Asset C
-Asset A [  2       0        0   ]
-Asset B [  0       2        0   ]
-Asset C [  0       0        2   ]
-```
+$$\Sigma = \begin{pmatrix} 2 & 0 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{pmatrix}$$
 
 The **diagonal** entries are the ones running from top-left to bottom-right (row 1 column 1, row 2 column 2, row 3 column 3) — these are each asset's **variance**, measuring how much it moves on its own. All three are 2 here, meaning equal volatility.
 

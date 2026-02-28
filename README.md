@@ -1783,11 +1783,9 @@ Now expand each piece with the actual numbers:
 
 Result: a column vector (one number per asset, stacked vertically):
 
-| Asset | Value |
-|:---:|:---:|
-| A | $2w_1$ |
-| B | $2w_2$ |
-| C | $2w_3$ |
+- Asset A: $2w_1$
+- Asset B: $2w_2$
+- Asset C: $2w_3$
 
 **Step 2 — Multiply the weight row by that result** ($w^\top \times$ result). Multiply element-by-element and add up:
 

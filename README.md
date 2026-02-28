@@ -1080,9 +1080,9 @@ graph TD
         K["Optimal Weights<br/>w₁, w₂, ..., w₁₂"]
     end
 
-    subgraph ML ["MACHINE LEARNING · PPO (Section H)"]
-        L["Regime Agent<br/>25 macro features → risk-on / risk-off / defensive"]
-        M["Weight Agent<br/>103 per-asset features → adjust SLSQP weights"]
+    subgraph ML ["MACHINE LEARNING · PPO"]
+        L["Regime Agent<br/>25 macro features → risk-on / risk-off / defensive<br/>(Section H)"]
+        M["Weight Agent<br/>103 per-asset features → adjust SLSQP weights<br/>(Section H)"]
         N["Final Portfolio Allocation"]
     end
 

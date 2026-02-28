@@ -1018,6 +1018,8 @@ This section provides rigorous mathematical interpretations of every core formul
 | D | [Proximal Policy Optimization (PPO)](#d-proximal-policy-optimization-ppo--the-complete-math) | PPO Clipped Surrogate Objective | $L^{CLIP} = -E[\min(r_t A_t, \text{clip}(r_t, 1 \pm \epsilon) A_t)]$ | How does the RL agent learn without destroying itself? |
 | | | Generalized Advantage Estimation | $A_t = \delta_t + (\gamma\lambda)\delta_{t+1} + (\gamma\lambda)^2\delta_{t+2} + \ldots$ | What is GAE and the actor-critic architecture? |
 
+**[Math Flow: From Market Data to Portfolio Weights](#math-flow-from-market-data-to-portfolio-weights)** — Visual flowchart of the entire mathematical pipeline
+
 **Detailed sub-sections within each part:**
 
 **Section 0 — Foundational Concepts**
@@ -1052,6 +1054,59 @@ This section provides rigorous mathematical interpretations of every core formul
 - [Step 4: The Clipped Surrogate Objective](#step-4-the-ppo-clipped-surrogate-objective--the-core-formula) — The core PPO innovation
 - [Step 5: The Full Loss Function](#step-5-the-full-loss-function) — Policy loss + value loss + entropy bonus
 - [How the two agents work together](#how-the-two-agents-work-together-hierarchically) — Hierarchical RL: regime agent → weight agent
+
+---
+
+## **Math Flow: From Market Data to Portfolio Weights**
+
+> This flowchart traces the entire mathematical pipeline — from raw prices to final allocation. Appendix section references (A, B, D, E, H, I) link to the full derivations below.
+
+```mermaid
+graph TD
+    subgraph DATA ["DATA PREPARATION"]
+        A["Raw Market Data<br/>Daily prices · Yahoo Finance · 12 assets × 15 years"]
+        B["Daily Returns<br/>r = price change ÷ previous price"]
+        C["Covariance Matrix Σ<br/>How every pair of assets moves together<br/>(Section A)"]
+        D["Cubed Momentum Scores M³<br/>Trend strength, cubed to amplify winners<br/>(Section I)"]
+    end
+
+    subgraph MATH ["MATHEMATICAL OPTIMIZATION"]
+        E["Objective Function<br/>minimize: risk − momentum − entropy<br/>102 terms: 78 risk + 12 momentum + 12 entropy"]
+        F["SLSQP Solver<br/>(Section B)"]
+        G["Approximate as Quadratic<br/>Treat objective as parabola at current point"]
+        H["Build Lagrangian<br/>Bake 'weights sum to 1' into the formula<br/>(Section D)"]
+        I["Partial Derivatives → Set to Zero<br/>13 equations, 13 unknowns"]
+        J["Gaussian Elimination<br/>Solve for weight numbers<br/>(Section E)"]
+        K["Optimal Weights<br/>w₁, w₂, ..., w₁₂"]
+    end
+
+    subgraph ML ["MACHINE LEARNING · PPO (Section H)"]
+        L["Regime Agent<br/>25 macro features → risk-on / risk-off / defensive"]
+        M["Weight Agent<br/>103 per-asset features → adjust SLSQP weights"]
+        N["Final Portfolio Allocation"]
+    end
+
+    A --> B
+    B --> C
+    B --> D
+    C --> E
+    D --> E
+    E --> F
+    F -->|"at each iteration"| G
+    G --> H
+    H --> I
+    I --> J
+    J -->|"repeat until converged"| F
+    J --> K
+    K --> L
+    K --> M
+    L --> N
+    M --> N
+
+    style DATA fill:#e3f2fd,stroke:#1565c0,color:#000
+    style MATH fill:#fff8e1,stroke:#f57f17,color:#000
+    style ML fill:#e8f5e9,stroke:#2e7d32,color:#000
+```
 
 ---
 

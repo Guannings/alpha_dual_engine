@@ -1059,7 +1059,7 @@ This section provides rigorous mathematical interpretations of every core formul
 
 ## **Math Flow: From Market Data to Portfolio Weights**
 
-> This flowchart traces the entire mathematical pipeline — from raw prices to final allocation. Appendix section references (A, B, D, E, H, I) link to the full derivations below.
+> This flowchart traces the entire mathematical pipeline — from raw prices to final allocation. Appendix section references (A, B, D, E, H) link to the full derivations below.
 
 ```mermaid
 graph TD
@@ -1067,7 +1067,7 @@ graph TD
         A["Raw Market Data<br/>Daily prices · Yahoo Finance · 12 assets × 15 years"]
         B["Daily Returns<br/>r = price change ÷ previous price"]
         C["Covariance Matrix Σ<br/>How every pair of assets moves together<br/>(Section A)"]
-        D["Cubed Momentum Scores M³<br/>Trend strength, cubed to amplify winners<br/>(Section I)"]
+        D["Cubed Momentum Scores M³<br/>Trend strength, cubed to amplify winners<br/>(Section A)"]
     end
 
     subgraph MATH ["MATHEMATICAL OPTIMIZATION"]

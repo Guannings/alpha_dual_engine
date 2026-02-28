@@ -1476,7 +1476,7 @@ From equation 1: $x + 6 + 0 = 9$, so $x = 3$.
 
 2. **Back-substitution:** The bottom equation now has one variable — solve it directly. Plug that answer into the equation above to find the next variable. Work upward until all $N$ variables are solved.
 
-For $N$ unknowns, forward elimination requires roughly $\frac{2}{3}N^3$ arithmetic operations, and back-substitution requires roughly $N^2$. For the portfolio's 13x13 system: approximately $\frac{2}{3}(13)^3 = 1,\!465$ multiplications and additions — tedious but entirely feasible by hand in about 20-30 minutes.
+For $N$ unknowns, forward elimination requires roughly $(2/3)N^3$ arithmetic operations, and back-substitution requires roughly $N^2$. For the portfolio's 13x13 system: approximately $(2/3)(13)^3 = 1{,}465$ multiplications and additions — tedious but entirely feasible by hand in about 20-30 minutes.
 
 ##### **How Gaussian elimination connects to the portfolio**
 

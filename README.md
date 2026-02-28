@@ -1851,7 +1851,7 @@ Every number in this formula traces back to either the covariance matrix (the 2'
 
 The 3-asset example above is intentionally simple. In the real portfolio with 12 assets and non-zero correlations, the same objective expands to **102 unique terms**:
 
-**Risk term** ($w^\top \Sigma w$) — every pair of assets contributes a term. With 12 assets, the matrix has $12 \times 12 = 144$ entries, but since the covariance matrix is symmetric ($\sigma_{1,2} = \sigma_{2,1}$), these collapse to **78 unique terms**: 12 squared terms on the diagonal plus 66 cross terms:
+**Risk term** ( $w^\top \Sigma w$ ) — every pair of assets contributes a term. With 12 assets, the matrix has $12 \times 12 = 144$ entries, but since the covariance matrix is symmetric ( $\sigma_{1,2} = \sigma_{2,1}$ ), these collapse to **78 unique terms**: 12 squared terms on the diagonal plus 66 cross terms:
 
 $$w^\top \Sigma w = \sigma_{1,1} w_1^2 + 2\sigma_{1,2} w_1 w_2 + 2\sigma_{1,3} w_1 w_3 + \cdots + 2\sigma_{1,12} w_1 w_{12}$$
 
@@ -1863,13 +1863,13 @@ $$+ \sigma_{12,12} w_{12}^2$$
 
 The diagonal terms (like $\sigma_{1,1} w_1^2$) capture each asset's individual risk. The cross terms (like $2\sigma_{1,2} w_1 w_2$) capture the additional risk from holding two correlated assets together — for example, $2\sigma_{SMH,QQQ} \cdot w_{SMH} \cdot w_{QQQ}$ would be large and positive because SMH and QQQ tend to crash together, while $2\sigma_{TLT,SMH} \cdot w_{TLT} \cdot w_{SMH}$ might be negative because bonds often rise when tech falls. In the 3-asset worked example above, the zeros in the covariance matrix killed all 6 cross terms, leaving only the three squared terms.
 
-**Momentum term** ($w \cdot M$) — just a dot product, one term per asset:
+**Momentum term** ( $w \cdot M$ ) — just a dot product, one term per asset:
 
 $$w \cdot M = M_1 w_1 + M_2 w_2 + M_3 w_3 + \cdots + M_{12} w_{12}$$
 
-**Entropy term** ($H(w)$) — one term per asset:
+**Entropy term** H(w) — one term per asset:
 
-$$\lambda(w_1 \ln w_1 + w_2 \ln w_2 + w_3 \ln w_3 + \cdots + w_{12} \ln w_{12})$$
+$$\lambda \cdot (w_1 \ln w_1 + w_2 \ln w_2 + w_3 \ln w_3 + \cdots + w_{12} \ln w_{12})$$
 
 **The full expanded objective** combines all three:
 

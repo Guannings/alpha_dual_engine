@@ -1026,7 +1026,7 @@ This section provides rigorous mathematical interpretations of every core formul
 - [What the formula actually says](#what-the-formula-actually-says) — Breaking down each term (risk, momentum, entropy)
 - [How SLSQP actually solves it](#how-slsqp-actually-solves-it) — The "approximate as a parabola and step" method
 - [What is the Hessian matrix?](#what-is-the-hessian-matrix-b) — Second derivatives, curvature, and the BFGS approximation
-- [How the covariance matrix is computed from data](#how-the-covariance-matrix-is-computed-from-data) — Variance, covariance formulas, and annualization
+- [How the covariance matrix is computed from data](#how-the-covariance-matrix-is-computed-from-data) — Concrete worked example (SMH variance, SMH-TLT covariance), formulas, and annualization
 - [Can the quadratic subproblem be solved by hand?](#can-the-quadratic-subproblem-be-solved-by-hand) — Layer-by-layer breakdown from 1 variable to 12
 - [What is a Lagrange multiplier, exactly?](#what-is-a-lagrange-multiplier-exactly) — Intuition, worked example, geometric interpretation, shadow prices
 - [Solving the Linear System: Gaussian Elimination](#solving-the-linear-system-gaussian-elimination) — Forward elimination, back-substitution, worked examples
@@ -1538,13 +1538,11 @@ The average return is $(+2 - 1 + 3 - 2 + 1) / 5 = +0.6\%$.
 
 **Variance** answers one question: "how jumpy is this asset?" To compute it, take each day's return, subtract the average, and square the result:
 
-| Day | Return | Deviation from average | Squared |
-|:---:|:---:|:---:|:---:|
-| Mon | +2% | $2 - 0.6 = +1.4$ | $1.96$ |
-| Tue | -1% | $-1 - 0.6 = -1.6$ | $2.56$ |
-| Wed | +3% | $3 - 0.6 = +2.4$ | $5.76$ |
-| Thu | -2% | $-2 - 0.6 = -2.6$ | $6.76$ |
-| Fri | +1% | $1 - 0.6 = +0.4$ | $0.16$ |
+- Mon: return +2%, deviation $= 2 - 0.6 = +1.4$, squared $= 1.96$
+- Tue: return -1%, deviation $= -1 - 0.6 = -1.6$, squared $= 2.56$
+- Wed: return +3%, deviation $= 3 - 0.6 = +2.4$, squared $= 5.76$
+- Thu: return -2%, deviation $= -2 - 0.6 = -2.6$, squared $= 6.76$
+- Fri: return +1%, deviation $= 1 - 0.6 = +0.4$, squared $= 0.16$
 
 Variance $= (1.96 + 2.56 + 5.76 + 6.76 + 0.16) / 4 = 4.30$
 
@@ -1570,13 +1568,11 @@ Notice the pattern: when SMH goes up, TLT tends to go down, and vice versa. They
 
 TLT average $= (-1 + 2 - 2 + 3 + 0) / 5 = +0.4\%$
 
-| Day | SMH deviation | TLT deviation | Product |
-|:---:|:---:|:---:|:---:|
-| Mon | $2 - 0.6 = +1.4$ | $-1 - 0.4 = -1.4$ | $1.4 \times (-1.4) = -1.96$ |
-| Tue | $-1 - 0.6 = -1.6$ | $2 - 0.4 = +1.6$ | $(-1.6) \times 1.6 = -2.56$ |
-| Wed | $3 - 0.6 = +2.4$ | $-2 - 0.4 = -2.4$ | $2.4 \times (-2.4) = -5.76$ |
-| Thu | $-2 - 0.6 = -2.6$ | $3 - 0.4 = +2.6$ | $(-2.6) \times 2.6 = -6.76$ |
-| Fri | $1 - 0.6 = +0.4$ | $0 - 0.4 = -0.4$ | $0.4 \times (-0.4) = -0.16$ |
+- Mon: SMH deviation $= +1.4$, TLT deviation $= -1.4$, product $= 1.4 \times (-1.4) = -1.96$
+- Tue: SMH deviation $= -1.6$, TLT deviation $= +1.6$, product $= (-1.6) \times 1.6 = -2.56$
+- Wed: SMH deviation $= +2.4$, TLT deviation $= -2.4$, product $= 2.4 \times (-2.4) = -5.76$
+- Thu: SMH deviation $= -2.6$, TLT deviation $= +2.6$, product $= (-2.6) \times 2.6 = -6.76$
+- Fri: SMH deviation $= +0.4$, TLT deviation $= -0.4$, product $= 0.4 \times (-0.4) = -0.16$
 
 Covariance $= (-1.96 - 2.56 - 5.76 - 6.76 - 0.16) / 4 = -4.30$
 
@@ -1595,11 +1591,17 @@ With 3 assets (SMH, TLT, QQQ), you compute the variance/covariance for every pai
 
 | | SMH | TLT | QQQ |
 |:---:|:---:|:---:|:---:|
-| **SMH** | var(SMH) = 4.30 | cov(SMH,TLT) = -4.30 | cov(SMH,QQQ) = +3.80 |
-| **TLT** | cov(TLT,SMH) = -4.30 | var(TLT) = 4.30 | cov(TLT,QQQ) = -3.50 |
-| **QQQ** | cov(QQQ,SMH) = +3.80 | cov(QQQ,TLT) = -3.50 | var(QQQ) = 3.90 |
+| **SMH** | 4.30 | -4.30 | +3.80 |
+| **TLT** | -4.30 | 4.30 | -3.50 |
+| **QQQ** | +3.80 | -3.50 | 3.90 |
 
 (The QQQ numbers are illustrative — the key point is the sign pattern.)
+
+How to read it:
+- **Diagonal** (4.30, 4.30, 3.90) = each asset's variance (how jumpy on its own)
+- **SMH-TLT = -4.30** = strong negative covariance (they move opposite — good hedge)
+- **SMH-QQQ = +3.80** = strong positive covariance (they crash together — bad for diversification)
+- **TLT-QQQ = -3.50** = negative covariance (bonds hedge tech — good)
 
 Reading this table:
 - **Diagonal** (top-left to bottom-right): each asset's variance — how jumpy it is on its own

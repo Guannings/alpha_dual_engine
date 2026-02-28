@@ -1008,6 +1008,7 @@ This section provides rigorous mathematical interpretations of every core formul
 | A | [The Objective Function & SLSQP](#a-the-objective-function--slsqp-solver-section-iv) | Portfolio Objective Function | $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ | How does the optimizer pick portfolio weights? |
 | | | Lagrangian | $\mathcal{L} = f(\mathbf{w}) + \mu(\sum w_i - 1)$ | What are Lagrange multipliers and shadow prices? |
 | | | Hessian Matrix | $H_{ij} = \partial^2 f / \partial w_i \partial w_j$ | How does the solver know the shape of the bowl? |
+| | | Covariance Matrix | $\sigma_{ij} = \frac{1}{N-1}\sum(r_i - \bar{r}_i)(r_j - \bar{r}_j)$ | How is portfolio risk measured from historical data? |
 | B | [Shannon Entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification) | Shannon Entropy | $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ | How does the system measure diversification? |
 | | | Effective N | $N_{\text{eff}} = e^{H(\mathbf{w})}$ | What is "Effective N" and why require at least 3? |
 | C | [Geometric Brownian Motion](#c-geometric-brownian-motion--the-complete-derivation) | GBM Stochastic Differential Equation | $dS = \mu S \cdot dt + \sigma S \cdot dW$ | How are future stock prices simulated? |

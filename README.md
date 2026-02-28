@@ -1498,7 +1498,7 @@ To see exactly what the solver computes at each iteration, here is a complete wo
 
 **Setup:**
 
-- 3 assets with equal variance and zero correlation: $\Sigma =$ diag$(2, 2, 2)$
+- 3 assets with equal variance and zero correlation (covariance matrix is diagonal: all variances = 2, all correlations = 0)
 - Momentum scores: $M = [3, 1, 2]$ (Asset A trending strongest, B weakest)
 - Objective (risk minus momentum, omitting entropy for clarity):
 

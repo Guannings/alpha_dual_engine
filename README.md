@@ -1516,6 +1516,17 @@ The **off-diagonal** entries are everything else — the six zeros. Each one rep
 
 In the real portfolio, these off-diagonals would be non-zero: SMH and QQQ would have a large positive covariance (they tend to rise and fall together), while TLT might have a negative covariance with SMH (bonds often rise when tech falls). But setting them to zero here removes the cross terms and keeps the arithmetic simple.
 
+**How the covariance matrix is computed from data:**
+
+The code calculates the covariance matrix from historical daily returns:
+
+1. **Daily returns** — for each asset, compute the percentage change each day (e.g., the price went from 100 to 102, so the daily return is +2%)
+2. **Standard deviation** — measure how spread out those daily returns are over a 60-day rolling window. This is the daily volatility.
+3. **Annualize** — multiply by $\sqrt{252}$ (there are 252 trading days per year). The square root comes from a statistical property: variance scales linearly with time, so standard deviation scales with the square root. For example, if daily volatility is 1.5%, annual volatility is $1.5\% \times \sqrt{252} \approx 24\%$.
+4. **Covariance matrix** — compute `returns.cov()` across all assets, then multiply by 252 to annualize (covariance is variance-like, so it scales linearly with time, not with the square root). The diagonal of this matrix contains each asset's variance; the off-diagonals contain pairwise covariances.
+
+The variance of 2 used in this worked example is chosen for clean arithmetic. In real markets, equity ETFs have annualized variances closer to 0.04-0.09 (corresponding to volatilities of 20-30%).
+
 - Constraint: $w_1 + w_2 + w_3 = 1$
 
 **Building the objective function step by step:**

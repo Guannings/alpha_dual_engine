@@ -1498,15 +1498,31 @@ To see exactly what the solver computes at each iteration, here is a complete wo
 
 **Setup:**
 
-- 3 assets with equal variance and zero correlation (covariance matrix is diagonal: all variances = 2, all correlations = 0)
-- Momentum scores: $M = [3, 1, 2]$ (Asset A trending strongest, B weakest)
-- Objective (risk minus momentum, omitting entropy for clarity):
+- 3 assets (A, B, C) with momentum scores $M = [3, 1, 2]$ (Asset A trending strongest, B weakest)
+- Covariance matrix (all variances = 2, all correlations = 0):
+
+$$\Sigma = \begin{bmatrix} 2 & 0 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{bmatrix}$$
+
+The diagonal entries (2, 2, 2) are each asset's variance — how much it moves on its own. The off-diagonal entries (all zeros) are the covariances between pairs of assets — zero means they move independently. In the real portfolio, these off-diagonals would be non-zero because assets like SMH and QQQ are correlated, but zeros keep this example tractable.
+
+- Objective: risk minus momentum (omitting entropy for clarity)
+- Constraint: $w_1 + w_2 + w_3 = 1$
+
+**Where the objective function comes from:**
+
+The risk term $w^\top \Sigma w$ is matrix multiplication, but because the off-diagonals are all zero, it simplifies to each weight squared times its variance:
+
+$$w^\top \Sigma w = 2w_1^2 + 2w_2^2 + 2w_3^2$$
+
+The momentum term $w \cdot M$ is a dot product — each weight times its momentum score, added up:
+
+$$w \cdot M = 3w_1 + 1 \cdot w_2 + 2w_3$$
+
+Subtract momentum from risk (the negative sign converts maximization into minimization, as explained in the "Why minimization achieves three goals at once" subsection above):
 
 $$\mathcal{L}(\mathbf{w}) = 2w_1^2 + 2w_2^2 + 2w_3^2 - 3w_1 - w_2 - 2w_3$$
 
-- Constraint: $w_1 + w_2 + w_3 = 1$
-
-**Step 1 — Build the Lagrangian:**
+**Step 1 — Build the Lagrangian** (add the multiplier $\mu$ times the constraint, as described in the Lagrange multiplier section above):
 
 $$\mathcal{L}(\mathbf{w}, \mu) = 2w_1^2 + 2w_2^2 + 2w_3^2 - 3w_1 - w_2 - 2w_3 + \mu(w_1 + w_2 + w_3 - 1)$$
 

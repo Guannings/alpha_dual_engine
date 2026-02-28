@@ -1220,9 +1220,27 @@ For a function of one variable, say $f(x) = 3x^2$:
 - First derivative $f'(x) = 6x$ → the slope. At $x = 5$, the slope is 30 (steep uphill).
 - Second derivative $f''(x) = 6$ → the curvature. It is constant — the bowl has the same width everywhere. A large second derivative means a narrow bowl (minimum is nearby); a small one means a wide bowl (minimum is far away).
 
-For a function of two variables, say $f(x, y) = 3x^2 + 2xy + 5y^2$, there is not just one second derivative but **four** — one for each pair of variables:
+For a function of two variables, say $f(x, y) = 3x^2 + 2xy + 5y^2$, there is not just one second derivative but **four** — one for each pair of variables. Here is exactly where each number comes from:
 
-$$H = \begin{bmatrix} \frac{\partial^2 f}{\partial x^2} & \frac{\partial^2 f}{\partial x \, \partial y} \\ \frac{\partial^2 f}{\partial y \, \partial x} & \frac{\partial^2 f}{\partial y^2} \end{bmatrix} = \begin{bmatrix} 6 & 2 \\ 2 & 10 \end{bmatrix}$$
+**First, take the first derivatives (the gradient).** These are normal derivatives where the other variable is treated as a constant:
+
+$$\frac{\partial f}{\partial x} = 6x + 2y \qquad \frac{\partial f}{\partial y} = 2x + 10y$$
+
+**Then, take derivatives of those derivatives (second derivatives):**
+
+From the first derivative with respect to $x$, which is $6x + 2y$:
+
+$$\frac{\partial}{\partial x}(6x + 2y) = 6 \qquad \frac{\partial}{\partial y}(6x + 2y) = 2$$
+
+From the first derivative with respect to $y$, which is $2x + 10y$:
+
+$$\frac{\partial}{\partial x}(2x + 10y) = 2 \qquad \frac{\partial}{\partial y}(2x + 10y) = 10$$
+
+**Finally, arrange the four numbers into a grid — that is the Hessian:**
+
+$$H = \begin{bmatrix} 6 & 2 \\ 2 & 10 \end{bmatrix}$$
+
+The "matrix" is just bookkeeping — four numbers placed in a 2x2 table. There is no matrix multiplication or linear algebra involved in *computing* the Hessian. You take derivatives twice and write the results in a grid. Notice the off-diagonals are both 2 — this always happens (the order of differentiation does not matter), which is why the Hessian is always symmetric.
 
 What each entry means:
 

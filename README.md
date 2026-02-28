@@ -1197,7 +1197,7 @@ A **loss function** (also called cost function or objective function) is a scala
 
 ---
 
-## **A. The Objective Function & SLSQP Solver **
+## **A. The Objective Function & SLSQP Solver**
 
 ### **What the formula actually says**
 

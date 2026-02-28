@@ -1437,6 +1437,66 @@ When the SLSQP solver builds a quadratic subproblem with Lagrange multipliers, t
 
 Every layer converts an unsolvable problem into a solvable one. At the very bottom, the entire optimization reduces to nothing more than multiplication and addition — the same operations taught in primary school. The computer's advantage is not intelligence; it is speed.
 
+#### **Worked Example: One Complete SLSQP Sub-Problem**
+
+To see exactly what the solver computes at each iteration, here is a complete worked example using a simplified 3-asset portfolio.
+
+**Setup:**
+
+- 3 assets with equal variance and zero correlation: $\Sigma = \text{diag}(2, 2, 2)$
+- Momentum scores: $M = [3, 1, 2]$ (Asset A trending strongest, B weakest)
+- Objective (risk minus momentum, omitting entropy for clarity):
+
+$$\mathcal{L}(\mathbf{w}) = 2w_1^2 + 2w_2^2 + 2w_3^2 - 3w_1 - w_2 - 2w_3$$
+
+- Constraint: $w_1 + w_2 + w_3 = 1$
+
+**Step 1 — Build the Lagrangian:**
+
+$$\mathcal{L}(\mathbf{w}, \mu) = 2w_1^2 + 2w_2^2 + 2w_3^2 - 3w_1 - w_2 - 2w_3 + \mu(w_1 + w_2 + w_3 - 1)$$
+
+**Step 2 — Take all partial derivatives and set to zero:**
+
+$$\frac{\partial \mathcal{L}}{\partial w_1} = 4w_1 - 3 + \mu = 0$$
+
+$$\frac{\partial \mathcal{L}}{\partial w_2} = 4w_2 - 1 + \mu = 0$$
+
+$$\frac{\partial \mathcal{L}}{\partial w_3} = 4w_3 - 2 + \mu = 0$$
+
+$$\frac{\partial \mathcal{L}}{\partial \mu} = w_1 + w_2 + w_3 - 1 = 0$$
+
+This is 4 equations with 4 unknowns — a linear system.
+
+**Step 3 — Solve by Gaussian elimination:**
+
+From equations 1-3, express each weight in terms of $\mu$:
+
+$$w_1 = \frac{3 - \mu}{4}, \quad w_2 = \frac{1 - \mu}{4}, \quad w_3 = \frac{2 - \mu}{4}$$
+
+Substitute into equation 4:
+
+$$\frac{3 - \mu}{4} + \frac{1 - \mu}{4} + \frac{2 - \mu}{4} = 1$$
+
+$$\frac{6 - 3\mu}{4} = 1 \quad \Rightarrow \quad 6 - 3\mu = 4 \quad \Rightarrow \quad \mu = \frac{2}{3}$$
+
+Back-substitute:
+
+$$w_1 = \frac{3 - 2/3}{4} = \frac{7}{12} \approx 0.583, \quad w_2 = \frac{1 - 2/3}{4} = \frac{1}{12} \approx 0.083, \quad w_3 = \frac{2 - 2/3}{4} = \frac{4}{12} = \frac{1}{3} \approx 0.333$$
+
+Verify: $7/12 + 1/12 + 4/12 = 12/12 = 1$ ✓
+
+**Step 4 — Interpret the result:**
+
+| Asset | Momentum Score | Optimal Weight | Interpretation |
+|:---|:---:|:---:|:---|
+| A | 3 (strongest) | 58.3% | Highest momentum → highest allocation |
+| C | 2 (middle) | 33.3% | Middle momentum → middle allocation |
+| B | 1 (weakest) | 8.3% | Lowest momentum → lowest allocation |
+
+The optimizer allocated capital proportional to momentum strength — exactly the desired behavior. The multiplier $\mu = 2/3$ means: if the constraint allowed 101% total capital instead of 100%, the objective would improve by approximately $0.01 \times 2/3 \approx 0.0067$.
+
+**Connection to the real portfolio:** The actual optimizer performs this same calculation with 12 assets instead of 3, a full 12x12 covariance matrix with non-zero correlations, and the nonlinear entropy term. Because entropy makes the objective non-quadratic, the quadratic approximation is not exact — so SLSQP must iterate, rebuilding and re-solving the subproblem 20-50 times until the answer converges. Each iteration is the same sequence shown above: build Lagrangian → take derivatives → solve linear system → update weights.
+
 #### **Layer 4: Add inequality constraints (0% to 30% per asset)**
 
 At the solution, each inequality constraint is either **active** (the solution is pressed right against the boundary) or **inactive** (the solution is safely inside and the constraint has no effect).

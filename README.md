@@ -1050,9 +1050,11 @@ This section provides rigorous mathematical interpretations of every core formul
 
 **Section D — Proximal Policy Optimization (PPO)**
 - [Step 1: The Policy](#step-1-the-policy-pi_theta) — Discrete (softmax) vs continuous (Gaussian) action spaces
+- [Step 2: The Value Function](#step-2-the-value-function-vs) — Shared trunk, actor-critic architecture
 - [Step 3: Advantage Estimation (GAE)](#step-3-advantage-estimation--was-this-action-better-than-average) — TD error, bias-variance tradeoff
 - [Step 4: The Clipped Surrogate Objective](#step-4-the-ppo-clipped-surrogate-objective--the-core-formula) — The core PPO innovation
 - [Step 5: The Full Loss Function](#step-5-the-full-loss-function) — Policy loss + value loss + entropy bonus
+- [Step 6: The Complete Training Loop](#step-6-the-complete-training-loop) — Collect, compute, update cycle
 - [How the two agents work together](#how-the-two-agents-work-together-hierarchically) — Hierarchical RL: regime agent → weight agent
 
 ---

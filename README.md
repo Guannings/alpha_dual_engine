@@ -1222,17 +1222,17 @@ For a function of one variable, say $f(x) = 3x^2$:
 
 For a function of two variables, say $f(x, y) = 3x^2 + 2xy + 5y^2$, there is not just one second derivative but **four** — one for each pair of variables. Here is exactly where each number comes from:
 
-**First, take the first derivatives (the gradient).** These are normal derivatives where the other variable is treated as a constant:
+**First, take the first partial derivatives (the gradient).** A partial derivative means differentiating with respect to one variable while treating all others as constants — the $\partial$ symbol (as opposed to $d$) indicates this:
 
 $$\frac{\partial f}{\partial x} = 6x + 2y \qquad \frac{\partial f}{\partial y} = 2x + 10y$$
 
-**Then, take derivatives of those derivatives (second derivatives):**
+**Then, take partial derivatives of those partial derivatives (second partial derivatives):**
 
-From the first derivative with respect to $x$, which is $6x + 2y$:
+From the first partial derivative with respect to $x$, which is $6x + 2y$:
 
 $$\frac{\partial}{\partial x}(6x + 2y) = 6 \qquad \frac{\partial}{\partial y}(6x + 2y) = 2$$
 
-From the first derivative with respect to $y$, which is $2x + 10y$:
+From the first partial derivative with respect to $y$, which is $2x + 10y$:
 
 $$\frac{\partial}{\partial x}(2x + 10y) = 2 \qquad \frac{\partial}{\partial y}(2x + 10y) = 10$$
 

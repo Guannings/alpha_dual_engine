@@ -1145,6 +1145,16 @@ $$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf
 
 The goal: find the weight vector $\mathbf{w}$ (12 numbers that add up to 1) that makes this as small as possible.
 
+### **Why minimization achieves three goals at once**
+
+The objective combines three competing goals into a single scalar through a sign convention:
+
+- **Term 1 (risk)** is positive → minimizing the objective pushes risk **down**.
+- **Term 2 (momentum)** has a negative sign → minimizing $-\text{momentum}$ is mathematically equivalent to **maximizing** momentum.
+- **Term 3 (entropy)** has a negative sign → minimizing $-\text{entropy}$ is mathematically equivalent to **maximizing** entropy (diversification).
+
+This is a standard technique in optimization: rather than building separate maximizers and minimizers, you flip the sign of anything you want to maximize and minimize the whole expression. One solver, one pass, three goals satisfied simultaneously.
+
 **Important clarification:** Despite the $\mathcal{L}$ notation, this is NOT a Lagrangian in the classical mechanics sense. It is simply an objective function that gets fed into a numerical solver. You do not solve it by hand with calculus.
 
 ### **Why you CANNOT solve this analytically**
@@ -1155,7 +1165,11 @@ In a simple case without constraints, you would take the derivative, set it to z
 2. The inequality constraints (bounds, caps, floors) — you cannot just "set derivative = 0" when the answer must also satisfy 10+ inequalities
 3. The growth anchor penalty uses $\max(0, \ldots)^2$ — the $\max$ function is not differentiable everywhere
 
-So instead of solving a clean equation, the computer does intelligent trial-and-error: try weights, compute score, adjust, repeat.
+The inequality constraints are the fundamental barrier. With **equality** constraints only (e.g., "weights sum to 1"), you could apply Lagrange multipliers, set up a system of equations, and solve via Gaussian elimination — all doable by hand. But with **inequality** constraints (e.g., "SMH $\leq$ 30%"), you face a combinatorial problem: you do not know in advance which constraints are **active** (binding at the optimum) and which are **inactive** (satisfied with room to spare). Maybe SMH hits exactly 30% and the cap matters; maybe SMH naturally settles at 22% and the cap is irrelevant. The only way to know is to solve the problem — but you need to know in order to set up the equations.
+
+With approximately 20 inequality constraints, there are $2^{20} \approx 1{,}000{,}000$ possible combinations of active/inactive constraints. For each combination, you would need to solve a full system of equations, then verify that the solution satisfies all constraints that were assumed inactive. This is computationally infeasible by hand.
+
+SLSQP's **active set method** handles this automatically: it maintains a working guess of which constraints are active, solves the resulting equality-only subproblem, checks whether any inactive constraints are violated or any active constraints should be released, adjusts the active set, and repeats. It typically converges in 20-50 iterations rather than exhaustively searching all $2^{20}$ combinations.
 
 ### **How SLSQP actually solves it**
 

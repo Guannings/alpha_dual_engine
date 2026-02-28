@@ -1608,7 +1608,15 @@ Reading this table:
 - **Off-diagonal**: covariance between each pair — positive means they move together, negative means they move opposite, near zero means independent
 - **Symmetric**: cov(SMH,TLT) = cov(TLT,SMH), because "how SMH moves relative to TLT" is the same question as "how TLT moves relative to SMH"
 
-That is the entire covariance matrix. It is a lookup table that answers, for any pair of assets: "do these two tend to crash together, hedge each other, or not care about each other?" With 12 assets, it is a 12x12 table with 78 unique numbers (12 variances on the diagonal + 66 unique covariances off the diagonal). The optimizer reads this entire table when computing portfolio risk via $w^\top \Sigma w$.
+That is the entire covariance matrix. It is a lookup table that answers, for any pair of assets: "do these two tend to crash together, hedge each other, or not care about each other?"
+
+With 12 assets, the table is 12x12 = 144 entries, but because the matrix is symmetric (the bottom-left half mirrors the top-right half), many entries are copies. The unique entries are:
+
+- **12 diagonal entries** (variances): one per asset (SMH-SMH, TLT-TLT, QQQ-QQQ, etc.)
+- **66 unique pairs** above the diagonal: the number of ways to pick 2 assets from 12 $= 12 \times 11 / 2 = 66$ (SMH-TLT, SMH-QQQ, SMH-IWM, ..., GLD-ETH)
+- **66 copies** below the diagonal: mirrors of the 66 above (TLT-SMH = SMH-TLT, etc.)
+
+Total unique numbers $= 12 + 66 = 78$, or equivalently $n(n+1)/2 = 12 \times 13 / 2 = 78$. The optimizer reads all 78 when computing portfolio risk via $w^\top \Sigma w$.
 
 **Step 4 — How the code computes it from real data**
 

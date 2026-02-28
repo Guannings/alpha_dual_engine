@@ -1207,6 +1207,20 @@ $$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf
 
 The goal: find the weight vector $\mathbf{w}$ (12 numbers that add up to 1) that makes this as small as possible.
 
+### **Is this a standard formula?**
+
+This objective function is **not** a universal formula like the area of a circle — it is custom-built for this strategy. However, it is assembled from standard, well-established components:
+
+| Component | Origin | Custom part |
+|:---|:---|:---|
+| Risk term $\mathbf{w}^\top \Sigma \mathbf{w}$ | Markowitz mean-variance theory (1952) | Standard — textbook portfolio risk |
+| Momentum term $\mathbf{w} \cdot \mathbf{M}$ | Dot product is standard linear algebra | **Cubing** the momentum scores to amplify winners is a design choice |
+| Entropy term $H(\mathbf{w})$ | Shannon information theory (1948) | Using entropy as a diversification nudge in portfolio optimization is a design choice |
+| The combination: risk − momentum − entropy | — | **Custom** — the decision to combine these three terms with these signs and lambda weights is specific to this strategy |
+| The constraints (30% cap, crypto floor, gold cap, etc.) | — | **Entirely custom** — these encode the specific investment thesis |
+
+The individual ingredients are established mathematics that appear in textbooks. The recipe — which terms to include, with what signs, at what weightings, under which constraints — is a design decision made for this strategy. Nobody else using `scipy.optimize.minimize(method='SLSQP')` would have the same objective function unless they copied this one.
+
 ### **Why minimization achieves three goals at once**
 
 The objective combines three competing goals into a single scalar through a sign convention:

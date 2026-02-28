@@ -1059,7 +1059,7 @@ This section provides rigorous mathematical interpretations of every core formul
 
 ## **Math Flow: From Market Data to Portfolio Weights**
 
-> This flowchart traces the entire mathematical pipeline — from raw prices to final allocation. Appendix section references (A, B, D, E, H) link to the full derivations below.
+> This flowchart traces the entire mathematical pipeline — from raw prices to final allocation. Appendix section references (A, B, C, D) link to the full derivations below.
 
 ```mermaid
 graph TD
@@ -1072,17 +1072,17 @@ graph TD
 
     subgraph MATH ["MATHEMATICAL OPTIMIZATION"]
         E["Objective Function<br/>minimize: risk − momentum − entropy<br/>102 terms: 78 risk + 12 momentum + 12 entropy"]
-        F["SLSQP Solver<br/>(Section B)"]
+        F["SLSQP Solver<br/>(Section A)"]
         G["Approximate as Quadratic<br/>Treat objective as parabola at current point"]
-        H["Build Lagrangian<br/>Bake 'weights sum to 1' into the formula<br/>(Section D)"]
+        H["Build Lagrangian<br/>Bake 'weights sum to 1' into the formula<br/>(Section A)"]
         I["Partial Derivatives → Set to Zero<br/>13 equations, 13 unknowns"]
-        J["Gaussian Elimination<br/>Solve for weight numbers<br/>(Section E)"]
+        J["Gaussian Elimination<br/>Solve for weight numbers<br/>(Section A)"]
         K["Optimal Weights<br/>w₁, w₂, ..., w₁₂"]
     end
 
     subgraph ML ["MACHINE LEARNING · PPO"]
-        L["Regime Agent<br/>25 macro features → risk-on / risk-off / defensive<br/>(Section H)"]
-        M["Weight Agent<br/>103 per-asset features → adjust SLSQP weights<br/>(Section H)"]
+        L["Regime Agent<br/>25 macro features → risk-on / risk-off / defensive<br/>(Section D)"]
+        M["Weight Agent<br/>103 per-asset features → adjust SLSQP weights<br/>(Section D)"]
         N["Final Portfolio Allocation"]
     end
 

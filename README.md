@@ -1010,6 +1010,7 @@ This section provides rigorous mathematical interpretations of every core formul
 | | | Hessian Matrix | $H_{ij} = \partial^2 f / \partial w_i \partial w_j$ | How does the solver know the shape of the bowl? |
 | | | Covariance Matrix | $\sigma_{ij} = \frac{1}{N-1}\sum(r_i - \bar{r}_i)(r_j - \bar{r}_j)$ | How is portfolio risk measured from historical data? |
 | | | Scalar / Vector / Matrix | $w_i$ = number, $w$ = list, $\Sigma$ = table | What is $w$ and how does the sandwich $w^\top \Sigma w$ work? |
+| | | Dot Product (Momentum) | $w \cdot M = w_1 M_1 + w_2 M_2 + \cdots + w_n M_n$ | Why does risk need a matrix but momentum does not? |
 | B | [Shannon Entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification) | Shannon Entropy | $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ | How does the system measure diversification? |
 | | | Effective N | $N_{\text{eff}} = e^{H(\mathbf{w})}$ | What is "Effective N" and why require at least 3? |
 | C | [Geometric Brownian Motion](#c-geometric-brownian-motion--the-complete-derivation) | GBM Stochastic Differential Equation | $dS = \mu S \cdot dt + \sigma S \cdot dW$ | How are future stock prices simulated? |
@@ -1028,7 +1029,7 @@ This section provides rigorous mathematical interpretations of every core formul
 - [How SLSQP actually solves it](#how-slsqp-actually-solves-it) — The "approximate as a parabola and step" method
 - [What is the Hessian matrix?](#what-is-the-hessian-matrix-b) — Second derivatives, curvature, and the BFGS approximation
 - [How the covariance matrix is computed from data](#how-the-covariance-matrix-is-computed-from-data) — Concrete worked example (SMH variance, SMH-TLT covariance), formulas, and annualization
-- [What is w? — scalars, vectors, and matrices](#what-is-w--scalars-vectors-and-matrices) — Single numbers vs lists vs tables, and how the sandwich $w^\top \Sigma w$ produces one risk number
+- [What is w? — scalars, vectors, and matrices](#what-is-w--scalars-vectors-and-matrices) — Single numbers vs lists vs tables, the sandwich $w^\top \Sigma w$, the dot product $w \cdot M$, and why risk needs a matrix but momentum does not
 - [Can the quadratic subproblem be solved by hand?](#can-the-quadratic-subproblem-be-solved-by-hand) — Layer-by-layer breakdown from 1 variable to 12
 - [What is a Lagrange multiplier, exactly?](#what-is-a-lagrange-multiplier-exactly) — Intuition, worked example, geometric interpretation, shadow prices
 - [Solving the Linear System: Gaussian Elimination](#solving-the-linear-system-gaussian-elimination) — Forward elimination, back-substitution, worked examples

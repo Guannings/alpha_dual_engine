@@ -1591,6 +1591,36 @@ $$\mathcal{L}(\mathbf{w}) = 2w_1^2 + 2w_2^2 + 2w_3^2 - 3w_1 - w_2 - 2w_3$$
 
 Every number in this formula traces back to either the covariance matrix (the 2's in front of the squared terms) or the momentum scores (the 3, 1, 2 being subtracted). Nothing is arbitrary.
 
+#### **What the full 12-asset formula looks like**
+
+The 3-asset example above is intentionally simple. In the real portfolio with 12 assets and non-zero correlations, the same objective expands to **102 unique terms**:
+
+**Risk term** ($w^\top \Sigma w$) — every pair of assets contributes a term. With 12 assets, the matrix has $12 \times 12 = 144$ entries, but since the covariance matrix is symmetric ($\sigma_{1,2} = \sigma_{2,1}$), these collapse to **78 unique terms**: 12 squared terms on the diagonal plus 66 cross terms:
+
+$$w^\top \Sigma w = \sigma_{1,1} w_1^2 + 2\sigma_{1,2} w_1 w_2 + 2\sigma_{1,3} w_1 w_3 + \cdots + 2\sigma_{1,12} w_1 w_{12}$$
+
+$$+ \sigma_{2,2} w_2^2 + 2\sigma_{2,3} w_2 w_3 + \cdots + 2\sigma_{2,12} w_2 w_{12}$$
+
+$$+ \cdots$$
+
+$$+ \sigma_{12,12} w_{12}^2$$
+
+The diagonal terms (like $\sigma_{1,1} w_1^2$) capture each asset's individual risk. The cross terms (like $2\sigma_{1,2} w_1 w_2$) capture the additional risk from holding two correlated assets together — for example, $2\sigma_{SMH,QQQ} \cdot w_{SMH} \cdot w_{QQQ}$ would be large and positive because SMH and QQQ tend to crash together, while $2\sigma_{TLT,SMH} \cdot w_{TLT} \cdot w_{SMH}$ might be negative because bonds often rise when tech falls. In the 3-asset worked example above, the zeros in the covariance matrix killed all 6 cross terms, leaving only the three squared terms.
+
+**Momentum term** ($w \cdot M$) — just a dot product, one term per asset:
+
+$$w \cdot M = M_1 w_1 + M_2 w_2 + M_3 w_3 + \cdots + M_{12} w_{12}$$
+
+**Entropy term** ($H(w)$) — one term per asset:
+
+$$\lambda(w_1 \ln w_1 + w_2 \ln w_2 + w_3 \ln w_3 + \cdots + w_{12} \ln w_{12})$$
+
+**The full expanded objective** combines all three:
+
+$$\mathcal{L} = \underbrace{78 \text{ risk terms}}_{\text{quadratic}} - \underbrace{12 \text{ momentum terms}}_{\text{linear}} - \underbrace{12 \text{ entropy terms}}_{\text{nonlinear}}$$
+
+The risk term is quadratic ($w^2$ and $w_i w_j$ terms) and the momentum term is linear (just $w$ times constants) — SLSQP handles both of these exactly in its quadratic subproblems. The entropy term ($w \ln w$) is the only part that is nonlinear and non-quadratic. This is why SLSQP must iterate: it approximates the $\ln$ part as a parabola at each step, solves that simpler problem, then re-approximates from the new position. Each iteration the parabola fits the curve more closely until the answer converges (typically in 20–50 iterations).
+
 **Step 1 — Build the Lagrangian** (add the multiplier $\mu$ times the constraint, as described in the Lagrange multiplier section above):
 
 $$\mathcal{L}(\mathbf{w}, \mu) = 2w_1^2 + 2w_2^2 + 2w_3^2 - 3w_1 - w_2 - 2w_3 + \mu(w_1 + w_2 + w_3 - 1)$$

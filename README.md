@@ -2378,7 +2378,7 @@ So $Z_1 + Z_2 + \ldots + Z_{252} = \sqrt{252} \times Z$, where $Z$ is one single
 - $3Z$: variance $= 3^2 \times 1 = 9$. Numbers typically between -3 and +3.
 - $\sqrt{252} \times Z$: variance $= (\sqrt{252})^2 \times 1 = 252$. That is $\mathcal{N}(0, 252)$.
 
-The $\sqrt{}$ is needed because variance scales by $c^2$. If you want variance = 252, you need $c^2 = 252$, so $c = \sqrt{252}$. You are just stretching the standard bell curve wider.
+The square root is needed because variance scales by $c^2$. If you want variance = 252, you need $c^2 = 252$, so $c = \sqrt{252}$. You are just stretching the standard bell curve wider.
 
 So $Z$ is simply **one standard bell-curve random number that represents the net effect of all 252 daily shocks combined.** Instead of tracking 252 separate random numbers, the math lets you replace them all with one.
 

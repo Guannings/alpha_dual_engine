@@ -2349,11 +2349,27 @@ The right side contains $S$. So to simulate 252 trading days, you must go step b
 
 $$d(\ln S) = \underbrace{\left(\mu - \tfrac{1}{2}\sigma^2\right)}_{\text{constant}} dt + \underbrace{\sigma}_{\text{constant}} dW$$
 
-The right side has **no** $S$ and **no** $\ln(S)$ — just constants and a random number. Each day's change is independent of where the price is. That means you can skip the day-by-day simulation and add everything up at once:
+The right side has **no** $S$ and **no** $\ln(S)$ — just constants and a random number. Each day's change is independent of where the price is. That means you can add up all the tiny changes from time 0 to time $T$ to get the total change:
+
+**The constant part** — add up $(\mu - \frac{1}{2}\sigma^2) ~ dt$ over the whole period. A constant times many tiny time slices that sum to $T$:
+
+$$\int_0^T \left(\mu - \tfrac{1}{2}\sigma^2\right) dt = \left(\mu - \tfrac{1}{2}\sigma^2\right) \times T$$
+
+Just like: walking at 5 km/h for 3 hours = $5 \times 3 = 15$ km. A constant rate times total time.
+
+**The random part** — add up $\sigma ~ dW$ over the whole period. Each $dW$ is an independent random shock from a bell curve. Adding up many independent bell-curve random numbers gives you one bigger bell-curve random number. The total of all $dW$'s over time $T$ is $\sqrt{T} \times Z$, where $Z \sim \mathcal{N}(0,1)$:
+
+$$\int_0^T \sigma ~ dW = \sigma \times \sqrt{T} \times Z$$
+
+Why $\sqrt{T}$ and not $T$? Because **variances** add, not standard deviations. 252 daily shocks, each with variance $dt$, give total variance $= 252 \times dt = T$. Total standard deviation $= \sqrt{T}$.
+
+**Combine both parts** and move $\ln(S_0)$ to the right:
 
 $$\ln(S_T) = \ln(S_0) + \left(\mu - \tfrac{1}{2}\sigma^2\right) T + \sigma \sqrt{T} ~ Z$$
 
-One formula. One random number $Z$. No looping through 252 days. Exponentiate to get the price: $S_T = S_0 ~ e^{(\mu - \frac{1}{2}\sigma^2)T + \sigma\sqrt{T} ~ Z}$. This is the formula the code actually uses to generate 1 million price paths efficiently.
+One formula. One random number $Z$. No looping through 252 days. This only works because the right side of the $d(\ln S)$ equation has no $S$ — so adding up the pieces is just "constant $\times$ time" plus "random $\times$ $\sqrt{\text{time}}$."
+
+Exponentiate to get the price: $S_T = S_0 ~ e^{(\mu - \frac{1}{2}\sigma^2)T + \sigma\sqrt{T} ~ Z}$. This is the formula the code actually uses to generate 1 million price paths efficiently.
 
 The tool that performs this conversion is **Ito's Lemma** — the chain rule from calculus, but adapted for random processes. In normal calculus, the chain rule tells you how a function of $x$ changes when $x$ changes. Ito's Lemma does the same thing, but adds a correction term because the random part ($dW$) behaves differently from a normal variable: its square doesn't vanish ($(dW)^2 = dt$), which produces the famous $-\frac{1}{2}\sigma^2$ correction.
 

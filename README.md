@@ -2370,7 +2370,17 @@ What is $Z_1 + Z_2 + \ldots + Z_{252}$? You might think the sum is around 252 �
 
 So $Z_1 + Z_2 + \ldots + Z_{252} = \sqrt{252} \times Z$, where $Z$ is one single $\mathcal{N}(0,1)$ random number.
 
-**Where does this $Z$ come from?** It is not a new mysterious variable. The sum of independent bell-curve random numbers is itself a bell-curve random number — this is a fundamental property of normal distributions. The sum of 252 standard normals has mean $0$ and variance $252$, so it follows $\mathcal{N}(0, 252)$. Any $\mathcal{N}(0, 252)$ random number can be written as $\sqrt{252} \times Z$ where $Z \sim \mathcal{N}(0, 1)$ — this is just rescaling (stretching a standard bell curve by $\sqrt{252}$ makes it wider, giving it variance 252). So $Z$ is simply **one standard bell-curve random number that represents the net effect of all 252 daily shocks combined.** Instead of tracking 252 separate random numbers, the math lets you replace them all with one.
+**Where does this $Z$ come from?** It is not a new mysterious variable. The sum of independent bell-curve random numbers is itself a bell-curve random number — this is a fundamental property of normal distributions. The sum of 252 standard normals has mean $0$ and variance $252$, so it follows $\mathcal{N}(0, 252)$.
+
+**Why does $\mathcal{N}(0, 252) = \sqrt{252} \times Z$?** Because of one rule: when you multiply a random variable by a constant $c$, the variance gets multiplied by $c^2$ (the square, not $c$ itself). This is because variance measures *squared* deviations — stretching every number by $c$ stretches each squared deviation by $c^2$. For example:
+
+- $Z \sim \mathcal{N}(0, 1)$: variance = 1. Numbers typically between -1 and +1.
+- $3Z$: variance $= 3^2 \times 1 = 9$. Numbers typically between -3 and +3.
+- $\sqrt{252} \times Z$: variance $= (\sqrt{252})^2 \times 1 = 252$. That is $\mathcal{N}(0, 252)$.
+
+The $\sqrt{}$ is needed because variance scales by $c^2$. If you want variance = 252, you need $c^2 = 252$, so $c = \sqrt{252}$. You are just stretching the standard bell curve wider.
+
+So $Z$ is simply **one standard bell-curve random number that represents the net effect of all 252 daily shocks combined.** Instead of tracking 252 separate random numbers, the math lets you replace them all with one.
 
 Plugging back in:
 

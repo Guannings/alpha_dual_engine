@@ -1480,7 +1480,13 @@ To find it, take 12 partial derivatives (one per weight), set them all to zero, 
 
 $$B \mathbf{d} = -\nabla \mathcal{L}$$
 
-Where $B$ is a 12x12 matrix (how curvy the bowl is), $\nabla \mathcal{L}$ is a list of 12 slopes, and $\mathbf{d}$ is the step direction to solve for. This is a system of 12 linear equations with 12 unknowns — solvable by Gaussian elimination (systematically manipulating equations to isolate each variable). Tedious with 12 variables, but each operation is just addition, subtraction, multiplication, and division.
+Where $B$ is a 12×12 matrix (how curvy the bowl is), $\nabla \mathcal{L}$ is a 12×1 column vector of slopes, and $\mathbf{d}$ is the **step direction** — also a 12×1 column vector, the unknown to solve for:
+
+$$\mathbf{d} = \begin{bmatrix} d_1 \\ d_2 \\ \vdots \\ d_{12} \end{bmatrix}$$
+
+Each entry tells the solver how much to adjust one weight. For example, $d_1 = +0.03$ means "increase asset 1's weight by 3%," $d_5 = -0.02$ means "decrease asset 5's weight by 2%." Once solved, the weights update: $\mathbf{w}_{\text{new}} = \mathbf{w}_{\text{old}} + \mathbf{d}$.
+
+This is a system of 12 linear equations with 12 unknowns — solvable by Gaussian elimination (systematically manipulating equations to isolate each variable). Tedious with 12 variables, but each operation is just addition, subtraction, multiplication, and division.
 
 #### **Layer 3: Add the constraint "weights must sum to 1"**
 

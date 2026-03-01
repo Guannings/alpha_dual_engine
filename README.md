@@ -1309,6 +1309,14 @@ That is a parabola that touches the true $x^3$ curve at $x = 2$ and closely matc
 
 The SLSQP formula is the 1D Taylor expansion with vectors and matrices substituted for single numbers. The $\frac{1}{2}$ is the same $\frac{1}{2}$. The structure is identical. The only reason it looks more complex is that "slope" and "curvature" in 12 dimensions require a vector and a matrix to describe, whereas in 1D they are just numbers.
 
+<p align="center">
+  <img src="assets/taylor_buildup.gif" alt="Taylor expansion building up term by term" width="700"/>
+  <br/>
+  <em>The SLSQP approximation built term by term. Red: value only (0th order — "I know my altitude").
+  Yellow: + gradient (1st order — "I know the slope"). Green: + curvature (2nd order — the parabola SLSQP actually solves).
+  Final frame: SLSQP jumps to the parabola's minimum, then rebuilds at the new point.</em>
+</p>
+
 ### **Is this a standard formula?**
 
 Unlike the objective function (which is custom-built for this strategy), the quadratic subproblem formula is **entirely standard mathematics**. It is the second-order Taylor expansion — the same approximation taught in multivariable calculus courses and used across all of numerical optimization, not just finance. Newton's method, quasi-Newton methods, and all sequential quadratic programming (SQP) solvers use this same expansion. The only project-specific element is *what* is being approximated: in our case, the portfolio objective function. The approximation machinery itself is off-the-shelf.

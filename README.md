@@ -2375,7 +2375,13 @@ $$df(S) = \underbrace{f'(S)}_{\text{first derivative of } f} ~ dS + \frac{1}{2} 
 
 $$f(S + dS) = f(S) + f'(S) \cdot dS + \frac{1}{2} f''(S) \cdot (dS)^2 + \frac{1}{6} f'''(S) \cdot (dS)^3 + \ldots$$
 
-The $\frac{1}{2}$ is baked into the Taylor series formula — it is always in front of the second-order term (the third-order term has $\frac{1}{6}$, the fourth has $\frac{1}{24}$, the pattern is $\frac{1}{n!}$). Since $df = f(S + dS) - f(S)$, the first term cancels and you get Ito's Lemma. In normal calculus, $(dS)^2 = 0$ so the $\frac{1}{2}$ term vanishes and you never see it. In stochastic calculus, $(dW)^2 = dt \neq 0$, so the $\frac{1}{2}$ term survives — and that is exactly where the $\frac{1}{2}$ in $-\frac{1}{2}\sigma^2$ comes from. It is the same $\frac{1}{2}$ that appears in the SLSQP formula $\frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$. Same Taylor expansion, same $\frac{1}{2}$.
+The $\frac{1}{2}$ is baked into the Taylor series formula — it is always in front of the second-order term (the third-order term has $\frac{1}{6}$, the fourth has $\frac{1}{24}$, the pattern is $\frac{1}{n!}$).
+
+But Ito's Lemma is about the **change** $df$, not the full value $f(S + dS)$. Since the change equals $df = f(S + dS) - f(S)$, subtract $f(S)$ from both sides of the Taylor expansion:
+
+$$df = \underbrace{f(S) - f(S)}_{\text{cancels to } 0} + f'(S) \cdot dS + \frac{1}{2} f''(S) \cdot (dS)^2 = f'(S) \cdot dS + \frac{1}{2} f''(S) \cdot (dS)^2$$
+
+The $f(S)$ term cancels itself — that is all "the first term cancels" means. What remains is Ito's Lemma. In normal calculus, $(dS)^2 = 0$ so the $\frac{1}{2}$ term vanishes and you never see it. In stochastic calculus, $(dW)^2 = dt \neq 0$, so the $\frac{1}{2}$ term survives — and that is exactly where the $\frac{1}{2}$ in $-\frac{1}{2}\sigma^2$ comes from. It is the same $\frac{1}{2}$ that appears in the SLSQP formula $\frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$. Same Taylor expansion, same $\frac{1}{2}$.
 
 **Step 2 — Choose $f(S) = \ln(S)$ and compute the derivatives.**
 

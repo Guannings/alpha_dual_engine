@@ -1464,7 +1464,7 @@ In formal terms, this is a constrained nonlinear optimization problem. The objec
 
 The name comes from the shape of the approximation, not from the number of layers or steps.
 
-- **"Quadratic"** — because SLSQP approximates the objective as a quadratic function (a parabola in 1D, a bowl in 12D). This is the second-order Taylor expansion. Quadratics have a clean closed-form minimum via $B\mathbf{d} = -\nabla \mathcal{L}$, which is why they are useful.
+- **"Quadratic"** — because SLSQP approximates the objective as a quadratic function (a parabola in 1D, a bowl in 12D). This is the second-order Taylor expansion. Quadratics have a clean closed-form minimum — take the derivative, set it to zero, and solve (see [Layer 1](#layer-1-one-variable-no-constraints) for the 1D case and [Layer 2](#layer-2-twelve-variables-no-constraints) for the 12D case where this becomes $B\mathbf{d} = -\nabla \mathcal{L}$).
 - **"Sub"** — because it is a smaller, simpler problem solved *inside* each iteration of the main problem. The main problem (minimize risk - momentum + entropy) is too complex to solve directly because of the entropy logarithm. The subproblem (minimize the bowl approximation) is easy.
 - **"Sequential"** (the "S" in SLSQP) — because the solver solves a *sequence* of these quadratic subproblems, one per iteration, each at a new point, until convergence.
 

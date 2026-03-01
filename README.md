@@ -1460,6 +1460,16 @@ SLSQP is the go-to for "small-to-medium nonlinear problems with constraints" —
 
 In formal terms, this is a constrained nonlinear optimization problem. The objective function combines a quadratic risk term, a linear momentum term, and a nonlinear entropy regularizer, subject to equality constraints (weights sum to 1) and bound constraints (per-asset caps). It is solved numerically using SLSQP — a sequential quadratic programming method that approximates the problem as a series of simpler quadratic subproblems at each iteration, converging to a local minimum while respecting all constraints. The objective function itself is not a Lagrangian — it is a cost function to be minimized. Internally, however, SLSQP constructs a Lagrangian at each iteration to enforce the constraints on the quadratic subproblem, using Lagrange multipliers for equality constraints and an active set method for inequality constraints. The method can be understood as Newton's method extended to handle both equality and inequality constraints.
 
+### **Why is it called a "quadratic subproblem"?**
+
+The name comes from the shape of the approximation, not from the number of layers or steps.
+
+- **"Quadratic"** — because SLSQP approximates the objective as a quadratic function (a parabola in 1D, a bowl in 12D). This is the second-order Taylor expansion. Quadratics have a clean closed-form minimum via $B\mathbf{d} = -\nabla \mathcal{L}$, which is why they are useful.
+- **"Sub"** — because it is a smaller, simpler problem solved *inside* each iteration of the main problem. The main problem (minimize risk - momentum + entropy) is too complex to solve directly because of the entropy logarithm. The subproblem (minimize the bowl approximation) is easy.
+- **"Sequential"** (the "S" in SLSQP) — because the solver solves a *sequence* of these quadratic subproblems, one per iteration, each at a new point, until convergence.
+
+In short: main problem (hard) → approximate as quadratic subproblem (easy) → solve → move → rebuild → repeat.
+
 ### **Can the quadratic subproblem be solved by hand?**
 
 Yes — and that is the entire point of SLSQP. It converts one impossible problem into a chain of easy problems. Each individual subproblem is solvable with high school and early university math. Here is how it breaks down, layer by layer.

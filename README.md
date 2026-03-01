@@ -2551,7 +2551,7 @@ After all paths complete, you have 1,000,000 final portfolio values. Sort them a
 
 GBM is the same model that underlies the **Black-Scholes options pricing formula** (Black & Scholes, 1973) — arguably the most famous equation in finance. Black-Scholes assumes stock prices follow GBM, then uses that assumption to derive a closed-form formula for the fair price of an option.
 
-This project uses GBM for a completely different purpose. Black-Scholes asks: "given that prices follow GBM, what should an option cost?" This project asks: "given that prices follow GBM, what are the 1 million possible futures for this portfolio?" Same underlying model, different application:
+**This project uses GBM for a completely different purpose.** Black-Scholes asks: "given that prices follow GBM, what should an option cost?" This project asks: "given that prices follow GBM, what are the 1 million possible futures for this portfolio?" Same underlying model, different application:
 
 | | Black-Scholes | This project |
 |:---|:---|:---|

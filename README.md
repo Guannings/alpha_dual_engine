@@ -2547,6 +2547,21 @@ After all paths complete, you have 1,000,000 final portfolio values. Sort them a
 - Percentage below starting value = probability of loss
 - The full histogram = the complete probability distribution of your financial future
 
+### **Connection to Black-Scholes**
+
+GBM is the same model that underlies the **Black-Scholes options pricing formula** (Black & Scholes, 1973) — arguably the most famous equation in finance. Black-Scholes assumes stock prices follow GBM, then uses that assumption to derive a closed-form formula for the fair price of an option.
+
+This project uses GBM for a completely different purpose. Black-Scholes asks: "given that prices follow GBM, what should an option cost?" This project asks: "given that prices follow GBM, what are the 1 million possible futures for this portfolio?" Same underlying model, different application:
+
+| | Black-Scholes | This project |
+|:---|:---|:---|
+| **Uses GBM to** | Derive a closed-form option price | Simulate 1M possible price paths |
+| **Output** | One number (the option price) | A full probability distribution of outcomes |
+| **Method** | Analytical (solve the equation) | Monte Carlo simulation (generate random paths) |
+| **Application** | Options pricing and hedging | Portfolio risk assessment and tail risk analysis |
+
+If asked in an interview: "Yes, GBM is the Black-Scholes assumption. But instead of pricing options with it, I use it for Monte Carlo simulation — generating a million possible futures to understand the full range of portfolio outcomes, including tail risks."
+
 ### **Technical Summary**
 
 GBM models stock prices as a random walk in log-space. The price change each day comprises two components: a deterministic drift (expected return adjusted for volatility drag) and a stochastic diffusion (random shock scaled by volatility). The $-\frac{1}{2}\sigma^2$ correction is a direct consequence of Ito's Lemma — it accounts for the mathematical asymmetry where symmetric percentage gains and losses do not cancel out (a +50% gain followed by a -50% loss results in a net -25% loss, not 0%). The exponential wrapper ensures that simulated prices remain strictly positive regardless of the random draw. By simulating 1,000,000 independent paths over a 5-year horizon, the engine constructs a full probability distribution of future portfolio outcomes — capturing not just the expected case but the complete range of tail risks and upside scenarios.

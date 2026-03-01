@@ -1157,9 +1157,9 @@ Gradient descent is how the computer actually makes the loss function smaller. T
 
 **What is a "gradient"?** The gradient is the slope, generalized to multiple dimensions. With one variable, the slope tells you: "if I nudge $x$ to the right, does the function go up or down?" With 12 variables (like portfolio weights), the gradient is a vector of 12 slopes — one per variable:
 
-$$\nabla L = \left[\frac{\partial L}{\partial w_1},~ \frac{\partial L}{\partial w_2},~ \ldots,~ \frac{\partial L}{\partial w_{12}}\right]$$
+$$\nabla L = \begin{bmatrix} \frac{\partial L}{\partial w_1} \\ \frac{\partial L}{\partial w_2} \\ \vdots \\ \frac{\partial L}{\partial w_{12}} \end{bmatrix}$$
 
-Each slope says "if I nudge THIS weight slightly, does the loss go up or down?" The gradient points **uphill**, so you go the opposite direction.
+This is a **12×1 column vector** — one row per weight, one column total. Each entry says "if I nudge THIS weight slightly, does the loss go up or down?" The gradient points **uphill**, so you go the opposite direction. (When you see $\nabla \mathcal{L}^\top$ with a transpose symbol elsewhere in this document, that flips it into a 1×12 row vector so the matrix multiplication sizes line up correctly.)
 
 **The update rule — the entire algorithm:**
 

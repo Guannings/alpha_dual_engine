@@ -1321,6 +1321,21 @@ The SLSQP formula is the 1D Taylor expansion with vectors and matrices substitut
   the <a href="#what-is-a-lagrange-multiplier-exactly">Lagrange multiplier</a> λ, which enforces the "weights sum to 1" constraint.</em>
 </p>
 
+### **What does the real 12D version actually look like?**
+
+The 2D contour plot above is a slice — pick 2 of the 12 weights, freeze the other 10, and you get a picture. The real 12-weight version cannot be visualized because humans cannot see beyond 3 dimensions. What the solver actually works with at each iteration is pure numbers:
+
+| Object | 2D (the GIF above) | 12D (the real code) |
+|:---|:---|:---|
+| Current weights | A dot on a 2D plane | A list of 12 numbers: `[0.22, 0.18, 0.30, ...]` |
+| Gradient $\nabla L$ | A 2D arrow | 12 numbers: one slope per weight |
+| Hessian $B$ | A 2×2 matrix (4 numbers) | A 12×12 matrix (144 numbers, 78 unique) |
+| Contour lines | Curves you can see | 11-dimensional hypersurfaces (impossible to picture) |
+| The "bowl" | An ellipse | A 12-dimensional ellipsoid (impossible to picture) |
+| Step to next point | An arrow on the plane | A 12-number direction vector |
+
+The math is identical — more weights means a bigger gradient vector, a bigger Hessian matrix, and a bigger linear system to solve, but the algorithm is the same. In the actual code ([`alpha_engine.py:883`](alpha_engine.py#L883)), `scipy.optimize.minimize(..., method='SLSQP')` handles all of this internally. You never see the Hessian or the individual iterations — just the final 12 weights that come out.
+
 ### **Is this a standard formula?**
 
 Unlike the objective function (which is custom-built for this strategy), the quadratic subproblem formula is **entirely standard mathematics**. It is the second-order Taylor expansion — the same approximation taught in multivariable calculus courses and used across all of numerical optimization, not just finance. Newton's method, quasi-Newton methods, and all sequential quadratic programming (SQP) solvers use this same expansion. The only project-specific element is *what* is being approximated: in our case, the portfolio objective function. The approximation machinery itself is off-the-shelf.

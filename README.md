@@ -2333,7 +2333,27 @@ The SDE $dS = \mu S  ~ dt + \sigma S  ~ dW$ is in continuous time — infinitely
 
 Look at the equation again: $dS = \mu S ~ dt + \sigma S ~ dW$. The change in $S$ depends on $S$ itself — both terms multiply by $S$. So to compute tomorrow's price you need today's price, but the randomness *also* scales with today's price, and in continuous time these interact in a way that doesn't simplify into a clean step-by-step recipe.
 
-The trick is to stop tracking $S$ and instead track $\ln(S)$ (the logarithm of the price). When you convert the equation from the price $S$ to the log-price $\ln(S)$, something useful happens: $\ln(S)$ disappears from the right side of the equation. The change in $\ln(S)$ becomes just a constant plus a random number — no dependence on the current value. That means you can directly add up all the steps and get a closed-form answer, no tiny iterations needed.
+The trick is to stop tracking $S$ and instead track $\ln(S)$ (the logarithm of the price). To see why, compare the two equations side by side:
+
+**Tracking price $S$ (the original SDE):**
+
+$$dS = \mu \underbrace{S}_{\text{depends on current price}} dt + \sigma \underbrace{S}_{\text{depends on current price}} dW$$
+
+The right side contains $S$. So to simulate 252 trading days, you must go step by step:
+- Day 1: $S = 100$. Compute change using $S = 100$. Get $S = 103.2$.
+- Day 2: use $S = 103.2$. Compute change using $S = 103.2$. Get $S = 101.7$.
+- Day 3: use $S = 101.7$. Compute change using $S = 101.7$. Get $S = 104.1$.
+- ... repeat 252 times. Every day depends on yesterday's answer.
+
+**Tracking log-price $\ln(S)$ (after Ito's Lemma converts it):**
+
+$$d(\ln S) = \underbrace{\left(\mu - \tfrac{1}{2}\sigma^2\right)}_{\text{constant}} dt + \underbrace{\sigma}_{\text{constant}} dW$$
+
+The right side has **no** $S$ and **no** $\ln(S)$ — just constants and a random number. Each day's change is independent of where the price is. That means you can skip the day-by-day simulation and add everything up at once:
+
+$$\ln(S_T) = \ln(S_0) + \left(\mu - \tfrac{1}{2}\sigma^2\right) T + \sigma \sqrt{T} ~ Z$$
+
+One formula. One random number $Z$. No looping through 252 days. Exponentiate to get the price: $S_T = S_0 ~ e^{(\mu - \frac{1}{2}\sigma^2)T + \sigma\sqrt{T} ~ Z}$. This is the formula the code actually uses to generate 1 million price paths efficiently.
 
 The tool that performs this conversion is **Ito's Lemma** — the chain rule from calculus, but adapted for random processes. In normal calculus, the chain rule tells you how a function of $x$ changes when $x$ changes. Ito's Lemma does the same thing, but adds a correction term because the random part ($dW$) behaves differently from a normal variable: its square doesn't vanish ($(dW)^2 = dt$), which produces the famous $-\frac{1}{2}\sigma^2$ correction.
 

@@ -2357,26 +2357,59 @@ One formula. One random number $Z$. No looping through 252 days. Exponentiate to
 
 The tool that performs this conversion is **Ito's Lemma** — the chain rule from calculus, but adapted for random processes. In normal calculus, the chain rule tells you how a function of $x$ changes when $x$ changes. Ito's Lemma does the same thing, but adds a correction term because the random part ($dW$) behaves differently from a normal variable: its square doesn't vanish ($(dW)^2 = dt$), which produces the famous $-\frac{1}{2}\sigma^2$ correction.
 
+#### **The full Ito's Lemma derivation — step by step**
+
+We want to find how $\ln(S)$ changes over time, given that $S$ follows $dS = \mu S ~ dt + \sigma S ~ dW$.
+
+**Step 1 — State the general Ito's Lemma formula.**
+
+For any smooth function $f(S)$ applied to a stochastic process $S$, Ito's Lemma says:
+
+$$df(S) = f'(S) ~ dS + \frac{1}{2} f''(S) ~ (dS)^2$$
+
+This looks almost like the normal chain rule $df = f'(S) ~ dS$, but with an extra second-derivative term. This extra term exists because of a fundamental property of Brownian Motion: $(dW)^2 = dt$, not zero. In normal calculus, $(dx)^2$ is so small it vanishes. In stochastic calculus, the random part squares to something non-negligible.
+
+**Step 2 — Choose $f(S) = \ln(S)$ and compute the derivatives.**
+
+$$f(S) = \ln(S), \quad f'(S) = \frac{1}{S}, \quad f''(S) = -\frac{1}{S^2}$$
+
+**Step 3 — Compute $(dS)^2$ using the rules of stochastic calculus.**
+
+We know $dS = \mu S ~ dt + \sigma S ~ dW$. Squaring:
+
+$$(dS)^2 = (\mu S ~ dt + \sigma S ~ dW)^2$$
+
+Expand using the rules: $(dt)^2 = 0$, $dt \cdot dW = 0$, $(dW)^2 = dt$:
+
+$$(dS)^2 = \mu^2 S^2 \underbrace{(dt)^2}_{= ~ 0} + 2\mu\sigma S^2 \underbrace{dt \cdot dW}_{= ~ 0} + \sigma^2 S^2 \underbrace{(dW)^2}_{= ~ dt} = \sigma^2 S^2 ~ dt$$
+
+Only the $(dW)^2$ term survives. This is the key difference from normal calculus.
+
+**Step 4 — Plug everything into Ito's Lemma.**
+
+$$d(\ln S) = \frac{1}{S} ~ dS + \frac{1}{2}\left(-\frac{1}{S^2}\right)(\sigma^2 S^2 ~ dt)$$
+
+Simplify the second term: $-\frac{1}{2} \cdot \frac{1}{S^2} \cdot \sigma^2 S^2 ~ dt = -\frac{1}{2}\sigma^2 ~ dt$ (the $S^2$ cancels).
+
+$$d(\ln S) = \frac{1}{S} ~ dS - \frac{1}{2}\sigma^2 ~ dt$$
+
+**Step 5 — Substitute $dS = \mu S ~ dt + \sigma S ~ dW$ into the first term.**
+
+$$d(\ln S) = \frac{1}{S}(\mu S ~ dt + \sigma S ~ dW) - \frac{1}{2}\sigma^2 ~ dt$$
+
+The $S$ cancels in $\frac{1}{S} \cdot \mu S = \mu$ and $\frac{1}{S} \cdot \sigma S = \sigma$:
+
+$$d(\ln S) = \mu ~ dt + \sigma ~ dW - \frac{1}{2}\sigma^2 ~ dt$$
+
+**Step 6 — Combine the $dt$ terms.**
+
+$$\boxed{d(\ln S) = \left(\mu - \frac{1}{2}\sigma^2\right) dt + \sigma ~ dW}$$
+
+This is the result. The right side has **no** $S$ anywhere — just constants ($\mu$, $\sigma$) and a random number ($dW$). That is why the log transform works: it turns the self-referencing SDE into a simple equation you can solve in one shot.
+
 #### **The $-\frac{1}{2}\sigma^2$ correction**
 
-This is the part everyone finds mysterious. Here is where it comes from.
-
-Take the logarithm of the stock price: $\ln(S)$. Applying Ito's Lemma to find how $\ln(S)$ changes over time, you get:
-
-$$d(\ln S) = \left(\mu - \frac{1}{2}\sigma^2\right) dt + \sigma  ~ dW$$
-
-**Where did the $-\frac{1}{2}\sigma^2$ come from?**
-
-In normal calculus, if $f(x) = \ln(x)$, then $f'(x) = 1/x$ and you are done. But in stochastic calculus, there is an extra term because the random part ($dW$) has a non-zero "squared" contribution. Specifically:
-
-- Normal chain rule: $d(\ln S) = \frac{1}{S} dS$
-- **Ito's chain rule:** $d(\ln S) = \frac{1}{S} dS - \frac{1}{2} \frac{1}{S^2} (dS)^2$
-
-That extra $-\frac{1}{2} \frac{1}{S^2}(dS)^2$ term exists because $(dW)^2 = dt$ — a fundamental property of Brownian Motion where the square of a random step equals the time step, not zero. When you expand $(dS)^2 = (\sigma S  ~ dW)^2 = \sigma^2 S^2  ~ dt$, you get:
-
-$$-\frac{1}{2} \frac{1}{S^2} \times \sigma^2 S^2  ~ dt = -\frac{1}{2}\sigma^2  ~ dt$$
-
-That is the **volatility drag**.
+The $-\frac{1}{2}\sigma^2$ appeared in Step 4 from the second-derivative term of Ito's Lemma. It is called the **volatility drag** — it reduces the expected growth rate of the stock. Here is the intuition for why it must exist:
 
 ### **The intuitive explanation of volatility drag**
 

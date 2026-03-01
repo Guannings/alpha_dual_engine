@@ -2365,9 +2365,11 @@ We want to find how $\ln(S)$ changes over time, given that $S$ follows $dS = \mu
 
 For any smooth function $f(S)$ applied to a stochastic process $S$, Ito's Lemma says:
 
-$$df(S) = f'(S) ~ dS + \frac{1}{2} f''(S) ~ (dS)^2$$
+$$df(S) = \underbrace{f'(S)}_{\text{first derivative of } f} ~ dS + \frac{1}{2} \underbrace{f''(S)}_{\text{second derivative of } f} ~ \underbrace{(dS)^2}_{\text{the square of } dS}$$
 
-This looks almost like the normal chain rule $df = f'(S) ~ dS$, but with an extra second-derivative term. This extra term exists because of a fundamental property of Brownian Motion: $(dW)^2 = dt$, not zero. In normal calculus, $(dx)^2$ is so small it vanishes. In stochastic calculus, the random part squares to something non-negligible.
+**Important notation clarification:** $f''(S)$ and $(dS)^2$ look similar but mean completely different things. $f''(S)$ is the second derivative of the function $f$ — a calculus operation. $(dS)^2$ is the change in price multiplied by itself — literally $dS \times dS$, a number squared. They happen to appear next to each other in the formula, but one is a property of the function and the other is a property of the price movement.
+
+This looks almost like the normal chain rule $df = f'(S) ~ dS$, but with an extra term involving $f''(S) \cdot (dS)^2$. This extra term exists because of a fundamental property of Brownian Motion: $(dW)^2 = dt$, not zero. In normal calculus, $(dx)^2$ is so small it vanishes and the extra term disappears. In stochastic calculus, the random part squares to something non-negligible, so the extra term stays.
 
 **Step 2 — Choose $f(S) = \ln(S)$ and compute the derivatives.**
 

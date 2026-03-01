@@ -2381,11 +2381,17 @@ We know $dS = \mu S ~ dt + \sigma S ~ dW$. Squaring:
 
 $$(dS)^2 = (\mu S ~ dt + \sigma S ~ dW)^2$$
 
-Expand using the rules: $(dt)^2 = 0$, $dt \cdot dW = 0$, $(dW)^2 = dt$:
+Expand using three rules of stochastic calculus. These rules are not arbitrary — each has a concrete reason:
+
+- $(dt)^2 = 0$ — a tiny number squared is negligible. If $dt = 0.004$ (one trading day), then $(dt)^2 = 0.000016$. Too small to matter. Same reason normal calculus ignores $(dx)^2$.
+- $dt \cdot dW = 0$ — since $dW \approx \sqrt{dt}$ in size, $dt \cdot dW \approx dt^{3/2}$, which is even smaller than $dt$ itself. Also negligible.
+- $(dW)^2 = dt$ — **this is the weird one** that makes stochastic calculus different. Since $dW = \sqrt{dt} \times Z$ (where $Z$ is a bell-curve random number), squaring gives $(dW)^2 = dt \times Z^2$. The key property: if you average $Z^2$ over many draws from the bell curve, the average is exactly 1. So $(dW)^2 = dt \times 1 = dt$. This is small but NOT zero — it survives and creates the extra term that doesn't exist in normal calculus.
+
+Applying these rules:
 
 $$(dS)^2 = \mu^2 S^2 \underbrace{(dt)^2}_{= ~ 0} + 2\mu\sigma S^2 \underbrace{dt \cdot dW}_{= ~ 0} + \sigma^2 S^2 \underbrace{(dW)^2}_{= ~ dt} = \sigma^2 S^2 ~ dt$$
 
-Only the $(dW)^2$ term survives. This is the key difference from normal calculus.
+Only the $(dW)^2$ term survives. **This is the entire reason Ito's Lemma exists.** In normal calculus, every squared term vanishes, so the chain rule has no extra term. Here, $(dW)^2 = dt$ does not vanish, so the extra term stays — and that is where the $-\frac{1}{2}\sigma^2$ correction comes from.
 
 **Step 4 — Plug everything into Ito's Lemma.**
 

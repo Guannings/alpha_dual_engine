@@ -2368,7 +2368,11 @@ What is $Z_1 + Z_2 + \ldots + Z_{252}$? You might think the sum is around 252 �
 - Total variance $= 1 + 1 + \ldots + 1 = 252$
 - Total standard deviation (typical size of the sum) $= \sqrt{252}$, not 252
 
-So $Z_1 + Z_2 + \ldots + Z_{252} = \sqrt{252} \times Z$, where $Z$ is one single $\mathcal{N}(0,1)$ random number. Plugging back in:
+So $Z_1 + Z_2 + \ldots + Z_{252} = \sqrt{252} \times Z$, where $Z$ is one single $\mathcal{N}(0,1)$ random number.
+
+**Where does this $Z$ come from?** It is not a new mysterious variable. The sum of independent bell-curve random numbers is itself a bell-curve random number — this is a fundamental property of normal distributions. The sum of 252 standard normals has mean $0$ and variance $252$, so it follows $\mathcal{N}(0, 252)$. Any $\mathcal{N}(0, 252)$ random number can be written as $\sqrt{252} \times Z$ where $Z \sim \mathcal{N}(0, 1)$ — this is just rescaling (stretching a standard bell curve by $\sqrt{252}$ makes it wider, giving it variance 252). So $Z$ is simply **one standard bell-curve random number that represents the net effect of all 252 daily shocks combined.** Instead of tracking 252 separate random numbers, the math lets you replace them all with one.
+
+Plugging back in:
 
 $$\sum dW = \sqrt{dt} \times \sqrt{252} \times Z = \sqrt{dt \times 252} \times Z = \sqrt{T} \times Z$$
 

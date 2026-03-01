@@ -2369,7 +2369,11 @@ $$df(S) = \underbrace{f'(S)}_{\text{first derivative of } f} ~ dS + \frac{1}{2} 
 
 **Important notation clarification:** $f''(S)$ and $(dS)^2$ look similar but mean completely different things. $f''(S)$ is the second derivative of the function $f$ — a calculus operation. $(dS)^2$ is the change in price multiplied by itself — literally $dS \times dS$, a number squared. They happen to appear next to each other in the formula, but one is a property of the function and the other is a property of the price movement.
 
-This looks almost like the normal chain rule $df = f'(S) ~ dS$, but with an extra term involving $f''(S) \cdot (dS)^2$. This extra term exists because of a fundamental property of Brownian Motion: $(dW)^2 = dt$, not zero. In normal calculus, $(dx)^2$ is so small it vanishes and the extra term disappears. In stochastic calculus, the random part squares to something non-negligible, so the extra term stays.
+**Where does the $\frac{1}{2}$ come from?** It comes from the Taylor expansion — the same one used in the [SLSQP quadratic subproblem](#where-does-this-formula-come-from). When you expand any function $f(S + dS)$ around the point $S$:
+
+$$f(S + dS) = f(S) + f'(S) \cdot dS + \frac{1}{2} f''(S) \cdot (dS)^2 + \frac{1}{6} f'''(S) \cdot (dS)^3 + \ldots$$
+
+The $\frac{1}{2}$ is baked into the Taylor series formula — it is always in front of the second-order term (the third-order term has $\frac{1}{6}$, the fourth has $\frac{1}{24}$, the pattern is $\frac{1}{n!}$). Since $df = f(S + dS) - f(S)$, the first term cancels and you get Ito's Lemma. In normal calculus, $(dS)^2 = 0$ so the $\frac{1}{2}$ term vanishes and you never see it. In stochastic calculus, $(dW)^2 = dt \neq 0$, so the $\frac{1}{2}$ term survives — and that is exactly where the $\frac{1}{2}$ in $-\frac{1}{2}\sigma^2$ comes from. It is the same $\frac{1}{2}$ that appears in the SLSQP formula $\frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$. Same Taylor expansion, same $\frac{1}{2}$.
 
 **Step 2 — Choose $f(S) = \ln(S)$ and compute the derivatives.**
 

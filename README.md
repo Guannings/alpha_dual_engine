@@ -1310,13 +1310,14 @@ That is a parabola that touches the true $x^3$ curve at $x = 2$ and closely matc
 The SLSQP formula is the 1D Taylor expansion with vectors and matrices substituted for single numbers. The $\frac{1}{2}$ is the same $\frac{1}{2}$. The structure is identical. The only reason it looks more complex is that "slope" and "curvature" in 12 dimensions require a vector and a matrix to describe, whereas in 1D they are just numbers.
 
 <p align="center">
-  <img src="assets/slsqp_3d.gif" alt="SLSQP quadratic approximation in 3D" width="700"/>
+  <img src="assets/slsqp_3d.gif" alt="SLSQP quadratic approximation — contour plot with 2 weights" width="700"/>
   <br/>
-  <em>SLSQP visualized with 2 weights (a slice of the full 12D problem). Blue surface: the true objective function
-  (curved because of the entropy term). Green bowl: SLSQP's quadratic approximation, touching the blue surface at the
-  current point (orange dot). SLSQP solves the bowl, jumps to its bottom (green square), then rebuilds a new bowl
-  at the new point. The real 12-weight version is this same concept in 13 dimensions — impossible to visualize,
-  but the math is identical.</em>
+  <em>SLSQP visualized with 2 weights (a slice of the full 12D problem), viewed from above as a contour map.
+  Blue contours: the true objective function. Green dashed contours: SLSQP's quadratic approximation (the "bowl") —
+  notice the green ellipses match the blue contours near the current point (orange dot) but diverge further away.
+  At each iteration, SLSQP jumps from the current point to the bowl's bottom (green square), rebuilds the
+  approximation, and repeats until it reaches the true minimum (blue star).
+  The real 12-weight version is this same concept in 13 dimensions.</em>
 </p>
 
 ### **Is this a standard formula?**

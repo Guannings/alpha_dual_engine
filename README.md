@@ -1277,6 +1277,38 @@ $$\mathcal{L}(\mathbf{w}) \approx \underbrace{\mathcal{L}(\mathbf{w}_k)}_{\text{
 
 > **Do not confuse these two formulas.** The objective function $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ is the *real problem* — what we want to minimize. The formula above is SLSQP's *approximation* of that problem at a single point $\mathbf{w}_k$. SLSQP never solves the objective function directly. Instead, at each iteration, it builds this quadratic approximation (a parabola that matches the objective's value, slope, and curvature at the current point), solves the parabola exactly, moves to the answer, and rebuilds. The objective function is the destination; the quadratic subproblem is the vehicle.
 
+### **Where does this formula come from?**
+
+This formula is the **second-order Taylor expansion** — the same approximation taught in introductory calculus, extended to multiple variables. If you have seen the 1D version, you already know the SLSQP formula.
+
+**The 1D Taylor expansion you learned in calculus:**
+
+For any function $f(x)$, if you are standing at point $a$, you can approximate $f$ nearby as:
+
+$$f(x) \approx f(a) + f'(a)(x - a) + \frac{1}{2}f''(a)(x - a)^2$$
+
+**Concrete example:** $f(x) = x^3$ at $a = 2$:
+- $f(2) = 8$ — the value where you are standing
+- $f'(2) = 3 \times 2^2 = 12$ — the slope at that point
+- $f''(2) = 6 \times 2 = 12$ — the curvature at that point
+
+Plugging in: $f(x) \approx 8 + 12(x - 2) + \frac{1}{2}(12)(x - 2)^2$
+
+That is a parabola that touches the true $x^3$ curve at $x = 2$ and closely matches it nearby. This is exactly what SLSQP does — except with 12 weights instead of one $x$.
+
+**Going from 1D to 12D — nothing new is invented, scalars become vectors:**
+
+| 1D (one weight) | 12D (twelve weights) | What changed |
+|:---|:---|:---|
+| $x$ — a single number | $\mathbf{w}$ — a list of 12 numbers | Scalar → vector |
+| $a$ — the current point | $\mathbf{w}_k$ — the current weights | Same idea, just 12 numbers instead of 1 |
+| $f'(a)$ — one slope number | $\nabla \mathcal{L}$ — 12 slope numbers (one per weight) | One derivative → a list of 12 partial derivatives (the gradient) |
+| $f''(a)$ — one curvature number | $B$ — a 12×12 table of curvature numbers | One second derivative → 144 second derivatives (the Hessian matrix) |
+| $(x - a)$ — how far you moved | $(\mathbf{w} - \mathbf{w}_k)$ — how far you moved in each of 12 directions | Same idea |
+| $(x - a)^2$ — distance squared | $(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$ — the matrix sandwich | Squaring one number → a matrix sandwich that accounts for curvature in every direction and every pairwise interaction |
+
+The SLSQP formula is the 1D Taylor expansion with vectors and matrices substituted for single numbers. The $\frac{1}{2}$ is the same $\frac{1}{2}$. The structure is identical. The only reason it looks more complex is that "slope" and "curvature" in 12 dimensions require a vector and a matrix to describe, whereas in 1D they are just numbers.
+
 ### **Is this a standard formula?**
 
 Unlike the objective function (which is custom-built for this strategy), the quadratic subproblem formula is **entirely standard mathematics**. It is the second-order Taylor expansion — the same approximation taught in multivariable calculus courses and used across all of numerical optimization, not just finance. Newton's method, quasi-Newton methods, and all sequential quadratic programming (SQP) solvers use this same expansion. The only project-specific element is *what* is being approximated: in our case, the portfolio objective function. The approximation machinery itself is off-the-shelf.

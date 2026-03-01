@@ -1406,6 +1406,16 @@ The off-diagonal entries are always symmetric (the top-right and bottom-left are
 
 Computing the exact 12x12 Hessian requires evaluating 78 second derivatives at every iteration — expensive. Instead, SLSQP uses a technique called **BFGS** (Broyden-Fletcher-Goldfarb-Shanno) that *estimates* the Hessian from gradient changes between iterations. The logic is: "last step I moved from point A to point B, and the gradient changed from $g_A$ to $g_B$. The relationship between how much I moved and how much the gradient changed tells me the curvature." After a few iterations, this estimate converges close to the true Hessian — accurate enough to find the bottom of the bowl efficiently without computing 78 derivatives every time.
 
+**What else BFGS does beyond approximating the Hessian:**
+
+1. **It updates, not recomputes.** BFGS does not build a new 12×12 matrix from scratch each iteration. It takes the *previous* estimate and applies a small correction using two vectors from the latest step: $s_k = w_{k+1} - w_k$ (how far you moved) and $y_k = \nabla L_{k+1} - \nabla L_k$ (how much the gradient changed). If you moved a little and the gradient changed a lot, the curvature in that direction is steep. If the gradient barely changed, it is flat. BFGS encodes this into a rank-2 update — meaning it adjusts only two "directions" in the matrix per step, leaving the rest unchanged.
+
+2. **It starts from the identity matrix.** At the very first iteration, BFGS has no history, so it sets $B_0 = I$ (the identity matrix — all 1s on the diagonal, 0s elsewhere). This is equivalent to assuming "the curvature is equal in all directions," which makes the first step essentially gradient descent. But after a few iterations, the estimate improves rapidly.
+
+3. **It is self-correcting.** Even if early estimates are poor, each new step refines the approximation. After roughly $n$ steps (where $n$ is the number of variables — 12 for this portfolio), BFGS has "seen" curvature information in enough directions to have a good estimate of the full Hessian.
+
+4. **It guarantees the bowl opens upward.** The Hessian must be *positive definite* (the bowl must open upward, not downward) for the quadratic subproblem to have a minimum. If the bowl opened downward, the "minimum" would be at negative infinity — nonsensical. BFGS guarantees positive definiteness by construction in every update, whereas the true Hessian might not always be positive definite for non-convex functions. This is a safety property: BFGS always produces a solvable subproblem.
+
 **The one-sentence summary:** The gradient says "go downhill." The Hessian says "the bottom of the hill is approximately *this far away* in *that direction*." Without the Hessian, the solver knows which way to walk but not how far — with it, the solver can jump directly to (approximately) the bottom in one step.
 
 **Step 4 — Find the bottom of that bowl.** But ONLY within the allowed zone (you cannot step outside the fence = constraints):

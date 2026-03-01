@@ -1277,10 +1277,32 @@ $$\mathcal{L}(\mathbf{w}) \approx \mathcal{L}(\mathbf{w}_k) + \nabla \mathcal{L}
 
 > **Do not confuse these two formulas.** The objective function $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ is the *real problem* — what we want to minimize. The formula above is SLSQP's *approximation* of that problem at a single point $\mathbf{w}_k$. SLSQP never solves the objective function directly. Instead, at each iteration, it builds this quadratic approximation (a parabola that matches the objective's value, slope, and curvature at the current point), solves the parabola exactly, moves to the answer, and rebuilds. The objective function is the destination; the quadratic subproblem is the vehicle.
 
-Each component explained:
-- $\mathcal{L}(\mathbf{w}_k)$ = the function value where you are standing now
-- $\nabla \mathcal{L}^\top (\mathbf{w} - \mathbf{w}_k)$ = the slope times how far you move (linear part — "which direction is downhill")
-- $\frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$ = the curvature times how far you move squared (quadratic part — "how far until the bottom"). $B$ is the Hessian matrix (a table of second derivatives — how fast the slope itself is changing)
+### **Is this a standard formula?**
+
+Unlike the objective function (which is custom-built for this strategy), the quadratic subproblem formula is **entirely standard mathematics**. It is the second-order Taylor expansion — the same approximation taught in multivariable calculus courses and used across all of numerical optimization, not just finance. Newton's method, quasi-Newton methods, and all sequential quadratic programming (SQP) solvers use this same expansion. The only project-specific element is *what* is being approximated: in our case, the portfolio objective function. The approximation machinery itself is off-the-shelf.
+
+| Component | Origin |
+|:---|:---|
+| Second-order Taylor expansion | Calculus (Taylor, 1715) |
+| Hessian matrix $B$ | Multivariable calculus (Hesse, 1842) |
+| BFGS approximation of $B$ | Numerical optimization (Broyden, Fletcher, Goldfarb, Shanno, 1970) |
+| SQP framework | Constrained optimization (Wilson, 1963; Han, 1976) |
+
+### **Why each term exists**
+
+The three terms in the quadratic subproblem each answer a different question at the current point $\mathbf{w}_k$:
+
+| Term | Formula | Question it answers | Analogy |
+|:---|:---|:---|:---|
+| **Value** | $\mathcal{L}(\mathbf{w}_k)$ | "How good is the current position?" | Your altitude on the hill right now |
+| **Gradient** (first-order) | $\nabla \mathcal{L}^\top (\mathbf{w} - \mathbf{w}_k)$ | "Which direction is downhill, and how steep?" | The slope of the ground under your feet |
+| **Curvature** (second-order) | $\frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$ | "How far away is the bottom?" | Whether you're in a wide valley (far to walk) or a narrow gorge (bottom is right below) |
+
+- With only the **value** term, you know where you are but not where to go.
+- Adding the **gradient** tells you the direction, but not the distance — you'd overshoot or undershoot.
+- Adding the **curvature** (the Hessian $B$) gives you both direction and distance, so SLSQP can jump directly to the approximate bottom of the bowl in one step.
+
+This is why the quadratic approximation is more powerful than gradient descent: gradient descent only uses the first two terms (value + slope) and must take many small, cautious steps. SLSQP uses all three terms and can take large, confident jumps — at the cost of computing or approximating the Hessian.
 
 **Why a quadratic approximation?** Any smooth function, if you zoom in close enough, looks like a parabola. A linear approximation (straight line) tells you which direction is downhill, but not how far to go. A quadratic approximation (parabola) tells you the direction AND roughly where the bottom is.
 

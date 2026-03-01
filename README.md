@@ -2560,8 +2560,6 @@ This project uses GBM for a completely different purpose. Black-Scholes asks: "g
 | **Method** | Analytical (solve the equation) | Monte Carlo simulation (generate random paths) |
 | **Application** | Options pricing and hedging | Portfolio risk assessment and tail risk analysis |
 
-If asked in an interview: "Yes, GBM is the Black-Scholes assumption. But instead of pricing options with it, I use it for Monte Carlo simulation — generating a million possible futures to understand the full range of portfolio outcomes, including tail risks."
-
 ### **Technical Summary**
 
 GBM models stock prices as a random walk in log-space. The price change each day comprises two components: a deterministic drift (expected return adjusted for volatility drag) and a stochastic diffusion (random shock scaled by volatility). The $-\frac{1}{2}\sigma^2$ correction is a direct consequence of Ito's Lemma — it accounts for the mathematical asymmetry where symmetric percentage gains and losses do not cancel out (a +50% gain followed by a -50% loss results in a net -25% loss, not 0%). The exponential wrapper ensures that simulated prices remain strictly positive regardless of the random draw. By simulating 1,000,000 independent paths over a 5-year horizon, the engine constructs a full probability distribution of future portfolio outcomes — capturing not just the expected case but the complete range of tail risks and upside scenarios.

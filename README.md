@@ -2365,6 +2365,8 @@ We want to find how $\ln(S)$ changes over time, given that $S$ follows $dS = \mu
 
 For any smooth function $f(S)$ applied to a stochastic process $S$, Ito's Lemma says:
 
+"Smooth" means $f$ has no sharp corners or jumps — its first and second derivatives must exist (the formula uses both $f'$ and $f''$, so if either doesn't exist, the formula breaks). "Stochastic process" means $S$ is not a fixed number but a randomly moving stock price following the SDE. The power of Ito's Lemma is that it works as a **universal converter**: if you know how $S$ moves, it tells you how *any* smooth function of $S$ moves. Want $\ln(S)$? Plug in $f = \ln$. Want $S^2$? Plug in $f(S) = S^2$. We choose $f = \ln$ specifically because it is the function that removes $S$ from the right side and gives a closed-form answer — but the formula itself is general-purpose.
+
 $$df(S) = \underbrace{f'(S)}_{\text{first derivative of } f} ~ dS + \frac{1}{2} \underbrace{f''(S)}_{\text{second derivative of } f} ~ \underbrace{(dS)^2}_{\text{the square of } dS}$$
 
 **Important notation clarification:** $f''(S)$ and $(dS)^2$ look similar but mean completely different things. $f''(S)$ is the second derivative of the function $f$ — a calculus operation. $(dS)^2$ is the change in price multiplied by itself — literally $dS \times dS$, a number squared. They happen to appear next to each other in the formula, but one is a property of the function and the other is a property of the price movement.

@@ -2287,7 +2287,7 @@ Here is what every symbol means:
 - $\mu$ = drift — the expected annual return (e.g., 0.20 for 20%/year)
 - $\sigma$ = volatility — the annual standard deviation (e.g., 0.25 for 25%)
 - $dt$ = a tiny slice of time
-- $dW$ = a Wiener process increment — a tiny random shock from a bell curve
+- $dW$ = a Wiener process increment — a tiny random shock from a bell curve. Think of it as the universe "rolling a bell-curve die" for the stock at every instant. Most rolls land near 0 (small moves, most days), some land at $\pm 1$ (moderate moves), rare ones hit $\pm 3$ (big moves). Formally: $dW = \sqrt{dt} \times Z$ where $Z \sim \mathcal{N}(0,1)$ is a standard normal random number. The $\sqrt{dt}$ scaling is critical — it ensures that randomness accumulates correctly over time. Over 252 trading days, the daily shocks add up to exactly one year's worth of volatility. Without the square root, short time steps would produce either too much or too little total randomness.
 
 The key insight: both terms are proportional to $S$. A 100 dollar stock moves in dollars, a 1000 dollar stock moves in tens of dollars — but they both move the same percentage. That is what makes it "geometric."
 

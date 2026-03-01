@@ -1317,7 +1317,8 @@ The SLSQP formula is the 1D Taylor expansion with vectors and matrices substitut
   notice the green ellipses match the blue contours near the current point (orange dot) but diverge further away.
   At each iteration, SLSQP jumps from the current point to the bowl's bottom (green square), rebuilds the
   approximation, and repeats until it reaches the true minimum (blue star).
-  The real 12-weight version is this same concept in 13 dimensions.</em>
+  The real 12-weight version is this same concept in 12 dimensions — and internally the solver adds a 13th variable,
+  the <a href="#what-is-a-lagrange-multiplier-exactly">Lagrange multiplier</a> λ, which enforces the "weights sum to 1" constraint.</em>
 </p>
 
 ### **Is this a standard formula?**

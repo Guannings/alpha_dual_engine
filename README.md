@@ -2331,7 +2331,7 @@ The SDE $dS = \mu S  ~ dt + \sigma S  ~ dW$ is in continuous time — infinitely
 
 **Why can't we just plug numbers into the SDE directly?**
 
-Look at the equation again: $dS = \mu S \, dt + \sigma S \, dW$. The change in $S$ depends on $S$ itself — both terms multiply by $S$. So to compute tomorrow's price you need today's price, but the randomness *also* scales with today's price, and in continuous time these interact in a way that doesn't simplify into a clean step-by-step recipe.
+Look at the equation again: $dS = \mu S ~ dt + \sigma S ~ dW$. The change in $S$ depends on $S$ itself — both terms multiply by $S$. So to compute tomorrow's price you need today's price, but the randomness *also* scales with today's price, and in continuous time these interact in a way that doesn't simplify into a clean step-by-step recipe.
 
 The trick is to stop tracking $S$ and instead track $\ln(S)$ (the logarithm of the price). When you convert the equation from "$S$" to "$\ln(S)$," something useful happens: $\ln(S)$ disappears from the right side of the equation. The change in $\ln(S)$ becomes just "a constant plus a random number" — no dependence on the current value. That means you can directly add up all the steps and get a closed-form answer, no tiny iterations needed.
 

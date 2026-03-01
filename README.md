@@ -2357,11 +2357,24 @@ $$\int_0^T \left(\mu - \tfrac{1}{2}\sigma^2\right) dt = \left(\mu - \tfrac{1}{2}
 
 Just like: walking at 5 km/h for 3 hours = $5 \times 3 = 15$ km. A constant rate times total time.
 
-**The random part** — add up $\sigma ~ dW$ over the whole period. Each $dW$ is an independent random shock from a bell curve. Adding up many independent bell-curve random numbers gives you one bigger bell-curve random number. The total of all $dW$'s over time $T$ is $\sqrt{T} \times Z$, where $Z \sim \mathcal{N}(0,1)$:
+**The random part** — add up $\sigma ~ dW$ over the whole period. Here is what literally happens over 252 trading days ($dt = 1/252$):
+
+Each day, the market generates one random shock: $dW_i = \sqrt{dt} \times Z_i$, where each $Z_i$ is an independent random number from $\mathcal{N}(0,1)$. Adding all 252 shocks:
+
+$$\sum dW = \sqrt{dt} \times (Z_1 + Z_2 + Z_3 + \ldots + Z_{252})$$
+
+What is $Z_1 + Z_2 + \ldots + Z_{252}$? You might think the sum is around 252 — but these are random numbers, some positive, some negative. They partially cancel each other. The sum does not grow as fast as 252. The rule from probability: when you add $n$ independent bell-curve random numbers each with variance 1, the **variances** add (not the standard deviations):
+
+- Total variance $= 1 + 1 + \ldots + 1 = 252$
+- Total standard deviation (typical size of the sum) $= \sqrt{252}$, not 252
+
+So $Z_1 + Z_2 + \ldots + Z_{252} = \sqrt{252} \times Z$, where $Z$ is one single $\mathcal{N}(0,1)$ random number. Plugging back in:
+
+$$\sum dW = \sqrt{dt} \times \sqrt{252} \times Z = \sqrt{dt \times 252} \times Z = \sqrt{T} \times Z$$
+
+The $\sqrt{T}$ comes from two square roots multiplied: $\sqrt{dt}$ (from each individual shock) times $\sqrt{252}$ (from adding 252 random numbers that partially cancel). Multiplying by $\sigma$:
 
 $$\int_0^T \sigma ~ dW = \sigma \times \sqrt{T} \times Z$$
-
-Why $\sqrt{T}$ and not $T$? Because **variances** add, not standard deviations. 252 daily shocks, each with variance $dt$, give total variance $= 252 \times dt = T$. Total standard deviation $= \sqrt{T}$.
 
 **Combine both parts** and move $\ln(S_0)$ to the right:
 

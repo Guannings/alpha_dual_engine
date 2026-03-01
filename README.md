@@ -2396,7 +2396,7 @@ $$(dS)^2 = (\mu S ~ dt + \sigma S ~ dW)^2$$
 Expand using three rules of stochastic calculus. These rules are not arbitrary — each has a concrete reason:
 
 - $(dt)^2 = 0$ — a tiny number squared is negligible. If $dt = 0.004$ (one trading day), then $(dt)^2 = 0.000016$. Too small to matter. Same reason normal calculus ignores $(dx)^2$.
-- $dt \cdot dW = 0$ — since $dW \approx \sqrt{dt}$ in size, $dt \cdot dW \approx dt^{3/2}$, which is even smaller than $dt$ itself. Also negligible.
+- $dt \cdot dW = 0$ — recall from above that $dW = \sqrt{dt} \times Z$, so the typical size of $dW$ is $\sqrt{dt}$ (since $Z$ is usually around 1). Therefore $dt \cdot dW \approx dt \times \sqrt{dt} = dt^{3/2}$, which is even smaller than $dt$ itself. If $dt = 0.004$, then $dt^{3/2} = 0.00025$. Also negligible.
 - $(dW)^2 = dt$ — **this is the weird one** that makes stochastic calculus different. Since $dW = \sqrt{dt} \times Z$ (where $Z$ is a bell-curve random number), squaring gives $(dW)^2 = dt \times Z^2$. The key property: if you average $Z^2$ over many draws from the bell curve, the average is exactly 1. So $(dW)^2 = dt \times 1 = dt$. This is small but NOT zero — it survives and creates the extra term that doesn't exist in normal calculus.
 
 Applying these rules:

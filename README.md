@@ -1273,7 +1273,7 @@ Imagine you are blindfolded on a hilly landscape and you need to find the lowest
 
 Mathematically, at the current weights $\mathbf{w}_k$, SLSQP approximates:
 
-$$\mathcal{L}(\mathbf{w}) \approx \mathcal{L}(\mathbf{w}_k) + \nabla \mathcal{L}^\top (\mathbf{w} - \mathbf{w}_k) + \frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$$
+$$\mathcal{L}(\mathbf{w}) \approx \underbrace{\mathcal{L}(\mathbf{w}_k)}_{\text{Value (Taylor 0th)}} + \underbrace{\nabla \mathcal{L}^\top (\mathbf{w} - \mathbf{w}_k)}_{\text{Gradient (Taylor 1st)}} + \underbrace{\frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top \overbrace{B}^{\text{Hessian (BFGS)}} (\mathbf{w} - \mathbf{w}_k)}_{\text{Curvature (Taylor 2nd)}}$$
 
 > **Do not confuse these two formulas.** The objective function $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ is the *real problem* — what we want to minimize. The formula above is SLSQP's *approximation* of that problem at a single point $\mathbf{w}_k$. SLSQP never solves the objective function directly. Instead, at each iteration, it builds this quadratic approximation (a parabola that matches the objective's value, slope, and curvature at the current point), solves the parabola exactly, moves to the answer, and rebuilds. The objective function is the destination; the quadratic subproblem is the vehicle.
 
@@ -1281,12 +1281,14 @@ $$\mathcal{L}(\mathbf{w}) \approx \mathcal{L}(\mathbf{w}_k) + \nabla \mathcal{L}
 
 Unlike the objective function (which is custom-built for this strategy), the quadratic subproblem formula is **entirely standard mathematics**. It is the second-order Taylor expansion — the same approximation taught in multivariable calculus courses and used across all of numerical optimization, not just finance. Newton's method, quasi-Newton methods, and all sequential quadratic programming (SQP) solvers use this same expansion. The only project-specific element is *what* is being approximated: in our case, the portfolio objective function. The approximation machinery itself is off-the-shelf.
 
-| Component | Origin |
-|:---|:---|
-| Second-order Taylor expansion | Calculus (Taylor, 1715) |
-| Hessian matrix $B$ | Multivariable calculus (Hesse, 1842) |
-| BFGS approximation of $B$ | Numerical optimization (Broyden, Fletcher, Goldfarb, Shanno, 1970) |
-| SQP framework | Constrained optimization (Wilson, 1963; Han, 1976) |
+| Component | Origin | What problem it solves |
+|:---|:---|:---|
+| Second-order Taylor expansion | Calculus (Taylor, 1715) | The objective is too complex to minimize directly — approximate it as a parabola locally |
+| Hessian matrix $B$ | Multivariable calculus (Hesse, 1842) | With 12 weights, we need curvature in every direction simultaneously — the Hessian is the multi-dimensional second derivative |
+| BFGS approximation of $B$ | Numerical optimization (Broyden, Fletcher, Goldfarb, Shanno, 1970) | Computing the exact 12×12 Hessian (78 second derivatives) every iteration is expensive — BFGS infers curvature by watching how the gradient changes between steps |
+| SQP framework | Constrained optimization (Wilson, 1963; Han, 1976) | Taylor + Hessian gives an unconstrained quadratic, but the real problem has constraints (weights sum to 1, caps, floors) — SQP wraps each subproblem in Lagrange multipliers and active-set methods |
+
+Each component solves a limitation left by the previous one. Taylor simplifies the function but only works for one variable. The Hessian extends it to 12 variables but is expensive to compute exactly. BFGS makes it cheap but doesn't handle constraints. SQP adds constraint handling. Together, these four layers form SLSQP — the "Sequential" refers to solving a sequence of these quadratic subproblems, each one more accurate than the last.
 
 ### **Why each term exists**
 

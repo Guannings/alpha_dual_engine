@@ -2329,11 +2329,19 @@ The stock jumps up 2.36 dollars. Notice: **the random part (2.36) completely dwa
 
 The SDE $dS = \mu S  ~ dt + \sigma S  ~ dW$ is in continuous time — infinitely small time steps. To actually simulate it on a computer, we need a discrete formula. This is where **Ito's Lemma** comes in.
 
+**Why can't we just plug numbers into the SDE directly?**
+
+Look at the equation again: $dS = \mu S \, dt + \sigma S \, dW$. The change in $S$ depends on $S$ itself — both terms multiply by $S$. So to compute tomorrow's price you need today's price, but the randomness *also* scales with today's price, and in continuous time these interact in a way that doesn't simplify into a clean step-by-step recipe.
+
+The trick is to stop tracking $S$ and instead track $\ln(S)$ (the logarithm of the price). When you convert the equation from "$S$" to "$\ln(S)$," something useful happens: $\ln(S)$ disappears from the right side of the equation. The change in $\ln(S)$ becomes just "a constant plus a random number" — no dependence on the current value. That means you can directly add up all the steps and get a closed-form answer, no tiny iterations needed.
+
+The tool that performs this conversion is **Ito's Lemma** — the chain rule from calculus, but adapted for random processes. In normal calculus, the chain rule tells you how a function of $x$ changes when $x$ changes. Ito's Lemma does the same thing, but adds a correction term because the random part ($dW$) behaves differently from a normal variable: its square doesn't vanish ($(dW)^2 = dt$), which produces the famous $-\frac{1}{2}\sigma^2$ correction.
+
 #### **The $-\frac{1}{2}\sigma^2$ correction**
 
 This is the part everyone finds mysterious. Here is where it comes from.
 
-Take the logarithm of the stock price: $\ln(S)$. If you apply calculus rules to find how $\ln(S)$ changes over time (using Ito's Lemma, which is just the chain rule but for random processes), you get:
+Take the logarithm of the stock price: $\ln(S)$. Applying Ito's Lemma to find how $\ln(S)$ changes over time, you get:
 
 $$d(\ln S) = \left(\mu - \frac{1}{2}\sigma^2\right) dt + \sigma  ~ dW$$
 

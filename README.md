@@ -1067,48 +1067,57 @@ This section provides rigorous mathematical interpretations of every core formul
 ```mermaid
 graph TD
     subgraph DATA ["DATA PREPARATION"]
-        A["Raw Market Data<br/>Daily prices · Yahoo Finance · 12 assets × 15 years"]
-        B["Daily Returns<br/>r = price change ÷ previous price"]
-        C["Covariance Matrix Σ<br/>How every pair of assets moves together<br/>(Section A)"]
-        D["Cubed Momentum Scores M³<br/>Trend strength, cubed to amplify winners<br/>(Section A)"]
+        RAW["Raw Market Data<br/>12 assets × 15 yrs"]
+        RET["Daily Returns<br/>r = Δprice ÷ prev price"]
+        COV["Covariance Matrix Σ"]
+        MOM["Cubed Momentum M³"]
     end
 
-    subgraph MATH ["OPTIMIZATION · Section A"]
-        E["Objective Function<br/>risk − momentum − entropy · 102 terms"]
-        F["SLSQP Solver · iterates 20–50 times"]
-        G["Approximate as Quadratic"]
-        H["Build Lagrangian<br/>Bake 'weights sum to 1' into formula"]
-        I["Partial Derivatives → Set to Zero<br/>13 equations, 13 unknowns"]
-        J["Gaussian Elimination → solve for weights"]
-        K["Optimal Weights<br/>w₁, w₂, ..., w₁₂"]
+    RAW --> RET
+    RET --> COV
+    RET --> MOM
+
+    COV --> PICK
+    MOM --> PICK
+    PICK{"OR — pick one path"}
+
+    subgraph CLASSICAL ["CLASSICAL PATH · Production"]
+        REG_C["Rule-Based Regime<br/>SPY > 200-SMA? →<br/>RISK_ON / REDUCED / DEF"]
+        OBJ["SLSQP Optimizer · Sec A<br/>Obj: risk − momentum − entropy"]
+        ITER["Quad approx → Lagrangian<br/>→ solve → repeat"]
+        W_C["12 Optimal Weights"]
     end
 
-    subgraph ML ["MACHINE LEARNING · PPO"]
-        L["Regime Agent<br/>25 macro features → risk-on / risk-off / defensive<br/>(Section D)"]
-        M["Weight Agent<br/>103 per-asset features → adjust SLSQP weights<br/>(Section D)"]
-        N["Final Portfolio Allocation"]
+    subgraph RL_PATH ["RL PATH · Experimental"]
+        REG_R["Regime Agent · Sec D<br/>25 macro feat → regime"]
+        W_R["Weight Agent · Sec D<br/>103 features → 12 weights"]
     end
 
-    A --> B
-    B --> C
-    B --> D
-    C --> E
-    D --> E
-    E --> F
-    F -->|"at each iteration"| G
-    G --> H
-    H --> I
-    I --> J
-    J -->|"repeat until converged"| F
-    J --> K
-    K --> L
-    K --> M
-    L --> N
-    M --> N
+    PICK -->|"classical"| REG_C
+    PICK -->|"RL"| REG_R
+
+    REG_C --> OBJ
+    OBJ --> ITER
+    ITER -->|"converged"| W_C
+    ITER -->|"repeat"| OBJ
+
+    REG_R --> W_R
+
+    W_C --> FINAL["Final Portfolio Weights"]
+    W_R --> FINAL
+
+    subgraph DOWN ["DOWNSTREAM EVALUATION"]
+        ENT["Sec B · Shannon Entropy<br/>Diversity term in objective"]
+        MC["Sec C · Monte Carlo / GBM<br/>1M paths → risk assessment"]
+    end
+
+    FINAL --> MC
+    OBJ -.->|"entropy term"| ENT
 
     style DATA fill:#e3f2fd,stroke:#1565c0,color:#000
-    style MATH fill:#fff8e1,stroke:#f57f17,color:#000
-    style ML fill:#e8f5e9,stroke:#2e7d32,color:#000
+    style CLASSICAL fill:#fff8e1,stroke:#f57f17,color:#000
+    style RL_PATH fill:#e8f5e9,stroke:#2e7d32,color:#000
+    style DOWN fill:#fce4ec,stroke:#c62828,color:#000
 ```
 
 ---

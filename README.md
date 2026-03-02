@@ -315,6 +315,8 @@ This produces a bounded oscillator between 0 and 100. Values above 70 indicate o
 
 * Result: This allows the "Active HODL" engine to swap 100% of its weight between Bitcoin and Ethereum based on which one is currently experiencing a stronger "pump."
 
+> **Note:** This winner-take-all RSI rotation applies only to the classical SLSQP path. When "Use Hierarchical RL" is toggled on, the RL weight agent does not enforce RSI rotation — it learns its own crypto allocation via soft constraint penalties and can freely split the bucket between BTC and ETH.
+
 **3. The 7-Factor Feature Synthesis**
 
 This section builds the input vectors for the Machine Learning "Brain." It distills the complex market state into 7 digestible numbers:
@@ -2581,7 +2583,7 @@ The Streamlit sidebar exposes two toggles under Advanced Options:
 | **Use RL Agent (PPO)** | Regime only | RL regime agent · Sec D | SLSQP optimizer |
 | **Use Hierarchical RL (Regime + Weights)** | Both stages | Rule-based* | RL weight agent · Sec D |
 
-\* The hierarchical controller internally bypasses the RL regime agent and uses the rule-based classifier, because the regime agent developed a 71% defensive bias during training. If both toggles are enabled, hierarchical takes precedence.
+\* The hierarchical controller internally bypasses the RL regime agent and uses the rule-based classifier (regime allocation: 84.2% RISK_ON, 13.5% RISK_REDUCED, 2.3% DEFENSIVE). When "Use RL Agent (PPO)" is toggled on instead, the RL regime agent shows a **RISK_REDUCED bias of 57.1%** (36.2% RISK_ON, 6.8% DEFENSIVE) — it defaults to the cautious middle ground instead of going fully RISK_ON during bull markets. The rule-based classifier with its simple SPY > 200-SMA master switch remains more reliable. If both toggles are enabled, hierarchical takes precedence. Note: the RL weight agent does not enforce the winner-take-all crypto RSI rotation used by SLSQP — it can freely split the crypto bucket between BTC and ETH.
 
 ### **The problem PPO solves**
 
@@ -2591,7 +2593,7 @@ The Alpha Dual Engine has **two** PPO agents:
 - **High-level (discrete):** observes 25-dim state and picks 1 of 3 regimes (RISK_ON / RISK_REDUCED / DEFENSIVE)
 - **Low-level (continuous):** observes 103-dim state and outputs 12 portfolio weights
 
-> **How are regimes actually classified?** In production the RL regime agent is bypassed (it developed a 71% defensive bias during training), so a rule-based classifier decides the regime. The logic is a two-node decision tree:
+> **How are regimes actually classified?** In production the RL regime agent is bypassed (it shows a 57.1% RISK_REDUCED / 36.2% RISK_ON / 6.8% DEFENSIVE distribution — too cautious compared to the rule-based baseline's 84.2% RISK_ON), so a rule-based classifier decides the regime. The logic is a two-node decision tree:
 >
 > 1. **Is SPY above its 200-day moving average?** → **RISK_ON**. Full stop — no other checks. This is the master switch.
 > 2. **SPY is below its 200-day SMA** → check the XGBoost crash probability (`ml_prob`):
@@ -2881,7 +2883,7 @@ The system operates as a principal-agent hierarchy:
 
 4. During training, the Regime Agent is frozen (pre-trained) while the Weight Agent learns. During inference, both run in sequence: regime first, then weights conditioned on that regime
 
-5. In the current production configuration, the Regime Agent's learned policy is **bypassed** in favor of a simple rule (SPY > 200-SMA = RISK_ON) because the learned regime policy exhibited a 71% DEFENSIVE bias that prevented equity participation in bull markets. The Weight Agent still operates, preserving the benefits of learned allocation while using the more reliable rule-based regime signal.
+5. In the current production configuration, the Regime Agent's learned policy is **bypassed** in favor of a simple rule (SPY > 200-SMA = RISK_ON) because the learned regime policy shows a 57.1% RISK_REDUCED / 36.2% RISK_ON / 6.8% DEFENSIVE distribution — too cautious compared to the rule-based baseline's 84.2% RISK_ON. The Weight Agent still operates, preserving the benefits of learned allocation while using the more reliable rule-based regime signal.
 
 ### **Technical Summary**
 
@@ -2915,7 +2917,7 @@ The following strategic and architectural decisions were made entirely by the au
 
 **RL Training & Debugging:**
 - Reward function design — excess Sharpe ratio over benchmark with a quadratic drawdown penalty, balancing risk-adjusted return maximization against tail-risk control
-- Bypassing the RL regime agent — after discovering a 71% DEFENSIVE bias in the learned policy that prevented equity participation during bull markets, the decision to replace it with a rule-based override (SPY > 200-SMA) while retaining the trained Weight Agent
+- Bypassing the RL regime agent — the trained policy shows 57.1% RISK_REDUCED / 36.2% RISK_ON / 6.8% DEFENSIVE, too cautious compared to the rule-based baseline's 84.2% RISK_ON. Replaced with a rule-based override (SPY > 200-SMA) while retaining the trained Weight Agent
 - Checkpoint selection — systematic evaluation of 11 model checkpoints across the training run, identifying the 50K-step model as optimal based on negative Sharpe decay (OOS Sharpe 1.060 > IS Sharpe 0.985), proving that more training degraded generalization
 - Diagnosing the safety net drift measurement bug — identifying and resolving an error in the drift calculation that caused the defensive regime to trigger incorrectly
 

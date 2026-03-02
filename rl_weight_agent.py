@@ -1573,8 +1573,9 @@ class HierarchicalRLController:
                    tlt_momentum: float = 0.0, equity_risk_premium: float = 0.0) -> str:
         """Baseline regime logic — SPY > 200-SMA = RISK_ON (master switch).
 
-        The RL regime agent is bypassed because its 71% DEFENSIVE bias
-        prevents equity participation in bull markets. The RL weight agent
+        The RL regime agent is bypassed because it shows a 57.1%
+        RISK_REDUCED bias (36.2% RISK_ON, 6.8% DEFENSIVE) — too cautious
+        vs the rule-based baseline's 84.2% RISK_ON. The RL weight agent
         still controls allocation, preserving diversity and cost advantages.
         """
         if spy_above_sma:

@@ -2637,7 +2637,7 @@ The math is the same for both agents. Here is the full derivation from scratch.
 
 ### **Step 1: The Policy $\pi_\theta$**
 
-The policy is a neural network with parameters $\theta$ that maps observations to actions.
+The policy is the agent's **decision-making rule** — it looks at market data and decides what to do. Concretely, it is a neural network: a function with thousands of internal numbers (called parameters, written as $\theta$) that takes in an observation ("here is what the market looks like today") and outputs an action ("pick this regime" or "use these portfolio weights"). At first the parameters are random and the decisions are garbage. Training adjusts $\theta$ until the agent makes good decisions — that is what PPO does (Steps 2–5 below).
 
 **Discrete case** (regime agent): The network outputs logits $\ell_1, \ell_2, \ell_3$ for the 3 regimes. Convert to probabilities via softmax:
 

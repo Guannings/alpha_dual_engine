@@ -1083,8 +1083,11 @@ graph TD
 
     subgraph CLASSICAL ["CLASSICAL PATH · Production"]
         REG_C["Rule-Based Regime<br/>SPY > 200-SMA? →<br/>RISK_ON / REDUCED / DEF"]
-        OBJ["SLSQP Optimizer · Sec A<br/>Obj: risk − momentum − entropy"]
-        ITER["Quad approx → Lagrangian<br/>→ solve → repeat"]
+        RISK["Risk term<br/>w′Σw · portfolio variance"]
+        MOMENT["Momentum term<br/>−Σ mᵢ³wᵢ · reward trends"]
+        ENTROPY["Entropy term · Sec B<br/>−λ H(w) · penalise concentration"]
+        OBJ["Combined Objective<br/>f = risk − momentum − entropy"]
+        ITER["SLSQP Solver · Sec A<br/>Quad approx → Lagrangian<br/>→ solve → repeat"]
         W_C["12 Optimal Weights"]
     end
 
@@ -1096,7 +1099,12 @@ graph TD
     PICK -->|"classical"| REG_C
     PICK -->|"RL"| REG_R
 
-    REG_C --> OBJ
+    REG_C --> RISK
+    REG_C --> MOMENT
+    REG_C --> ENTROPY
+    RISK --> OBJ
+    MOMENT --> OBJ
+    ENTROPY --> OBJ
     OBJ --> ITER
     ITER -->|"converged"| W_C
     ITER -->|"repeat"| OBJ
@@ -1107,12 +1115,10 @@ graph TD
     W_R --> FINAL
 
     subgraph DOWN ["DOWNSTREAM EVALUATION"]
-        ENT["Sec B · Shannon Entropy<br/>Diversity term in objective"]
         MC["Sec C · Monte Carlo / GBM<br/>1M paths → risk assessment"]
     end
 
     FINAL --> MC
-    OBJ -.->|"entropy term"| ENT
 
     style DATA fill:#e3f2fd,stroke:#1565c0,color:#000
     style CLASSICAL fill:#fff8e1,stroke:#f57f17,color:#000

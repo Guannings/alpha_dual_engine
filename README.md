@@ -2664,11 +2664,13 @@ The network outputs two things:
 - $\mu$ — the **mean vector**: a list of 12 numbers representing "my best guess" for each weight. This is the center of 12 bell curves.
 - $\log\sigma$ — the **log standard deviation**: how wide each bell curve is. Big $\sigma$ = "I'm unsure, try wildly different values." Small $\sigma$ = "I'm pretty confident, stay close to $\mu$."
 
-**Step 1 — Sample from the bell curves.** For each of the 12 assets, roll a random number from its bell curve:
+**Step 1 — Sample from the bell curves.** For each of the 12 assets, generate a random number near the network's best guess:
 
 $$z_i \sim \mathcal{N}(\mu_i, \sigma_i^2)$$
 
-Example: if the network's best guess for asset 3 is $\mu_3 = 0.8$ with uncertainty $\sigma_3 = 0.1$, then $z_3$ is a random draw from a bell curve centered at 0.8 with width 0.1. Most draws (~99.7%) land within $\pm 3\sigma$ of the center: $0.8 \pm 0.3 = [0.5, 1.1]$. A tighter $\sigma$ (say 0.01) would keep draws very close to 0.8 — meaning the agent is confident and barely explores.
+What does "draw from a bell curve" actually mean? It's the computer equivalent of saying "pick a number near $\mu$, but add some noise." Concretely, the computer calls a random number generator that is rigged to produce numbers clustered around $\mu$ — numbers very close to $\mu$ come up often, numbers far away come up rarely. The parameter $\sigma$ controls how much noise: big $\sigma$ means the random draws scatter widely, small $\sigma$ means they stay tight.
+
+Example: suppose the network's best guess for SMH is $\mu = 0.15$ with $\sigma = 0.05$. One draw might produce 0.14, another 0.17, another 0.08. Most draws land within $\pm 3\sigma$ of the center ($0.15 \pm 0.15 = [0.00, 0.30]$). The network is saying "I think SMH should be around 15%, give or take" — and the randomness lets it accidentally discover that 8% or 25% might actually work better. It does this independently for all 12 assets, producing 12 random-ish numbers $z_1, \ldots, z_{12}$.
 
 **Step 2 — Softmax the samples** to get actual weights that sum to 1:
 
@@ -2678,7 +2680,9 @@ The 12 raw samples $z_1, \ldots, z_{12}$ from Step 1 are arbitrary numbers — t
 
 Why is this a "valid portfolio"? Because after softmax, each weight is between 0 and 1, and they add up to exactly 1. That's the definition of a portfolio allocation.
 
-Where does the randomness come from? Not from softmax — softmax is deterministic. The randomness came from Step 1, where each $z_i$ was randomly drawn from its bell curve. Two runs with the same $\mu$ and $\sigma$ will produce different $z$ values and therefore different portfolios. This is how the agent **explores**: early in training when $\sigma$ is large, the draws vary wildly, so the agent tries many different allocations and learns which ones get rewarded.
+Where does the randomness come from? Not from softmax — softmax is deterministic. The randomness came from Step 1, where each $z_i$ was randomly drawn from its bell curve. Two runs with the same $\mu$ and $\sigma$ will produce different $z$ values and therefore different portfolios.
+
+This is how the agent **explores**. Here is what "trying" looks like concretely: the agent sees today's market data, draws random weights from its bell curves, and those weights are used to run a simulated quarter of trading. At the end of the quarter, the simulation produces a reward (based on Sharpe ratio minus drawdown penalties). If the random draw happened to put 20% in SMH and that worked well, the agent nudges $\mu_{\text{SMH}}$ upward so future draws are more likely to be near 20%. If a draw put 30% in TLT and that lost money, $\mu_{\text{TLT}}$ gets nudged down. Over thousands of these simulated quarters, the bell curve centres ($\mu$) drift toward allocations that consistently earn good rewards, and the widths ($\sigma$) shrink as the agent becomes more confident — it stops exploring and starts exploiting what it learned.
 
 **Step 3 — Compute the log probability** of the specific sample. This asks: "how likely was this particular roll?" It is the standard bell curve (Gaussian) formula, written in log form:
 

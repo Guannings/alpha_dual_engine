@@ -2568,6 +2568,23 @@ GBM models stock prices as a random walk in log-space. The price change each day
 
 ## **D. Proximal Policy Optimization (PPO) — The Complete Math**
 
+### **How Section D relates to Section A — the "Dual" in Alpha Dual Engine**
+
+Section A (SLSQP) and Section D (PPO) both output the same thing: **12 portfolio weights**. They are two alternative engines for the same job — the system uses one or the other, not both at the same time.
+
+| | Section A: SLSQP | Section D: PPO |
+|:---|:---|:---|
+| **What it is** | Classical math optimization (1970s) | Reinforcement learning (neural network) |
+| **Input** | Covariance matrix, momentum scores, entropy | 103 market features (momentum, vol, RSI, SMA, etc.) |
+| **Output** | 12 portfolio weights | 12 portfolio weights |
+| **How it decides** | Solves an equation: minimize risk - momentum - entropy | Learns from 50,000 simulated episodes of trial and error |
+| **Deterministic?** | Yes — same inputs always give same output | No — samples from bell curves (exploration), but converges over training |
+| **Adapts over time?** | No — it is solving math, not learning | Yes — the neural network updates its parameters based on rewards |
+
+**Why build two engines?** SLSQP is the reliable baseline — it is mathematically guaranteed to find the optimal weights for its objective function. PPO is the ambitious alternative — it can potentially learn patterns that a fixed formula cannot capture (like "when VIX spikes, rotate to bonds faster than the momentum signal suggests"). The code at `alpha_engine.py:1216` picks which engine to use: if an RL controller is loaded, use PPO; otherwise, fall back to SLSQP.
+
+In the current production configuration, **SLSQP handles the weights** (the PPO weight agent is still experimental). The regime agent is also bypassed in favor of the rule-based classifier. So the live flow is: rule-based regime classification → SLSQP optimization → portfolio weights. The PPO agents exist as a research path toward a fully learned system.
+
 ### **The problem PPO solves**
 
 You have an agent that observes the world (market data), takes actions (pick a regime or pick portfolio weights), and receives rewards (excess Sharpe minus penalties). The goal: find the **policy** (the rule mapping observations to actions) that maximizes cumulative reward.

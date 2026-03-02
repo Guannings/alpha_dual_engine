@@ -1069,20 +1069,14 @@ graph TD
     subgraph DATA ["DATA PREPARATION"]
         RAW["Raw Market Data<br/>12 assets × 15 yrs"]
         RET["Daily Returns<br/>r = Δprice ÷ prev price"]
-        COV["Covariance Matrix Σ"]
-        MOM["Cubed Momentum M³"]
     end
 
     RAW --> RET
-    RET --> COV
-    RET --> MOM
-
-    COV --> PICK
-    MOM --> PICK
-    PICK{"OR — pick one path"}
 
     subgraph CLASSICAL ["CLASSICAL PATH · Production"]
         REG_C["Rule-Based Regime<br/>SPY > 200-SMA? →<br/>RISK_ON / REDUCED / DEF"]
+        COV["Covariance Matrix Σ · Sec A"]
+        MOM["Cubed Momentum M³ · Sec A"]
         RISK["Risk term<br/>w′Σw · portfolio variance"]
         MOMENT["Momentum term<br/>−Σ mᵢ³wᵢ · reward trends"]
         ENTROPY["Entropy term · Sec B<br/>−λ H(w) · penalise concentration"]
@@ -1096,16 +1090,18 @@ graph TD
         W_R["Weight Agent · Sec D<br/>103 features → 12 weights"]
     end
 
-    PICK -->|"classical"| REG_C
-    PICK -->|"RL"| REG_R
+    RET --> REG_C
+    RET --> COV
+    RET --> MOM
+    RET --> REG_R
 
-    REG_C --> RISK
-    REG_C --> MOMENT
-    REG_C --> ENTROPY
+    COV --> RISK
+    MOM --> MOMENT
     RISK --> OBJ
     MOMENT --> OBJ
     ENTROPY --> OBJ
     OBJ --> ITER
+    REG_C --> ITER
     ITER -->|"converged"| W_C
     ITER -->|"repeat"| OBJ
 

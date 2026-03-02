@@ -1075,11 +1075,12 @@ graph TD
 
     subgraph CLASSICAL ["CLASSICAL PATH · Production"]
         REG_C["Rule-Based Regime<br/>SPY > 200-SMA? →<br/>RISK_ON / REDUCED / DEF"]
-        COV["Covariance Matrix Σ · Sec A"]
-        MOM["Cubed Momentum M³ · Sec A"]
-        RISK["Risk term<br/>w′Σw · portfolio variance"]
-        MOMENT["Momentum term<br/>−Σ mᵢ³wᵢ · reward trends"]
-        ENTROPY["Entropy term · Sec B<br/>−λ H(w) · penalise concentration"]
+        subgraph TERMS ["Objective Terms"]
+            direction LR
+            RISK["Risk · w′Σw<br/>from Σ · Sec A"]
+            MOMENT["Momentum · −Σmᵢ³wᵢ<br/>from M³ · Sec A"]
+            ENTROPY["Entropy · −λH(w)<br/>Sec B"]
+        end
         OBJ["Combined Objective<br/>f = risk − momentum − entropy"]
         ITER["SLSQP Solver · Sec A<br/>Quad approx → Lagrangian<br/>→ solve → repeat"]
         W_C["12 Optimal Weights"]
@@ -1090,18 +1091,14 @@ graph TD
         W_R["Weight Agent · Sec D<br/>103 features → 12 weights"]
     end
 
-    RET --> REG_C
-    RET --> COV
-    RET --> MOM
-    RET --> REG_R
+    RET -->|"classical"| REG_C
+    RET -->|"RL"| REG_R
 
-    COV --> RISK
-    MOM --> MOMENT
     RISK --> OBJ
     MOMENT --> OBJ
     ENTROPY --> OBJ
-    OBJ --> ITER
     REG_C --> ITER
+    OBJ --> ITER
     ITER -->|"converged"| W_C
     ITER -->|"repeat"| OBJ
 
@@ -1118,6 +1115,7 @@ graph TD
 
     style DATA fill:#e3f2fd,stroke:#1565c0,color:#000
     style CLASSICAL fill:#fff8e1,stroke:#f57f17,color:#000
+    style TERMS fill:#fff3e0,stroke:#ef6c00,color:#000
     style RL_PATH fill:#e8f5e9,stroke:#2e7d32,color:#000
     style DOWN fill:#fce4ec,stroke:#c62828,color:#000
 ```

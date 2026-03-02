@@ -2674,7 +2674,11 @@ Example: if the network's best guess for asset 3 is $\mu_3 = 0.8$ with uncertain
 
 $$\text{weights} = \text{softmax}(z)$$
 
-Now you have a valid portfolio. The sampling adds randomness (exploration), and softmax enforces the constraint that weights sum to 1.
+The 12 raw samples $z_1, \ldots, z_{12}$ from Step 1 are arbitrary numbers — they can be negative, and they don't sum to 1, so they're not valid portfolio weights. Softmax fixes this (same operation explained in the discrete case above): raise $e$ to the power of each $z_i$, then divide by the total. Every output becomes positive and they're guaranteed to sum to 1 — which is exactly the constraint a portfolio needs (you must allocate 100% of your money, no more, no less).
+
+Why is this a "valid portfolio"? Because after softmax, each weight is between 0 and 1, and they add up to exactly 1. That's the definition of a portfolio allocation.
+
+Where does the randomness come from? Not from softmax — softmax is deterministic. The randomness came from Step 1, where each $z_i$ was randomly drawn from its bell curve. Two runs with the same $\mu$ and $\sigma$ will produce different $z$ values and therefore different portfolios. This is how the agent **explores**: early in training when $\sigma$ is large, the draws vary wildly, so the agent tries many different allocations and learns which ones get rewarded.
 
 **Step 3 — Compute the log probability** of the specific sample. This asks: "how likely was this particular roll?" It is the standard bell curve (Gaussian) formula, written in log form:
 

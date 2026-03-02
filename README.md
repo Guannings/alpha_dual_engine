@@ -2576,7 +2576,27 @@ The Alpha Dual Engine has **two** PPO agents:
 - **High-level (discrete):** observes 25-dim state and picks 1 of 3 regimes (RISK_ON / RISK_REDUCED / DEFENSIVE)
 - **Low-level (continuous):** observes 103-dim state and outputs 12 portfolio weights
 
-The math is the same for both. Here is the full derivation from scratch.
+"25-dim state" and "103-dim state" simply mean a list of 25 or 103 numbers that describe the current market conditions — each number is one "dimension" (one piece of information the agent can see). The 103 dimensions of the weight agent break down as:
+
+| Dims | Count | What the agent sees |
+|:---|:---|:---|
+| [0:3] | 3 | Regime one-hot (which regime the high-level agent chose) |
+| [3:15] | 12 | Per-asset raw momentum |
+| [15:27] | 12 | Per-asset volatilities |
+| [27:39] | 12 | Per-asset RSI-14 |
+| [39:51] | 12 | Per-asset above-SMA (binary: is the price above the 60-day moving average?) |
+| [51:63] | 12 | Per-asset golden cross (binary: did the short-term SMA cross above the long-term?) |
+| [63:75] | 12 | Per-asset information ratio |
+| [75:87] | 12 | Per-asset 30-day log returns |
+| [87:99] | 12 | Current portfolio weights |
+| [99] | 1 | ML probability (XGBoost crash probability) |
+| [100] | 1 | Current drawdown |
+| [101] | 1 | Days since last rebalance |
+| [102] | 1 | Portfolio value |
+
+Each rebalance day, these 103 numbers are assembled into one vector and fed to the neural network. The agent's job is to look at all 103 numbers and output 12 weights.
+
+The math is the same for both agents. Here is the full derivation from scratch.
 
 ### **Step 1: The Policy $\pi_\theta$**
 

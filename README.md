@@ -2596,6 +2596,17 @@ The Alpha Dual Engine has **two** PPO agents:
 
 Each rebalance day, these 103 numbers are assembled into one vector and fed to the neural network. The agent's job is to look at all 103 numbers and output 12 weights.
 
+The 25 dimensions of the regime agent break down as:
+
+| Dims | Count | What the agent sees |
+|:---|:---|:---|
+| [0:7] | 7 | ML features (realized vol, vol momentum, equity risk premium, trend score, 21d momentum, QQQ vs SPY, TLT momentum) |
+| [7:13] | 6 | Portfolio-aggregate (equity weight, safe-haven weight, crypto weight, normalized portfolio value, days since rebalance, drawdown) |
+| [13:20] | 7 | Cross-asset summaries (mean equity momentum, pct above SMA, mean volatility, BTC golden cross, TLT above SMA, mean information ratio, ML probability) |
+| [20:25] | 5 | Recent performance (5d / 21d / 63d portfolio returns, 21d benchmark returns, 21d excess returns) |
+
+Notice the difference: the weight agent sees per-asset detail (12 numbers per feature — one for each asset), while the regime agent sees aggregate summaries (one number for the whole market). This makes sense — the regime agent only needs to answer "what's the big picture?" (risk-on / risk-off / defensive), so it gets macro-level signals. The weight agent needs to decide how much of each specific asset to hold, so it gets asset-level signals.
+
 The math is the same for both agents. Here is the full derivation from scratch.
 
 ### **Step 1: The Policy $\pi_\theta$**

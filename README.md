@@ -1052,6 +1052,7 @@ This section provides rigorous mathematical interpretations of every core formul
 - [A full worked example](#a-full-worked-example--one-simulated-day) — One simulated day with real numbers
 
 **Section D — Proximal Policy Optimization (PPO)**
+- [Softmax](#softmax--turning-arbitrary-numbers-into-valid-allocations) — Formula, worked example, why $e$, key properties
 - [Step 1: The Policy](#step-1-the-policy-pi_theta) — Discrete (softmax) vs continuous (Gaussian) action spaces
 - [Step 2: The Value Function](#step-2-the-value-function-vs) — Shared trunk, actor-critic architecture
 - [Step 3: Advantage Estimation (GAE)](#step-3-advantage-estimation--was-this-action-better-than-average) — TD error, bias-variance tradeoff

@@ -2590,9 +2590,16 @@ The system has two decisions to make every rebalance day: (1) which regime are w
 
 **Where does Section C fit?** Section C (GBM / Monte Carlo) is not part of either decision. It runs **after** the weights are already chosen — it takes the final portfolio weights and simulates 1 million future price paths to assess risk (tail losses, drawdown probabilities, etc.). It is a downstream evaluation step, not a competing weight engine.
 
-**Why build two approaches?** The classical path is the reliable baseline — SLSQP is mathematically guaranteed to find the optimal weights for its objective function, and the rule-based regime classifier is simple and interpretable. The RL path is the ambitious alternative — it can potentially learn patterns that fixed formulas cannot capture (like "when VIX spikes, rotate to bonds faster than the momentum signal suggests"). Each RL agent can be toggled independently via the Streamlit interface, so the system supports any combination of classical and RL for the two decisions (regime + weights).
+**Why build two approaches?** The classical path is the reliable baseline — SLSQP is mathematically guaranteed to find the optimal weights for its objective function, and the rule-based regime classifier is simple and interpretable. The RL path is the ambitious alternative — it can potentially learn patterns that fixed formulas cannot capture (like "when VIX spikes, rotate to bonds faster than the momentum signal suggests"). Both RL agents can be **toggled on independently** from the Streamlit interface, giving four possible configurations:
 
-By default the classical path is active — rule-based regime classification → SLSQP optimization → portfolio weights. Both RL agents can be **toggled on independently** from the Streamlit interface, so you can mix and match (e.g. classical regime + RL weights, or RL regime + SLSQP weights). The RL regime agent is known to have a 71% defensive bias from training, which is why it defaults to off.
+| Regime decision | Weight decision | Config |
+|---|---|---|
+| Rule-based (SPY > 200-SMA) | SLSQP optimizer | Full classical **(default)** |
+| Rule-based | RL weight agent | Hybrid |
+| RL regime agent | SLSQP optimizer | Hybrid |
+| RL regime agent | RL weight agent | Full RL |
+
+The RL regime agent defaults to off because it developed a 71% defensive bias during training.
 
 ### **The problem PPO solves**
 

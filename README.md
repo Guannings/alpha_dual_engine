@@ -1073,37 +1073,21 @@ graph TD
 
     RAW --> RET
 
-    subgraph CLASSICAL ["CLASSICAL PATH · Production"]
-        REG_C["Rule-Based Regime<br/>SPY > 200-SMA? →<br/>RISK_ON / REDUCED / DEF"]
-        subgraph TERMS ["Objective Terms"]
-            direction LR
-            RISK["Risk · w′Σw<br/>from Σ · Sec A"]
-            MOMENT["Momentum · −Σmᵢ³wᵢ<br/>from M³ · Sec A"]
-            ENTROPY["Entropy · −λH(w)<br/>Sec B"]
-        end
-        OBJ["Combined Objective<br/>f = risk − momentum − entropy"]
-        ITER["SLSQP Solver · Sec A<br/>Quad approx → Lagrangian<br/>→ solve → repeat"]
-        W_C["12 Optimal Weights"]
-    end
+    RET --> REG{"Regime Decision"}
+    REG -->|"default"| REG_C["Rule-Based Classifier<br/>SPY > 200-SMA? →<br/>RISK_ON / REDUCED / DEF"]
+    REG -->|"Use RL Agent"| REG_R["RL Regime Agent · Sec D<br/>25 macro feat → regime"]
 
-    subgraph RL_PATH ["RL PATH · Experimental"]
-        REG_R["Regime Agent · Sec D<br/>25 macro feat → regime"]
-        W_R["Weight Agent · Sec D<br/>103 features → 12 weights"]
-    end
+    REG_C --> WGT{"Weight Decision"}
+    REG_R --> WGT
 
-    RET -->|"classical"| REG_C
-    RET -->|"RL"| REG_R
+    WGT -->|"default"| OBJ["Objective Function · Sec A/B<br/>risk: w′Σw (from cov matrix)<br/>− momentum: Σmᵢ³wᵢ (from M³)<br/>− entropy: λH(w)"]
+    WGT -->|"Hierarchical RL"| W_R["RL Weight Agent · Sec D<br/>103 features → 12 weights"]
 
-    RISK --> OBJ
-    MOMENT --> OBJ
-    ENTROPY --> OBJ
-    REG_C --> ITER
-    OBJ --> ITER
-    ITER -->|"converged"| W_C
+    OBJ --> ITER["SLSQP Solver · Sec A<br/>Quad approx → Lagrangian<br/>→ solve → repeat"]
+    ITER -->|"converged"| W_C["12 Optimal Weights"]
     ITER -->|"repeat"| OBJ
 
     W_C --> FINAL["Final Portfolio Weights"]
-    REG_R --> FINAL
     W_R --> FINAL
 
     subgraph DOWN ["DOWNSTREAM EVALUATION"]
@@ -1113,9 +1097,6 @@ graph TD
     FINAL --> MC
 
     style DATA fill:#e3f2fd,stroke:#1565c0,color:#000
-    style CLASSICAL fill:#fff8e1,stroke:#f57f17,color:#000
-    style TERMS fill:#fff3e0,stroke:#ef6c00,color:#000
-    style RL_PATH fill:#e8f5e9,stroke:#2e7d32,color:#000
     style DOWN fill:#fce4ec,stroke:#c62828,color:#000
 ```
 
@@ -2590,16 +2571,17 @@ The system has two decisions to make every rebalance day: (1) which regime are w
 
 **Where does Section C fit?** Section C (GBM / Monte Carlo) is not part of either decision. It runs **after** the weights are already chosen — it takes the final portfolio weights and simulates 1 million future price paths to assess risk (tail losses, drawdown probabilities, etc.). It is a downstream evaluation step, not a competing weight engine.
 
-**Why build two approaches?** The classical path is the reliable baseline — SLSQP is mathematically guaranteed to find the optimal weights for its objective function, and the rule-based regime classifier is simple and interpretable. The RL path is the ambitious alternative — it can potentially learn patterns that fixed formulas cannot capture (like "when VIX spikes, rotate to bonds faster than the momentum signal suggests"). Both RL agents can be **toggled on independently** from the Streamlit interface, giving four possible configurations:
+**Why build two approaches?** The classical path is the reliable baseline — SLSQP is mathematically guaranteed to find the optimal weights for its objective function, and the rule-based regime classifier is simple and interpretable. The RL path is the ambitious alternative — it can potentially learn patterns that fixed formulas cannot capture (like "when VIX spikes, rotate to bonds faster than the momentum signal suggests").
 
-| Regime decision | Weight decision | Config |
-|---|---|---|
-| Rule-based (SPY > 200-SMA) | SLSQP optimizer | Full classical **(default)** |
-| Rule-based | RL weight agent | Hybrid |
-| RL regime agent | SLSQP optimizer | Hybrid |
-| RL regime agent | RL weight agent | Full RL |
+The Streamlit sidebar exposes two toggles under Advanced Options:
 
-The RL regime agent defaults to off because it developed a 71% defensive bias during training.
+| Toggle | What it swaps | Regime | Weights |
+|---|---|---|---|
+| *(neither)* | — | Rule-based (SPY > 200-SMA) | SLSQP optimizer **(default)** |
+| **Use RL Agent (PPO)** | Regime only | RL regime agent · Sec D | SLSQP optimizer |
+| **Use Hierarchical RL (Regime + Weights)** | Both stages | Rule-based* | RL weight agent · Sec D |
+
+\* The hierarchical controller internally bypasses the RL regime agent and uses the rule-based classifier, because the regime agent developed a 71% defensive bias during training. If both toggles are enabled, hierarchical takes precedence.
 
 ### **The problem PPO solves**
 

@@ -2635,6 +2635,40 @@ Notice the difference: the weight agent sees per-asset detail (12 numbers per fe
 
 The math is the same for both agents. Here is the full derivation from scratch.
 
+### **Softmax — turning arbitrary numbers into valid allocations**
+
+Softmax appears twice in this system: once in the regime agent (turning logits into regime probabilities) and once in the weight agent (turning raw samples into portfolio weights). Both uses solve the same problem: you have a list of arbitrary numbers that can be negative, huge, or tiny, and you need to convert them into positive numbers that sum to exactly 1.
+
+**The formula:**
+
+$$\text{softmax}(x_i) = \frac{e^{x_i}}{\sum_j e^{x_j}}$$
+
+Two steps: (1) raise $e$ (Euler's number, ≈ 2.718) to the power of each number — this makes every value positive, even if the input was negative, because $e^x > 0$ for any $x$; (2) divide each by the total — this forces them to sum to exactly 1.
+
+**Why $e$?** You could use any positive base (like $2^x$ or $10^x$), but $e^x$ has a special property: its derivative equals itself, which makes gradient descent (the training algorithm) much simpler. This is a mathematical convenience, not a deep insight — the important thing is that the exponential makes everything positive and amplifies differences.
+
+**Worked example** — 3 assets to keep it simple (the real system does 12):
+
+| Asset | Raw value $x$ | $e^x$ | Softmax = $e^x$ ÷ total |
+|:---|:---|:---|:---|
+| SMH | 1.2 | $e^{1.2} = 3.32$ | $3.32 / 5.45 = 0.61$ (61%) |
+| TLT | -0.5 | $e^{-0.5} = 0.61$ | $0.61 / 5.45 = 0.11$ (11%) |
+| GLD | 0.4 | $e^{0.4} = 1.49$ | $1.49 / 5.45 = 0.27$ (27%) |
+| **Total** | | **5.45** | **1.00** (100%) |
+
+Key properties:
+- **Negative inputs still get positive output.** TLT had $x = -0.5$, but $e^{-0.5} = 0.61$ is still positive — softmax never produces zero.
+- **Bigger gaps → more lopsided output.** SMH's raw value (1.2) is only 1.7 more than TLT's (-0.5), but it gets 6× the weight. The exponential amplifies differences.
+- **Equal inputs → even split.** If all 12 raw values were identical, softmax would give each asset exactly $1/12 \approx 8.3\%$.
+- **Softmax is deterministic.** Same inputs always produce the same outputs — there is no randomness here.
+
+In the actual code, the weight agent's softmax is at [`rl_weight_agent.py:484-487`](rl_weight_agent.py#L484):
+```python
+z_shifted = z - z.max()       # numerical trick to prevent overflow
+exp_z = np.exp(z_shifted)     # step 1: raise e to each value
+weights = exp_z / exp_z.sum() # step 2: divide by total
+```
+
 ### **Step 1: The Policy $\pi_\theta$**
 
 The policy is the agent's **decision-making rule** — it looks at market data and decides what to do. Concretely, it is a neural network: a function with thousands of internal numbers (called parameters, written as $\theta$) that takes in an observation ("here is what the market looks like today") and outputs an action ("pick this regime" or "use these portfolio weights"). At first the parameters are random and the decisions are garbage. Training adjusts $\theta$ until the agent makes good decisions — that is what PPO does (Steps 2–5 below).
@@ -2643,18 +2677,7 @@ The policy is the agent's **decision-making rule** — it looks at market data a
 
 $$\pi_\theta(a | s) = \frac{e^{\ell_a}}{\sum_i e^{\ell_i}}$$
 
-> **What is softmax?** A neural network's raw outputs (called **logits**) are just arbitrary numbers — they can be negative, huge, or tiny. You can't use them as probabilities because probabilities must be positive and sum to 1. Softmax fixes both problems in one step: raise $e$ (Euler's number, roughly 2.718) to the power of each logit, then divide each by the total. This guarantees every output is positive (because $e^x > 0$ for any $x$), and they sum to 1 (because you divided by the total). It also amplifies differences — a logit of 2.0 doesn't just get "a bit more" than 0.5, it gets *exponentially* more.
->
-> Concrete example with logits $[2.0, 0.5, -1.0]$ for [risk-on, risk-off, defensive]:
->
-> | Regime | Logit | $e^{\text{logit}}$ | Probability |
-> |:---|:---|:---|:---|
-> | Risk-on | 2.0 | $e^{2.0} = 7.39$ | $7.39 / 9.04 = 0.82$ |
-> | Risk-off | 0.5 | $e^{0.5} = 1.65$ | $1.65 / 9.04 = 0.18$ |
-> | Defensive | -1.0 | $e^{-1.0} = 0.37$ | $0.37 / 9.04 = 0.04$ |
-> | **Total** | | **9.04** | **1.00** |
->
-> The agent strongly prefers RISK_ON. Softmax appears twice in this system: here (converting regime logits to regime probabilities) and in the weight agent (converting 12 raw action values to 12 portfolio weights that sum to 1).
+> This is the same softmax operation explained in the [subsection above](#softmax--turning-arbitrary-numbers-into-valid-allocations) — it converts 3 raw logits into 3 probabilities that sum to 1. If the logits are $[2.0, 0.5, -1.0]$, softmax gives $[0.82, 0.18, 0.04]$ — the agent strongly prefers RISK_ON.
 
 **Reading the notation:** $\pi_\theta(a | s)$ reads as "the probability of choosing action $a$ given state $s$, according to the policy with parameters $\theta$." So it answers: "given what the agent sees right now, how likely is it to pick each regime?"
 
@@ -2686,11 +2709,7 @@ Example: suppose the network's best guess for SMH is $\mu = 0.15$ with $\sigma =
 
 $$\text{weights} = \text{softmax}(z)$$
 
-The 12 raw samples $z_1, \ldots, z_{12}$ from Step 1 are arbitrary numbers — they can be negative, and they don't sum to 1, so they're not valid portfolio weights. Softmax fixes this (same operation explained in the discrete case above): raise $e$ to the power of each $z_i$, then divide by the total. Every output becomes positive and they're guaranteed to sum to 1 — which is exactly the constraint a portfolio needs (you must allocate 100% of your money, no more, no less).
-
-Why is this a "valid portfolio"? Because after softmax, each weight is between 0 and 1, and they add up to exactly 1. That's the definition of a portfolio allocation.
-
-Where does the randomness come from? Not from softmax — softmax is deterministic. The randomness came from Step 1, where each $z_i$ was randomly drawn from its bell curve. Two runs with the same $\mu$ and $\sigma$ will produce different $z$ values and therefore different portfolios.
+The 12 raw samples from Step 1 are arbitrary numbers — they can be negative and don't sum to 1. Softmax (explained in the [subsection above](#softmax--turning-arbitrary-numbers-into-valid-allocations)) converts them into valid portfolio weights: all positive and summing to exactly 1. The randomness doesn't come from softmax — softmax is deterministic. The randomness came from Step 1, where each $z_i$ was randomly drawn from its bell curve.
 
 This is how the agent **explores**. Here is what "trying" looks like concretely: the agent sees today's market data, draws random weights from its bell curves, and those weights are used to run a simulated quarter of trading. At the end of the quarter, the simulation produces a reward (based on Sharpe ratio minus drawdown penalties). If the random draw happened to put 20% in SMH and that worked well, the agent nudges $\mu_{\text{SMH}}$ upward so future draws are more likely to be near 20%. If a draw put 30% in TLT and that lost money, $\mu_{\text{TLT}}$ gets nudged down. Over thousands of these simulated quarters, the bell curve centres ($\mu$) drift toward allocations that consistently earn good rewards, and the widths ($\sigma$) shrink as the agent becomes more confident.
 

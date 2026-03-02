@@ -2661,14 +2661,14 @@ $$\pi_\theta(a | s) = \frac{e^{\ell_a}}{\sum_i e^{\ell_i}}$$
 **Continuous case** (weight agent): The regime agent picks from 3 options — that is a discrete choice. But the weight agent outputs 12 continuous numbers (portfolio weights). You cannot use softmax-over-logits here because the action space is continuous, not a menu of choices. Instead, the agent outputs a **bell curve** and samples from it.
 
 The network outputs two things:
-- $\mu \in \mathbb{R}^{12}$ — the **mean vector**: 12 numbers representing "my best guess" for each weight. This is the center of 12 bell curves.
+- $\mu$ — the **mean vector**: a list of 12 numbers representing "my best guess" for each weight. This is the center of 12 bell curves.
 - $\log\sigma$ — the **log standard deviation**: how wide each bell curve is. Big $\sigma$ = "I'm unsure, try wildly different values." Small $\sigma$ = "I'm pretty confident, stay close to $\mu$."
 
 **Step 1 — Sample from the bell curves.** For each of the 12 assets, roll a random number from its bell curve:
 
 $$z_i \sim \mathcal{N}(\mu_i, \sigma_i^2)$$
 
-So if $\mu_3 = 0.8$ and $\sigma_3 = 0.1$, then $z_3$ will usually land somewhere between 0.5 and 1.1 (within a few $\sigma$ of the center).
+Example: if the network's best guess for asset 3 is $\mu_3 = 0.8$ with uncertainty $\sigma_3 = 0.1$, then $z_3$ is a random draw from a bell curve centered at 0.8 with width 0.1. Most draws (~99.7%) land within $\pm 3\sigma$ of the center: $0.8 \pm 0.3 = [0.5, 1.1]$. A tighter $\sigma$ (say 0.01) would keep draws very close to 0.8 — meaning the agent is confident and barely explores.
 
 **Step 2 — Softmax the samples** to get actual weights that sum to 1:
 

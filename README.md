@@ -2572,13 +2572,15 @@ GBM models stock prices as a random walk in log-space. The price change each day
 
 The system has two decisions to make every rebalance day: (1) which regime are we in? and (2) what should the 12 portfolio weights be? Each decision has a classical approach and an RL approach — that is the "Dual" in Alpha Dual Engine.
 
-| | Classical (Sections A–C) | RL (Section D: PPO) |
+| | Classical (Section A + rule-based regime) | RL (Section D: PPO) |
 |:---|:---|:---|
 | **Regime decision** | Rule-based classifier: SPY > 200-SMA → RISK_ON, else check ml_prob | **Regime agent:** neural network observes 25 macro features → picks 1 of 3 regimes |
 | **Weight decision** | SLSQP optimizer: solves risk − momentum − entropy equation | **Weight agent:** neural network observes 103 per-asset features → outputs 12 weights |
 | **How it decides** | Solves equations (math, not learning) | Learns from 50,000 simulated episodes of trial and error |
 | **Deterministic?** | Yes — same inputs always give same output | No — samples from distributions (exploration), but converges over training |
 | **Adapts over time?** | No — fixed formulas | Yes — neural networks update parameters based on rewards |
+
+**Where does Section C fit?** Section C (GBM / Monte Carlo) is not part of either decision. It runs **after** the weights are already chosen — it takes the final portfolio weights and simulates 1 million future price paths to assess risk (tail losses, drawdown probabilities, etc.). It is a downstream evaluation step, not a competing weight engine.
 
 **Why build two approaches?** The classical path is the reliable baseline — SLSQP is mathematically guaranteed to find the optimal weights for its objective function, and the rule-based regime classifier is simple and interpretable. The RL path is the ambitious alternative — it can potentially learn patterns that fixed formulas cannot capture (like "when VIX spikes, rotate to bonds faster than the momentum signal suggests"). The code at `alpha_engine.py:1216` picks which approach to use: if an RL controller is loaded, use PPO for both decisions; otherwise, fall back to rule-based regime + SLSQP weights.
 

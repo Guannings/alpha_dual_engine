@@ -2617,7 +2617,20 @@ The policy is a neural network with parameters $\theta$ that maps observations t
 
 $$\pi_\theta(a | s) = \frac{e^{\ell_a}}{\sum_i e^{\ell_i}}$$
 
-So if the logits are $[2.0, 0.5, -1.0]$, the probabilities are roughly $[0.78, 0.17, 0.04]$ — the agent strongly prefers RISK_ON.
+> **What is softmax?** A neural network's raw outputs (called **logits**) are just arbitrary numbers — they can be negative, huge, or tiny. You can't use them as probabilities because probabilities must be positive and sum to 1. Softmax fixes both problems in one step: raise $e$ (Euler's number, roughly 2.718) to the power of each logit, then divide each by the total. This guarantees every output is positive (because $e^x > 0$ for any $x$), and they sum to 1 (because you divided by the total). It also amplifies differences — a logit of 2.0 doesn't just get "a bit more" than 0.5, it gets *exponentially* more.
+>
+> Concrete example with logits $[2.0, 0.5, -1.0]$ for [risk-on, risk-off, defensive]:
+>
+> | Regime | Logit | $e^{\text{logit}}$ | Probability |
+> |:---|:---|:---|:---|
+> | Risk-on | 2.0 | $e^{2.0} = 7.39$ | $7.39 / 9.04 = 0.82$ |
+> | Risk-off | 0.5 | $e^{0.5} = 1.65$ | $1.65 / 9.04 = 0.18$ |
+> | Defensive | -1.0 | $e^{-1.0} = 0.37$ | $0.37 / 9.04 = 0.04$ |
+> | **Total** | | **9.04** | **1.00** |
+>
+> The agent strongly prefers RISK_ON. Softmax appears twice in this system: here (converting regime logits to regime probabilities) and in the weight agent (converting 12 raw action values to 12 portfolio weights that sum to 1).
+
+**Reading the notation:** $\pi_\theta(a | s)$ reads as "the probability of choosing action $a$ given state $s$, according to the policy with parameters $\theta$." So it answers: "given what the agent sees right now, how likely is it to pick each regime?"
 
 **Continuous case** (weight agent): The network outputs a mean vector $\mu \in \mathbb{R}^{12}$ and a learned log standard deviation $\log\sigma$. Actions are sampled from a Gaussian:
 

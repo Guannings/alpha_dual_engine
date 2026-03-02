@@ -2668,7 +2668,17 @@ The network outputs two things:
 
 $$z_i \sim \mathcal{N}(\mu_i, \sigma_i^2)$$
 
-What does "draw from a bell curve" actually mean? It's the computer equivalent of saying "pick a number near $\mu$, but add some noise." Concretely, the computer calls a random number generator that is rigged to produce numbers clustered around $\mu$ — numbers very close to $\mu$ come up often, numbers far away come up rarely. The parameter $\sigma$ controls how much noise: big $\sigma$ means the random draws scatter widely, small $\sigma$ means they stay tight.
+What does "draw from a bell curve" actually mean? It happens in two steps. First, the computer generates a **standard random number** — a number from a bell curve centered at 0 with width 1. This is a built-in function that every programming language provides (like `np.random.randn()` in Python), the same way a calculator has a built-in square root button. Second, it shifts and scales: multiply by $\sigma$ (set the width) and add $\mu$ (set the center):
+
+$$z_i = \mu_i + \sigma_i \times \text{random()}$$
+
+In the actual code, this is a single line ([`rl_weight_agent.py:477`](rl_weight_agent.py#L477)):
+```python
+z = mu_np + std_np * np.random.randn(self.n_assets)
+```
+`np.random.randn(12)` generates 12 standard random numbers, `std_np *` scales them, and `mu_np +` shifts them.
+
+That's it. If $\mu = 0.15$ and $\sigma = 0.05$, and the standard random number happens to be $-0.4$, then $z = 0.15 + 0.05 \times (-0.4) = 0.13$. Next time the random number might be $+1.6$, giving $z = 0.15 + 0.05 \times 1.6 = 0.23$. The standard random number is usually small (close to 0), occasionally medium (around ±2), and very rarely large (beyond ±3) — that's what makes the results cluster around $\mu$.
 
 Example: suppose the network's best guess for SMH is $\mu = 0.15$ with $\sigma = 0.05$. One draw might produce 0.14, another 0.17, another 0.08. Most draws land within $\pm 3\sigma$ of the center ($0.15 \pm 0.15 = [0.00, 0.30]$). The network is saying "I think SMH should be around 15%, give or take" — and the randomness lets it accidentally discover that 8% or 25% might actually work better. It does this independently for all 12 assets, producing 12 random-ish numbers $z_1, \ldots, z_{12}$.
 

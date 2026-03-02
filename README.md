@@ -2641,15 +2641,39 @@ $$\pi_\theta(a | s) = \frac{e^{\ell_a}}{\sum_i e^{\ell_i}}$$
 
 **Reading the notation:** $\pi_\theta(a | s)$ reads as "the probability of choosing action $a$ given state $s$, according to the policy with parameters $\theta$." So it answers: "given what the agent sees right now, how likely is it to pick each regime?"
 
-**Continuous case** (weight agent): The network outputs a mean vector $\mu \in \mathbb{R}^{12}$ and a learned log standard deviation $\log\sigma$. Actions are sampled from a Gaussian:
+**Continuous case** (weight agent): The regime agent picks from 3 options — that is a discrete choice. But the weight agent outputs 12 continuous numbers (portfolio weights). You cannot use softmax-over-logits here because the action space is continuous, not a menu of choices. Instead, the agent outputs a **bell curve** and samples from it.
 
-$$z \sim \mathcal{N}(\mu, \sigma^2), \quad \text{weights} = \text{softmax}(z)$$
+The network outputs two things:
+- $\mu \in \mathbb{R}^{12}$ — the **mean vector**: 12 numbers representing "my best guess" for each weight. This is the center of 12 bell curves.
+- $\log\sigma$ — the **log standard deviation**: how wide each bell curve is. Big $\sigma$ = "I'm unsure, try wildly different values." Small $\sigma$ = "I'm pretty confident, stay close to $\mu$."
 
-The log probability of a sampled $z$ under this Gaussian is:
+**Step 1 — Sample from the bell curves.** For each of the 12 assets, roll a random number from its bell curve:
+
+$$z_i \sim \mathcal{N}(\mu_i, \sigma_i^2)$$
+
+So if $\mu_3 = 0.8$ and $\sigma_3 = 0.1$, then $z_3$ will usually land somewhere between 0.5 and 1.1 (within a few $\sigma$ of the center).
+
+**Step 2 — Softmax the samples** to get actual weights that sum to 1:
+
+$$\text{weights} = \text{softmax}(z)$$
+
+Now you have a valid portfolio. The sampling adds randomness (exploration), and softmax enforces the constraint that weights sum to 1.
+
+**Step 3 — Compute the log probability** of the specific sample. This asks: "how likely was this particular roll?" It is the standard bell curve (Gaussian) formula, written in log form:
 
 $$\log \pi_\theta(z | s) = -\frac{1}{2}\sum_{i=1}^{12}\left[\left(\frac{z_i - \mu_i}{\sigma_i}\right)^2 + 2\log\sigma_i + \log(2\pi)\right]$$
 
-This is the standard Gaussian log-likelihood formula, implemented directly in `rl_weight_agent.py`.
+Each of the three parts inside the sum has a concrete meaning:
+
+| Part | Plain English |
+|:---|:---|
+| $\left(\frac{z_i - \mu_i}{\sigma_i}\right)^2$ | How far was the roll from the center, in standard deviations? Farther = less likely. |
+| $2\log\sigma_i$ | Wider bell curves spread probability thinner, so any specific value is less likely. |
+| $\log(2\pi)$ | A constant that makes the math work out (the bell curve normalization factor). |
+
+**Why does PPO need this probability?** Because PPO learns by asking "that action got a good reward — was it a lucky fluke (low probability roll) or my deliberate choice (high probability roll)?" The ratio of new probability to old probability is exactly the $r_t$ in the PPO clipping formula further below. Without knowing the probability, PPO cannot update the policy.
+
+**As training progresses**, $\sigma$ shrinks. The agent becomes more confident, explores less, and the bell curves tighten around the best weights it has found. This is implemented directly in `rl_weight_agent.py`.
 
 ### **Step 2: The Value Function $V(s)$**
 

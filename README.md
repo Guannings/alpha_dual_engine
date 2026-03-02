@@ -1102,9 +1102,8 @@ graph TD
     ITER -->|"converged"| W_C
     ITER -->|"repeat"| OBJ
 
-    REG_R --> W_R
-
     W_C --> FINAL["Final Portfolio Weights"]
+    REG_R --> FINAL
     W_R --> FINAL
 
     subgraph DOWN ["DOWNSTREAM EVALUATION"]

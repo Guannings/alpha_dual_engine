@@ -2576,6 +2576,15 @@ The Alpha Dual Engine has **two** PPO agents:
 - **High-level (discrete):** observes 25-dim state and picks 1 of 3 regimes (RISK_ON / RISK_REDUCED / DEFENSIVE)
 - **Low-level (continuous):** observes 103-dim state and outputs 12 portfolio weights
 
+> **How are regimes actually classified?** In production the RL regime agent is bypassed (it developed a 71% defensive bias during training), so a rule-based classifier decides the regime. The logic is a two-node decision tree:
+>
+> 1. **Is SPY above its 200-day moving average?** → **RISK_ON**. Full stop — no other checks. This is the master switch.
+> 2. **SPY is below its 200-day SMA** → check the XGBoost crash probability (`ml_prob`):
+>    - `ml_prob > 0.55` → **RISK_REDUCED** (the model thinks a crash is slightly more likely than not, so reduce exposure)
+>    - `ml_prob <= 0.55` → **DEFENSIVE** (not enough bullish signal to warrant risk)
+>
+> There is no gradual spectrum — it is a hard decision tree. The 200-SMA trend is the dominant signal, and the ML probability is only a tiebreaker when the trend is already bearish. See `get_regime()` in `alpha_engine.py`.
+
 "25-dim state" and "103-dim state" simply mean a list of 25 or 103 numbers that describe the current market conditions — each number is one "dimension" (one piece of information the agent can see). The 103 dimensions of the weight agent break down as:
 
 | Dims | Count | What the agent sees |

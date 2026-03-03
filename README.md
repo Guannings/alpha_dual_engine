@@ -3059,6 +3059,12 @@ n_steps = 256    # collect 256 steps with the old policy
 n_epochs = 6     # then train on that same batch 6 times
 ```
 
+**`n_steps = 256`** — the agent plays through 256 rebalancing steps using the current (frozen) policy. At each step it sees a market state, picks portfolio weights, gets a reward, and moves to the next state. All 256 (state, action, reward) tuples are stored in a buffer. During this phase, the network parameters do not change — the agent is just collecting data, not learning. Think of it as a student taking 256 practice exams before sitting down to study.
+
+**`n_epochs = 6`** — now the agent studies. It takes those same 256 stored experiences and trains on them 6 times. Each pass through the batch is one "epoch." In the first epoch, gradient descent tweaks the parameters a bit. In the second epoch, it tweaks them a bit more, using the same 256 experiences. By the 6th epoch, the policy may have drifted noticeably from the frozen snapshot that collected the data — which is exactly why the clipping exists (to prevent it from drifting too far).
+
+After all 6 epochs, the agent throws away the old buffer, collects a fresh 256 steps with the now-updated policy, and repeats. This collect → train → collect → train cycle continues until training ends ([`total_timesteps = 200,000`](rl_weight_agent.py#L1073)).
+
 **The two questions PPO asks.** For every action in the batch, PPO checks:
 
 1. **Was this action good or bad?** That is the advantage $A_t$ from Step 3. Positive = better than expected, negative = worse.

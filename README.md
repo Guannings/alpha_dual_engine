@@ -3033,7 +3033,19 @@ This actually happens in practice. The pre-PPO approach (called "vanilla policy 
 
 $$L = -\mathbb{E}\left[\log\pi_\theta(a_t | s_t) \cdot A_t\right]$$
 
-In plain English: for each action the agent took, multiply its log probability by its advantage, then adjust the policy via gradient descent. If $A_t$ is positive (good action), gradient descent increases $\log\pi$ — making this action more likely next time. If $A_t$ is negative (bad action), it decreases $\log\pi$. The problem is there is **no limit** on how much the policy can change in one step. A single action with a large advantage can swing the entire policy, destroying behaviour that took thousands of steps to learn. PPO's entire purpose is to prevent this: **learn from good and bad experiences, but never change the policy too much in one update.**
+Breaking it down piece by piece:
+
+| Symbol | What it is | Where it comes from |
+|:---|:---|:---|
+| $L$ | The loss — the single number gradient descent tries to make smaller | This is the policy loss, one of the three losses in [Section 0](#what-is-a-loss-function) |
+| $\mathbb{E}[\ldots]$ | "Average over all the actions in the batch" | The agent collects many (state, action, reward) tuples; this averages across them |
+| $\log\pi_\theta(a_t \| s_t)$ | The log probability of the action the agent took | Computed in Step 3 of the policy — "how likely was this specific action under the current policy?" |
+| $A_t$ | The advantage — was this action better or worse than average? | Computed in Step 3 above (TD error + GAE) |
+| The $-$ sign | Flips the direction — minimizing $-x$ is the same as maximizing $x$ | Gradient descent minimizes, but we want to maximize good actions |
+
+What does the whole thing do? For each action the agent took, multiply its log probability by its advantage. If $A_t$ is positive (good action), gradient descent increases $\log\pi$ — making this action more likely next time. If $A_t$ is negative (bad action), it decreases $\log\pi$ — making this action less likely. The $-$ sign is there because gradient descent always *minimizes* the loss, but we want to *maximize* the probability of good actions — negating flips the direction.
+
+The problem is there is **no limit** on how much the policy can change in one step. A single action with a large advantage can swing the entire policy, destroying behaviour that took thousands of steps to learn. PPO's entire purpose is to prevent this: **learn from good and bad experiences, but never change the policy too much in one update.**
 
 **The core idea in plain English.** After each batch of experience, PPO asks two questions for every action the agent took:
 

@@ -2611,6 +2611,8 @@ The Alpha Dual Engine has **two** PPO agents:
 >
 > There is no gradual spectrum — it is a hard decision tree. The 200-SMA trend is the dominant signal, and the ML probability is only a tiebreaker when the trend is already bearish. See `get_regime()` in `alpha_engine.py`.
 
+#### **The observation spaces**
+
 "25-dim state" and "103-dim state" simply mean a list of 25 or 103 numbers that describe the current market conditions — each number is one "dimension" (one piece of information the agent can see). The 103 dimensions of the weight agent break down as:
 
 | Dims | Count | What the agent sees |
@@ -2850,7 +2852,9 @@ value = value_head(h)       # 128 → 1 number
 
 What does each layer actually do? Think of it as an assembly line with 3 stations:
 
-**Station 1** — Take the 103 raw market numbers. Multiply each by a learned weight, add them up in 128 different combinations (each combination emphasizes different inputs), add a bias to each, then squish every result through $\tanh$ so nothing explodes to infinity. You now have 128 intermediate numbers. In math: $h_1 = \tanh(W_1 \cdot s + b_1)$, where $W_1$ is a 128×103 table of learned weights (16,384 numbers) and $b_1$ is 128 biases.
+**Station 1** — Take the [103 raw market numbers](#the-observation-spaces) (momentum, volatility, RSI, etc. for each of the 12 assets, plus portfolio state). Multiply each by a learned weight, add them up in 128 different combinations (each combination emphasizes different inputs), add a bias to each, then squish every result through $\tanh$ so nothing explodes to infinity. You now have 128 intermediate numbers. In math: $h_1 = \tanh(W_1 \cdot s + b_1)$, where $W_1$ is a 128×103 table of learned weights (16,384 numbers) and $b_1$ is 128 biases.
+
+**Why 128?** It is a design choice — the `hidden` parameter at [`rl_weight_agent.py:443`](rl_weight_agent.py#L443). It could be 64, 256, or any number. Too small (say 16) and the network cannot learn complex patterns from 103 inputs — it is forced to throw away too much information. Too large (say 1024) and the network has far more capacity than needed, trains slower, and is more likely to memorize the training data instead of learning general patterns (overfitting). 128 is a common middle ground for RL problems of this size. The regime agent uses 64 because it only has 25 inputs — smaller input, smaller hidden layer needed. There is no deep math here — it is a hyperparameter picked by trial and error.
 
 **Station 2** — Take those 128 intermediate numbers and do the same thing again: 128 new combinations, new biases, squish through $\tanh$. This lets the network build higher-level patterns on top of the patterns from Station 1. In math: $h_2 = \tanh(W_2 \cdot h_1 + b_2)$, where $W_2$ is 128×128 (16,384 more learned numbers).
 

@@ -2926,7 +2926,13 @@ This is why we built $V(s)$ in Step 2 — it provides the "what the critic expec
 
 The simplest way to measure advantage is to look at what happened in a single step. At step $t$, the agent is in state $s_t$, takes an action, gets reward $r_t$, and lands in a new state $s_{t+1}$. The **TD error** (temporal difference) compares what happened to what the critic predicted:
 
-$$\delta_t = \underbrace{r_t}_{\text{actual reward}} + \underbrace{\gamma \cdot V(s_{t+1})}_{\text{estimated future}} - \underbrace{V(s_t)}_{\text{original estimate}}$$
+$$\delta_t = r_t + \gamma \cdot V(s_{t+1}) - V(s_t)$$
+
+| Piece | What it is |
+|:---|:---|
+| $r_t$ | The actual reward the agent earned this step |
+| $\gamma \cdot V(s_{t+1})$ | The critic's estimate of all future rewards from the new state, discounted |
+| $V(s_t)$ | The critic's original estimate before the agent acted |
 
 Think of it this way. Before the agent acts, the critic looks at the current state and makes a guess: "from here, I expect a total of $V(s_t)$." That is the **original estimate** — one number covering everything (this step's reward + all future rewards).
 

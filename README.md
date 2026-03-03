@@ -3165,7 +3165,7 @@ policy_loss = -mx.minimum(surr1, surr2).mean()                           # take 
 
 PPO's total loss combines three components into one number (as previewed in [Section 0](#what-is-a-loss-function)):
 
-$$L_{\text{total}} = L_{\text{CLIP}} + 0.5 \times L_{\text{VF}} - \text{ent\_coef} \times H$$
+$$L_{\text{total}} = L_{\text{CLIP}} + 0.5 \times L_{\text{VF}} - 0.10 \times H$$
 
 Which maps directly to the code at [`rl_weight_agent.py:1127`](rl_weight_agent.py#L1127):
 

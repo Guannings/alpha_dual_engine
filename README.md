@@ -2848,11 +2848,19 @@ h = tanh(shared2(h))        # 128 → 128 → squish
 value = value_head(h)       # 128 → 1 number
 ```
 
-Each layer is a matrix multiply plus a bias ($\text{output} = W \times \text{input} + b$), so the full formula is:
+What does each layer actually do? Think of it as an assembly line with 3 stations:
+
+**Station 1** — Take the 103 raw market numbers. Multiply each by a learned weight, add them up in 128 different combinations (each combination emphasizes different inputs), add a bias to each, then squish every result through $\tanh$ so nothing explodes to infinity. You now have 128 intermediate numbers. In math: $h_1 = \tanh(W_1 \cdot s + b_1)$, where $W_1$ is a 128×103 table of learned weights (16,384 numbers) and $b_1$ is 128 biases.
+
+**Station 2** — Take those 128 intermediate numbers and do the same thing again: 128 new combinations, new biases, squish through $\tanh$. This lets the network build higher-level patterns on top of the patterns from Station 1. In math: $h_2 = \tanh(W_2 \cdot h_1 + b_2)$, where $W_2$ is 128×128 (16,384 more learned numbers).
+
+**Station 3** — Take the 128 numbers from Station 2, multiply each by one final weight, add them up into a single number, add a bias. That single number is $V(s)$. In math: $V(s) = W_3 \cdot h_2 + b_3$, where $W_3$ is 1×128 (128 numbers).
+
+Chaining all three stations together gives the full formula:
 
 $$V(s) = W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s + b_1) + b_2) + b_3$$
 
-Where $W_1$ is 128×103 (16,384 numbers), $W_2$ is 128×128 (16,384 numbers), $W_3$ is 1×128 (128 numbers), and $b_1, b_2, b_3$ are bias vectors. That is roughly **33,000 learned parameters** that together produce a single number. At initialization they are random, so $V(s)$ outputs garbage. Training adjusts them so that $V(s)$ gets closer to the actual future reward — that is the `value_loss = (V(s) - actual_return)²` part of the loss function.
+That is roughly **33,000 learned parameters** ($16{,}384 + 16{,}384 + 128$ weights, plus biases) that together produce a single number. At initialization they are random, so $V(s)$ outputs garbage. Training adjusts them so that $V(s)$ gets closer to the actual future reward — that is the `value_loss = (V(s) - actual_return)²` part of the loss function.
 
 There is no way to look at those 33,000 numbers and intuit what the function "means." It is a black box that learned to map market observations to expected rewards. That is the nature of neural networks.
 

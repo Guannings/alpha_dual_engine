@@ -3199,21 +3199,40 @@ The coefficient $c_1 = 0.5$ (`vf_coef` at [line 1081](rl_weight_agent.py#L1081))
 
 #### **Part 3: Entropy bonus $H[\pi]$**
 
-Prevents the policy from becoming too confident too fast.
+This is the same entropy bonus explained in detail in [Force 2 of the σ tug-of-war](#does-sigma-ever-reach-zero) earlier. Here is a quick recap of why it's in the loss function and how the two agents use it differently.
 
-For the **discrete** regime agent (categorical entropy):
+**The problem it solves.** Without the entropy bonus, the agent would quickly become overconfident — the regime agent might learn to pick RISK_ON 99% of the time, and the weight agent's bell curves would collapse to near-zero width. In both cases, the agent stops exploring and gets stuck with whatever strategy it found first, even if something better exists.
 
-$$H[\pi] = -\sum_a \pi(a|s) \log\pi(a|s)$$
+**How it works.** The entropy bonus measures how "spread out" the agent's decisions are. High entropy = lots of randomness (still exploring). Low entropy = predictable (locked in). The loss function *subtracts* the entropy, which means higher entropy → lower loss → the optimizer is rewarded for keeping the agent's choices spread out.
 
-This is Shannon entropy again, but on the action probabilities instead of portfolio weights. If the agent always picks RISK_ON with 99% certainty, entropy is near zero (no exploration). If it picks uniformly (33% each), entropy is at its max (maximum exploration).
+**The two agents compute entropy differently:**
 
-For the **continuous** weight agent (Gaussian entropy):
+**Regime agent** (discrete — picking 1 of 3 regimes). The entropy is [Shannon entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification) applied to the regime probabilities:
 
-$$H[\pi] = \frac{1}{2} n (1 + \log(2\pi)) + \sum_i \log\sigma_i$$
+$$H = -\sum_a \pi(a|s) \log\pi(a|s)$$
 
-Where $n = 12$ (number of assets). A wider Gaussian (bigger $\sigma$) = more entropy = more exploration. This formula comes from the analytical entropy of a multivariate Gaussian distribution.
+Concrete example: if the regime agent outputs probabilities [0.80, 0.15, 0.05] for [risk-on, risk-reduced, defensive]:
 
-The entropy bonus is **subtracted** from the loss (i.e., added as reward), so the optimizer encourages exploration. The code uses $c_2 = 0.05$ for the regime agent and $c_2 = 0.10$ for the weight agent (higher because continuous action spaces need more exploration to avoid collapsing to a single set of weights).
+$$H = -(0.80 \times \ln 0.80 + 0.15 \times \ln 0.15 + 0.05 \times \ln 0.05)$$
+$$= -(0.80 \times (-0.22) + 0.15 \times (-1.90) + 0.05 \times (-3.00))$$
+$$= -(-0.18 - 0.28 - 0.15) = 0.61$$
+
+If the probabilities were perfectly even [0.33, 0.33, 0.33], entropy would be $\ln 3 \approx 1.10$ (the maximum). If the agent was 99% sure of one regime [0.99, 0.005, 0.005], entropy would be near 0. The entropy bonus pushes the agent away from that 99% certainty.
+
+**Weight agent** (continuous — outputting 12 bell curves). The entropy is the [Gaussian entropy derived earlier](#does-sigma-ever-reach-zero):
+
+$$H = \frac{12}{2}(1 + \ln 2\pi) + \sum_{i=1}^{12} \ln\sigma_i$$
+
+This depends entirely on $\sigma$ — wider bell curves = higher entropy. The formula and its derivation are already covered in the [Force 2 section above](#does-sigma-ever-reach-zero), so we won't repeat it here.
+
+**The coefficients.** The entropy bonus is scaled by `ent_coef` before being subtracted from the loss:
+
+| Agent | `ent_coef` | Why |
+|:---|:---|:---|
+| Regime agent | 0.05 | 3 discrete choices — doesn't need as much encouragement to explore |
+| Weight agent | 0.10 ([line 1080](rl_weight_agent.py#L1080)) | 12 continuous numbers — much easier for the bell curves to collapse, so needs a stronger push |
+
+The weight agent gets double the entropy bonus because continuous action spaces are much more prone to collapsing. With only 3 choices, the regime agent can't get *that* stuck. With 12 independent bell curves, the weight agent can narrow all of them to near-zero and lock into one rigid allocation — the higher coefficient fights this harder.
 
 ### **Step 6: The Complete Training Loop**
 

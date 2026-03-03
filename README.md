@@ -2911,47 +2911,67 @@ This is called the **Actor-Critic** architecture. The Actor decides what to do. 
 
 ### **Step 3: Advantage Estimation — "Was this action better than average?"**
 
-The raw reward tells you how good the outcome was. But PPO needs to know: **was this action better or worse than what we would normally expect?** That is the advantage:
+Suppose the agent picks portfolio weights and earns a reward of 2.5. Is that good? It depends on context. If the market was booming and the agent usually earns 3.0 in booms, then 2.5 is actually **below average** — the agent did worse than expected. But if the market was crashing and the agent usually earns 1.0 in crashes, then 2.5 is **excellent** — the agent found a great allocation despite bad conditions.
 
-$$A_t = Q(s_t, a_t) - V(s_t)$$
+The **advantage** captures exactly this: how much better (or worse) was this specific action compared to what the agent normally gets from this situation?
 
-"The value of this specific action minus the average value of being in this state."
+$$A_t = \text{what actually happened} - \text{what the critic expected}$$
 
-We do not know $Q$ directly, so we estimate it using **Generalized Advantage Estimation (GAE)**.
+If $A_t > 0$: the action was better than average → do more of this.
+If $A_t < 0$: the action was worse than average → do less of this.
 
-#### **The TD Error (Temporal Difference)**
+This is why we built $V(s)$ in Step 2 — it provides the "what the critic expected" baseline. Without it, the agent only knows "2.5 is a medium number" but not whether that's good or bad for the current market state.
 
-First, compute the TD error at each step:
+#### **The TD Error — one step at a time**
 
-$$\delta_t = r_t + \gamma \cdot V(s_{t+1}) \cdot (1 - \text{done}_t) - V(s_t)$$
+The simplest way to measure advantage is to look at what happened in a single step. At step $t$, the agent is in state $s_t$, takes an action, gets reward $r_t$, and lands in a new state $s_{t+1}$. The **TD error** (temporal difference) compares what happened to what the critic predicted:
 
-Where:
-- $r_t$ = reward at step $t$
-- $\gamma = 0.99$ = discount factor ("how much do I care about future vs. now?" 0.99 means the future matters almost as much as the present)
-- $V(s_{t+1})$ = critic's estimate of the next state's value
-- $(1 - \text{done}_t)$ = zero out the future if the episode ended (no future rewards after terminal state)
+$$\delta_t = \underbrace{r_t + \gamma \cdot V(s_{t+1})}_{\text{what actually happened}} - \underbrace{V(s_t)}_{\text{what the critic predicted}}$$
 
-The TD error $\delta_t$ answers: "was the actual outcome (reward + estimated future) better or worse than what the critic predicted for this state?"
+The left side is "actual": the reward I got ($r_t$) plus what the critic thinks the future is worth from the new state ($V(s_{t+1})$), discounted by $\gamma = 0.99$ (a dollar tomorrow is worth 99 cents today). The right side is "predicted": what the critic thought this state was worth before I acted.
 
-#### **GAE: Smoothing TD errors across time**
-
-GAE takes a weighted sum of TD errors looking forward:
-
-$$A_t = \delta_t + (\gamma \lambda)\delta_{t+1} + (\gamma \lambda)^2 \delta_{t+2} + \ldots$$
-
-Where $\lambda = 0.95$ (the GAE lambda) controls the **bias-variance tradeoff**:
-
-- $\lambda = 0$: only use the immediate TD error. Low variance (stable) but high bias (the critic's estimate might be wrong)
-- $\lambda = 1$: use all future TD errors. Low bias (captures the true trajectory) but high variance (noisy)
-- $\lambda = 0.95$: heavily weight nearby steps but still look ahead. This is the standard sweet spot
-
-In code, this is computed efficiently by working backwards from the last step:
-
+In the code ([`rl_weight_agent.py:554`](rl_weight_agent.py#L554)):
+```python
+delta = rewards[t] + gamma * next_value * next_non_terminal - values[t]
 ```
+
+The `next_non_terminal` part handles episode endings: if the episode is over (`done = True`), there is no future, so `next_non_terminal = 0` and the future term drops out.
+
+**Concrete example:** The agent is in a bull market. The critic says $V(s_t) = 2.0$ ("I expect reward of about 2.0 from here"). The agent picks weights, earns reward $r_t = 0.8$ this step, and lands in a new state where $V(s_{t+1}) = 1.5$. The TD error is:
+
+$$\delta_t = 0.8 + 0.99 \times 1.5 - 2.0 = 0.8 + 1.485 - 2.0 = +0.285$$
+
+Positive — the outcome (reward + estimated future = 2.285) was slightly better than predicted (2.0). The action was a bit above average.
+
+#### **GAE — why one step is not enough**
+
+The TD error $\delta_t$ only looks at one step. But the agent's action might have consequences that play out over many steps — maybe putting 25% in TLT doesn't hurt immediately but sets up a bad position 3 rebalances later. Using only $\delta_t$ would miss this.
+
+The other extreme is to wait until the entire episode finishes and use the total real return instead of the critic's estimate. This captures all consequences but is very noisy — random events later in the episode contaminate the signal about whether this specific action was good.
+
+**Generalized Advantage Estimation (GAE)** is a compromise: look at TD errors from multiple future steps, but weight nearby steps more heavily than distant ones:
+
+$$A_t = \delta_t + (0.99 \times 0.95) \cdot \delta_{t+1} + (0.99 \times 0.95)^2 \cdot \delta_{t+2} + \ldots$$
+
+Each future TD error is multiplied by $(0.99 \times 0.95)^k \approx 0.94^k$, which shrinks rapidly:
+
+| Steps ahead | Weight | How much it counts |
+|:---|:---|:---|
+| 0 (this step) | 1.00 | 100% |
+| 1 | 0.94 | 94% |
+| 5 | 0.73 | 73% |
+| 10 | 0.54 | 54% |
+| 20 | 0.29 | 29% |
+| 50 | 0.04 | 4% — barely matters |
+
+So the advantage is mostly about what happened in the next few steps, with a fading tail of future information. The $\gamma = 0.99$ controls how much the agent cares about the future (0.99 = cares a lot), and $\lambda = 0.95$ controls how many steps of TD errors to blend in (0.95 = look fairly far ahead).
+
+In the code ([`rl_weight_agent.py:555`](rl_weight_agent.py#L555)), this is computed efficiently by working backwards:
+```python
 last_gae = delta + gamma * gae_lambda * next_non_terminal * last_gae
 ```
 
-This single line implements the exponentially-decaying sum by accumulating backwards — each step adds its own $\delta_t$ and a discounted version of all future advantages.
+This single line implements the entire sum. Starting from the last step and walking backwards, each step adds its own $\delta_t$ and a discounted version of everything that came after it. By the time it reaches the first step, `last_gae` has accumulated the full weighted sum.
 
 ### **Step 4: The PPO Clipped Surrogate Objective — The Core Formula**
 

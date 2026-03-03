@@ -1137,6 +1137,14 @@ Lower loss means a better guess. The computer tries many guesses and adjusts to 
 
 Each is explained with its full formula in the referenced section. The key insight: all three do the same thing conceptually — define "what is wrong" as a number, then make that number smaller.
 
+**PPO combines its losses into one number.** In practice, PPO does not minimize policy loss and value loss separately. It adds them together — along with an **entropy bonus** — into a single `total_loss`:
+
+```
+total_loss = policy_loss + 0.5 × value_loss − 0.10 × entropy
+```
+
+Why combine them? Because gradient descent (explained below) can only walk downhill on **one** landscape at a time. By adding the three terms into a single number, the optimizer can adjust all the network's parameters in one pass. The three terms pull in different directions — policy loss wants better actions, value loss wants better predictions, and the entropy bonus wants the agent to keep exploring — and gradient descent finds a compromise that improves all three simultaneously. The full derivation of each term and how they interact is in [Section D](#d-proximal-policy-optimization-ppo--the-complete-math).
+
 ### **What is gradient descent?**
 
 Gradient descent is how the computer actually makes the loss function smaller. The loss function tells you "how wrong am I?" — gradient descent tells you "which direction should I adjust to be less wrong?"

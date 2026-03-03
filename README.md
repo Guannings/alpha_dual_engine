@@ -2750,7 +2750,25 @@ Which is exactly what the code computes: `0.5 * n_assets * (1 + log(2*pi)) + sum
 ```python
 total_loss = policy_loss + vf_coef * value_loss - ent_coef * entropy
 ```
-The minus sign means: higher entropy → lower loss → the optimizer is rewarded for keeping the bell curves wide. Since the constant part of entropy never changes, the gradient of `- ent_coef * entropy` with respect to `log_std` is simply `- ent_coef` — a steady downward push on the loss whenever $\sigma$ tries to shrink. The coefficient `ent_coef = 0.10` ([line 1080](rl_weight_agent.py#L1080)) controls how strongly this force pushes back — at 0.10, it is a moderate nudge, not an overwhelming force.
+The minus sign means: higher entropy → lower loss → the optimizer is rewarded for keeping the bell curves wide. The coefficient `ent_coef = 0.10` ([line 1080](rl_weight_agent.py#L1080)) controls how strongly this force pushes back — at 0.10, it is a moderate nudge, not an overwhelming force.
+
+**The gradient — why it's a constant push.** Let's work out exactly how the entropy bonus pushes on $\sigma$. The entropy bonus part of the loss is:
+
+$$L_{\text{entropy}} = -\text{ent\_coef} \times \left[\underbrace{\frac{12}{2}(1 + \ln 2\pi)}_{\text{constant } \approx 17.0} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
+
+Now take the derivative with respect to a single asset's $\ln\sigma_j$ (say, SMH's bell curve width). The derivative asks: "if I make SMH's $\ln\sigma$ slightly bigger, how does the loss change?"
+
+$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -\text{ent\_coef} \times \frac{\partial}{\partial \ln\sigma_j}\left[\text{constant} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
+
+Step by step:
+- The constant $\frac{12}{2}(1 + \ln 2\pi)$ doesn't depend on $\ln\sigma_j$ at all, so its derivative is **0** — it vanishes.
+- The sum $\ln\sigma_1 + \ln\sigma_2 + \cdots + \ln\sigma_{12}$ contains exactly one term with $\ln\sigma_j$. The derivative of $\ln\sigma_j$ with respect to itself is **1**. All the other terms ($\ln\sigma_1, \ln\sigma_2$, etc.) don't contain $\ln\sigma_j$, so they also vanish.
+
+What's left:
+
+$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -\text{ent\_coef} \times 1 = -0.10$$
+
+This is the same for every asset, at every point in training, regardless of what $\sigma$ currently is. It is a **constant downward push of $-0.10$ on the loss for each asset's `log_std`**. In gradient descent, a negative gradient means "increasing this parameter decreases the loss" — so the optimizer is always nudged toward making $\ln\sigma$ larger (i.e., keeping $\sigma$ wide). This is what prevents $\sigma$ from collapsing: no matter how small $\sigma$ gets, the entropy bonus keeps pushing back with the same steady force.
 
 **Why bother keeping $\sigma$ from collapsing?** Without the entropy bonus, the agent would quickly narrow its bell curves to near-zero width, locking in whatever allocation it found first. If that allocation happened to be mediocre (a "local optimum"), the agent would be stuck — it would never explore enough to discover something better. The entropy bonus forces the agent to keep trying new things even when it thinks it knows the answer. It is the difference between a student who only re-reads the one textbook they already own vs. one who occasionally picks up a new book.
 

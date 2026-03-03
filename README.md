@@ -3173,7 +3173,7 @@ What we just covered. Makes the Actor better at choosing actions.
 
 #### **Part 2: Value loss $L^{\text{VF}}$**
 
-Remember the value head from Step 2 — the Critic that outputs $V(s)$, a single number estimating "how much total reward do I expect from this state?" That estimate needs to be accurate for the advantage calculation in Step 3 to work. If the Critic's predictions are wrong, the advantages are wrong, and the agent learns from garbage signals.
+Remember the value head from [Step 2](#step-2-the-value-function-vs) — the Critic that outputs $V(s)$, a single number estimating "how much total reward do I expect from this state?" That estimate needs to be accurate for the [advantage calculation in Step 3](#step-3-advantage-estimation--was-this-action-better-than-average) to work. If the Critic's predictions are wrong, the advantages are wrong, and the agent learns from garbage signals.
 
 The value loss trains the Critic by asking: **"after the episode played out, how far off was your prediction?"**
 

@@ -3114,7 +3114,45 @@ $$L_{\text{CLIP}} = -\min(r_t \cdot A_t, \enspace \text{clip}(r_t, 0.8, 1.2) \cd
 | $\min(\ldots)$ | Take whichever is smaller — always pick the more conservative update |
 | $-$ | Negate so gradient descent minimizes (same trick as the vanilla formula above) |
 
-The $\min$ (take the smaller of two values) ensures the update is always **conservative** — if the unclipped version and the clipped version disagree, pick the one that changes the policy less. This is the "proximal" in Proximal Policy Optimization — "proximal" means "stay close to where you were."
+**Worked example — good action, policy has drifted too far.** Say $r_t = 1.3$ (policy is 30% more likely to take this action) and $A_t = +2.0$ (good action):
+
+Step 1 — Compute the unclipped version:
+$$r_t \cdot A_t = 1.3 \times 2.0 = 2.6$$
+
+Step 2 — Compute the clipped version. First, apply the clip function to $r_t$. The clip function is simple: if the number is inside $[0.8, 1.2]$, leave it alone; if it's outside, force it to the nearest boundary. Since $1.3 > 1.2$, clip forces it down to $1.2$:
+$$\text{clip}(1.3, \; 0.8, \; 1.2) = 1.2$$
+Then multiply by the advantage:
+$$1.2 \times 2.0 = 2.4$$
+
+Step 3 — Take the min of the two:
+$$\min(2.6, \; 2.4) = 2.4$$
+
+Step 4 — Negate:
+$$L_{\text{CLIP}} = -2.4$$
+
+The unclipped version wanted to give a score of 2.6, but the clipped version capped it at 2.4. The $\min$ picked 2.4 (the capped one). The effect: the policy gets **less credit** for this action than it would without clipping. More importantly, the gradient of the clipped term is zero with respect to $r_t$ — since clip(1.3) was forced to the constant 1.2, small changes to the policy parameters don't change 1.2, so gradient descent has nothing to push on. **The update stops.**
+
+**Worked example — policy hasn't drifted much.** Same good action ($A_t = +2.0$), but now $r_t = 1.1$ (only 10% drift):
+
+$$\text{unclipped: } 1.1 \times 2.0 = 2.2$$
+$$\text{clip}(1.1, \; 0.8, \; 1.2) = 1.1 \quad \text{(inside the range — no change)}$$
+$$\text{clipped: } 1.1 \times 2.0 = 2.2$$
+$$\min(2.2, \; 2.2) = 2.2$$
+$$L_{\text{CLIP}} = -2.2$$
+
+Both versions agree — no clipping needed. The gradient flows normally and the policy keeps updating.
+
+**Worked example — bad action.** Now $r_t = 0.7$ (policy has moved away from this action) and $A_t = -1.5$ (bad action):
+
+$$\text{unclipped: } 0.7 \times (-1.5) = -1.05$$
+$$\text{clip}(0.7, \; 0.8, \; 1.2) = 0.8 \quad \text{(below 0.8, forced up to boundary)}$$
+$$\text{clipped: } 0.8 \times (-1.5) = -1.2$$
+$$\min(-1.05, \; -1.2) = -1.2$$
+$$L_{\text{CLIP}} = -(-1.2) = 1.2$$
+
+Again, the clipped version is chosen by the $\min$. The gradient of clip(0.7) = 0.8 is zero — **the update stops**. The policy has already moved 30% away from this bad action, which is past the 20% limit, so PPO says "enough, stop pushing."
+
+**The pattern:** clipping never kicks in when $r_t$ is inside $[0.8, 1.2]$ — the two versions are identical and learning proceeds normally. Clipping only activates when the policy has already drifted more than 20%, at which point it kills the gradient and forces the update to stop. This is the "proximal" in Proximal Policy Optimization — "proximal" means "stay close to where you were."
 
 In the code ([`rl_weight_agent.py:1117-1119`](rl_weight_agent.py#L1117)):
 ```python

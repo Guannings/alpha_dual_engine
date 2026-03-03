@@ -2992,7 +2992,38 @@ In the code ([`rl_weight_agent.py:555`](rl_weight_agent.py#L555)), this is compu
 last_gae = delta + gamma * gae_lambda * next_non_terminal * last_gae
 ```
 
-This single line implements the entire sum. Starting from the last step and walking backwards, each step adds its own $\delta_t$ and a discounted version of everything that came after it. By the time it reaches the first step, `last_gae` has accumulated the full weighted sum.
+**Why backwards?** The naive approach would be to compute each step's advantage from scratch using the full sum — but that repeats a lot of work. There is a shortcut. Say there are 4 steps. The full GAE formula gives:
+
+```
+A₃ = δ₃                                          (last step — nothing after)
+A₂ = δ₂ + 0.94 × δ₃                              (this + decayed next)
+A₁ = δ₁ + 0.94 × δ₂ + 0.94² × δ₃                (this + next + next-next)
+A₀ = δ₀ + 0.94 × δ₁ + 0.94² × δ₂ + 0.94³ × δ₃  (all four steps)
+```
+
+But notice that each one contains the previous:
+
+```
+A₃ = δ₃
+A₂ = δ₂ + 0.94 × A₃          ← just reuse A₃
+A₁ = δ₁ + 0.94 × A₂          ← just reuse A₂
+A₀ = δ₀ + 0.94 × A₁          ← just reuse A₁
+```
+
+Each step's advantage = its own TD error + 0.94 × the next step's advantage. So start at the end and work backwards: `last_gae = delta + 0.94 * last_gae`.
+
+**"But how can it start from the end without knowing the beginning?"** It doesn't need the beginning. Think of it like building a snowball rolling uphill:
+
+```
+Step 3 (last):   last_gae = δ₃                              ← just this step
+Step 2:          last_gae = δ₂ + 0.94 × δ₃                  ← add one layer
+Step 1:          last_gae = δ₁ + 0.94 × (δ₂ + 0.94 × δ₃)   ← add another
+Step 0 (first):  last_gae = δ₀ + 0.94 × (everything above)  ← full sum
+```
+
+At step 3, it only needs δ₃ — nothing comes after the last step. At step 2, it only needs δ₂ and the `last_gae` it already computed (which contains δ₃). Each step only needs two things: its own TD error and the running total from everything after it. By the time it reaches step 0, the snowball contains everything.
+
+The `next_non_terminal` part handles episode endings — if the episode ended at step $t$, there is nothing after it, so multiply by 0 to cut off the chain.
 
 ### **Step 4: The PPO Clipped Surrogate Objective — The Core Formula**
 

@@ -2870,6 +2870,23 @@ That is roughly **33,000 learned parameters** ($16{,}384 + 16{,}384 + 128$ weigh
 
 There is no way to look at those 33,000 numbers and intuit what the function "means." It is a black box that learned to map market observations to expected rewards. That is the nature of neural networks.
 
+**What does $V(s)$ look like as a shape?** You cannot graph it — it takes 103 inputs and produces 1 output, so you would need a 104-dimensional chart. But if we pretend the network only had **1 input**, we can see what $\tanh$-based networks produce:
+
+```
+Single tanh (1 layer):           Two stacked tanh (2 layers):
+
+  1 ┤         ────────             ┤      ╭──╮
+    │        /                     │     /    \      ╭───
+    │       /                      │    /      \    /
+  0 ┤──────/                     0 ┤───╯       ╰──╯
+    │     /                        │
+    │    /                         │
+ -1 ┤────                       -1 ┤
+    └──────────────────            └──────────────────
+```
+
+With 1 layer, $V(s)$ can only learn a single S-shaped transition — "below this threshold = bad, above = good." With 2 layers (what our network has), it can learn bumps and valleys — "this range is good, this range is bad, this range is good again." Now scale that to 103 inputs: instead of a curve on a flat page, $V(s)$ is a **landscape in 103 dimensions** — with ridges, valleys, bumps, and flat regions that the network learned correspond to high or low expected reward. The 33,000 parameters determine the shape of that landscape. Training carved out the valleys and ridges by adjusting those parameters to match actual observed rewards.
+
 **What is $\tanh$ and why is it there?** $\tanh$ (hyperbolic tangent) is a function that squishes any number into the range $[-1, +1]$:
 
 $$\tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}$$

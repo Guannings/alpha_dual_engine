@@ -3265,7 +3265,18 @@ Here is how it all fits together in each iteration:
 
 $$A_t \leftarrow \frac{A_t - \bar{A}}{\text{std}(A) + 10^{-8}}$$
 
-This stabilizes training — prevents one unusually good or bad episode from dominating the gradient signal
+This is like converting test scores to a curve. Suppose the raw advantages in a batch are [+50, +48, +52, +0.1, +0.3]. The first three actions would completely dominate the gradient update, and the last two would barely matter — even though those last two might contain useful information about what to avoid. After normalization, they become something like [+0.8, +0.6, +1.0, -1.2, -1.0] — all roughly the same magnitude, so every action gets a fair say in the update.
+
+The formula does three things:
+- **Subtract the mean** ($\bar{A}$) — now the average advantage is 0. Actions that were above average become positive, below average become negative.
+- **Divide by the standard deviation** ($\text{std}(A)$) — now the spread is 1. No single action can dominate by being 100× larger than the others.
+- **Add $10^{-8}$** to the denominator — just a safety net to prevent dividing by zero if all advantages happen to be identical.
+
+In the code ([`rl_weight_agent.py:1166-1167`](rl_weight_agent.py#L1166)):
+```python
+adv_mean, adv_std = advantages.mean(), advantages.std() + 1e-8
+advantages = (advantages - adv_mean) / adv_std
+```
 
 **4. PPO update** (run `n_epochs = 6-10` passes over the collected data):
    - Shuffle the buffer into mini-batches of size 64

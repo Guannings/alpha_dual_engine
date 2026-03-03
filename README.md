@@ -2840,6 +2840,42 @@ Observation (103 numbers for weight agent, 25 for regime agent)
 
 **Why share layers?** The first two layers learn to compress the raw observation into useful features ("the market is trending up", "volatility is spiking"). Both the actor and the critic need this same understanding of the market state, so sharing the computation is efficient. The heads then specialise: the actor uses those features to pick actions, the critic uses them to estimate value.
 
+**What does $V(s)$ actually compute?** Tracing through the code ([`rl_weight_agent.py:455-458`](rl_weight_agent.py#L455)), the value head is:
+
+```python
+h = tanh(shared1(x))        # 103 inputs → 128 neurons → squish
+h = tanh(shared2(h))        # 128 → 128 → squish
+value = value_head(h)       # 128 → 1 number
+```
+
+Each layer is a matrix multiply plus a bias ($\text{output} = W \times \text{input} + b$), so the full formula is:
+
+$$V(s) = W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s + b_1) + b_2) + b_3$$
+
+Where $W_1$ is 128×103 (16,384 numbers), $W_2$ is 128×128 (16,384 numbers), $W_3$ is 1×128 (128 numbers), and $b_1, b_2, b_3$ are bias vectors. That is roughly **33,000 learned parameters** that together produce a single number. At initialization they are random, so $V(s)$ outputs garbage. Training adjusts them so that $V(s)$ gets closer to the actual future reward — that is the `value_loss = (V(s) - actual_return)²` part of the loss function.
+
+There is no way to look at those 33,000 numbers and intuit what the function "means." It is a black box that learned to map market observations to expected rewards. That is the nature of neural networks.
+
+**What is $\tanh$ and why is it there?** $\tanh$ (hyperbolic tangent) is a function that squishes any number into the range $[-1, +1]$:
+
+$$\tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}$$
+
+A few examples:
+
+| Input $x$ | $\tanh(x)$ | What happened |
+|:---|:---|:---|
+| 0 | 0 | Zero stays zero |
+| 1 | 0.76 | Positive, but pulled toward 1 |
+| 3 | 0.995 | Almost 1 — big positives get clamped |
+| -2 | -0.96 | Almost -1 — big negatives get clamped |
+| 100 | 1.00 | Completely saturated at the ceiling |
+
+The shape looks like an S-curve: flat at the top (+1), flat at the bottom (-1), steep in the middle around 0.
+
+**Why does the network need it?** Without $\tanh$, each layer is just $W \times \text{input} + b$ — a linear operation. Stacking two linear operations is still linear ($W_2(W_1 x + b_1) + b_2$ simplifies to $W_2 W_1 x + W_2 b_1 + b_2$, which is just another $Ax + c$). No matter how many layers you stack, the network can only learn straight-line relationships. $\tanh$ breaks the linearity — by squishing intermediate values through an S-curve, it lets the network learn curves, thresholds, and complex patterns. Without it, a 3-layer network would be no more powerful than a 1-layer network.
+
+**Why $\tanh$ instead of some other squish function?** There are several popular choices (ReLU, sigmoid, etc.). $\tanh$ was chosen here because its output is centered at zero (range $[-1, +1]$), which helps gradients flow smoothly during training. It is a common choice for smaller networks in RL.
+
 This is called the **Actor-Critic** architecture. The Actor decides what to do. The Critic judges how good the current situation is — not how good the action was (that comes from the advantage in Step 3).
 
 ### **Step 3: Advantage Estimation — "Was this action better than average?"**

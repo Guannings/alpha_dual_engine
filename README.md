@@ -3027,53 +3027,58 @@ The `next_non_terminal` part handles episode endings — if the episode ended at
 
 ### **Step 4: The PPO Clipped Surrogate Objective — The Core Formula**
 
-This is the key innovation that makes PPO work. The naive approach (vanilla policy gradient) would be:
+**The problem PPO solves.** Imagine the agent tries some portfolio weights and gets a great reward. The simplest learning rule is: "that worked well, do way more of it next time." So the agent massively increases the probability of those weights. But here is the danger — that one great result might have been partly luck (a favourable random draw in Step 1). By swinging the policy hard toward that one experience, the agent might completely wreck its behaviour for all other market conditions. It goes from decent to catastrophically broken in a single update.
 
-$$L = -\mathbb{E}\left[\log\pi_\theta(a_t | s_t) \cdot A_t\right]$$
+This actually happens in practice. Before PPO existed, RL agents would frequently "blow up" during training — one big gradient step would destroy a policy that took thousands of steps to build. PPO's entire purpose is to prevent this: **learn from good and bad experiences, but never change the policy too much in one update.**
 
-"Increase the probability of actions with positive advantage, decrease for negative." But this is **dangerously unstable** — a single big gradient step can completely wreck the policy. The agent goes from smart to catastrophically broken in one update.
+**The core idea in plain English.** After each batch of experience, PPO asks two questions for every action the agent took:
 
-**PPO's fix: clip the update so the policy cannot change too much in one step.**
+1. **Was this action good or bad?** That is the advantage $A_t$ from Step 3. Positive = better than expected, negative = worse.
+2. **How much has the policy already changed?** Compare the probability of taking that action under the new (updated) policy vs. the old policy:
 
-Define the probability ratio:
+$$r_t = \frac{\text{new policy's probability of this action}}{\text{old policy's probability of this action}}$$
 
-$$r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}$$
+| $r_t$ value | What it means |
+|:---|:---|
+| 1.0 | The policy hasn't changed at all |
+| 1.3 | The new policy is 30% more likely to take this action |
+| 0.7 | The new policy is 30% less likely to take this action |
 
-This measures: "how much more likely is this action under the new policy vs. the old one?"
-
-- If $r = 1.0$: the policy has not changed
-- If $r = 1.5$: the new policy is 50% more likely to take this action
-- If $r = 0.7$: the new policy is 30% less likely to take this action
-
-In code (log space for numerical stability):
-
-$$r_t = \exp(\log\pi_{\theta}(a_t|s_t) - \log\pi_{\theta_{\text{old}}}(a_t|s_t))$$
-
-Now, the **clipped surrogate objective**:
-
-$$L^{\text{CLIP}} = -\mathbb{E}\left[\min\left(r_t \cdot A_t,~ \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \cdot A_t\right)\right]$$
-
-Where $\epsilon = 0.2$ (the `clip_range`). Here is how the clipping works:
-
-**Case 1: $A_t > 0$ (good action — we want to do more of this)**
-- The ratio $r_t$ grows as the policy increasingly favors this action
-- If $r_t$ grows above $1 + \epsilon = 1.2$: the `clip` kicks in and caps the objective. "You are already doing this action way more — stop pushing."
-- If $r_t < 1.2$: normal update, keep increasing the probability
-
-**Case 2: $A_t < 0$ (bad action — we want to do less of this)**
-- The ratio $r_t$ shrinks as the policy moves away from this action
-- If $r_t$ drops below $1 - \epsilon = 0.8$: the `clip` kicks in. "You have already decreased this action a lot — stop pushing."
-- If $r_t > 0.8$: normal update, keep decreasing the probability
-
-The `min` ensures we always take the **more pessimistic** (more conservative) estimate. This is the "proximal" part — the policy stays close to where it was.
-
-In the actual code (`rl_weight_agent.py` lines 1116-1119):
-
+In the code ([`rl_weight_agent.py:1116`](rl_weight_agent.py#L1116)), this ratio is computed in log space (to avoid numerical overflow):
 ```python
 ratio = mx.exp(new_log_probs - old_logprob_batch)
-surr1 = ratio * advantage_batch
-surr2 = mx.clip(ratio, 1.0 - clip_range, 1.0 + clip_range) * advantage_batch
-policy_loss = -mx.minimum(surr1, surr2).mean()
+```
+Subtracting logs and exponentiating is the same as dividing: $e^{\log a - \log b} = a/b$.
+
+**The clipping rule.** Now PPO combines the advantage and the ratio, but with a safety limit. The rule is:
+
+- If the action was **good** ($A_t > 0$): let the policy increase the probability of this action, but **cap $r_t$ at 1.2**. Once the new policy is already 20% more likely to take this action, stop pushing — you've changed enough.
+- If the action was **bad** ($A_t < 0$): let the policy decrease the probability, but **floor $r_t$ at 0.8**. Once the new policy is already 20% less likely, stop pushing.
+
+The 0.2 margin comes from `clip_range = 0.2` ([`rl_weight_agent.py:1079`](rl_weight_agent.py#L1079)). It is a design choice — 0.2 means "the policy can change by at most ±20% per update."
+
+**Concrete example.** The agent put 25% in SMH and got a great result ($A_t = +2.0$). During the update, gradient descent keeps nudging the policy to make this action more likely. After a few nudges:
+
+| Update step | $r_t$ | $r_t \times A_t$ | Clipped? | What happens |
+|:---|:---|:---|:---|:---|
+| Start | 1.0 | 2.0 | No | Normal learning |
+| After 2 nudges | 1.1 | 2.2 | No | Still learning |
+| After 5 nudges | 1.2 | 2.4 | **Hits cap** | Gradient goes to 0 — stop |
+| After 6 nudges | 1.3 | would be 2.6 | **Clipped to 1.2** | No further change |
+
+Without clipping, $r_t$ could reach 3.0 or 10.0, completely rewriting the policy based on one good experience. With clipping, the policy can only move 20% per batch, so it takes many batches to make large changes — and if the good result was a fluke, the agent has time to correct before it's too late.
+
+**The formal formula** says exactly this:
+
+$$L^{\text{CLIP}} = -\min\left(r_t \cdot A_t,\; \text{clip}(r_t,\; 0.8,\; 1.2) \cdot A_t\right)$$
+
+The $\min$ (take the smaller of two values) ensures the update is always **conservative** — if the unclipped version and the clipped version disagree, pick the one that changes the policy less. This is the "proximal" in Proximal Policy Optimization — "proximal" means "stay close to where you were."
+
+In the code ([`rl_weight_agent.py:1117-1119`](rl_weight_agent.py#L1117)):
+```python
+surr1 = ratio * advantage_batch                                          # unclipped
+surr2 = mx.clip(ratio, 1.0 - clip_range, 1.0 + clip_range) * advantage_batch  # clipped
+policy_loss = -mx.minimum(surr1, surr2).mean()                           # take the conservative one
 ```
 
 ### **Step 5: The Full Loss Function**

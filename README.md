@@ -3268,9 +3268,9 @@ $$A_t \leftarrow \frac{A_t - \bar{A}}{\text{std}(A) + 10^{-8}}$$
 This is like converting test scores to a curve. Suppose the raw advantages in a batch are [+50, +48, +52, +0.1, +0.3]. The first three actions would completely dominate the gradient update, and the last two would barely matter — even though those last two might contain useful information about what to avoid. After normalization, they become something like [+0.8, +0.6, +1.0, -1.2, -1.0] — all roughly the same magnitude, so every action gets a fair say in the update.
 
 The formula does three things:
-- **Subtract the mean** ($\bar{A}$) — now the average advantage is 0. Actions that were above average become positive, below average become negative.
-- **Divide by the standard deviation** ($\text{std}(A)$) — now the spread is 1. No single action can dominate by being 100× larger than the others.
-- **Add $10^{-8}$** to the denominator — just a safety net to prevent dividing by zero if all advantages happen to be identical.
+- **Subtract the mean** (the average of all advantages in the batch) — now the average advantage is 0. Actions that were above average become positive, below average become negative.
+- **Divide by the standard deviation** (the spread of advantages in the batch) — now the spread is 1. No single action can dominate by being 100× larger than the others.
+- **Add 0.00000001** to the denominator — just a safety net to prevent dividing by zero if all advantages happen to be identical.
 
 In the code ([`rl_weight_agent.py:1166-1167`](rl_weight_agent.py#L1166)):
 ```python

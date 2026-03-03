@@ -3047,24 +3047,37 @@ What does the whole thing do? For each action the agent took, multiply its log p
 
 The problem is there is **no limit** on how much the policy can change in one step. A single action with a large advantage can swing the entire policy, destroying behaviour that took thousands of steps to learn. PPO's entire purpose is to prevent this: **learn from good and bad experiences, but never change the policy too much in one update.**
 
-**The core idea in plain English.** After each batch of experience, PPO asks two questions for every action the agent took:
+**Why there is a "new" and "old" policy.** Training does not happen action-by-action. Instead, the agent first **collects a batch of experience** — it plays through 256 steps of market data using its current policy, recording every (state, action, reward) along the way. During this collection phase, the policy is frozen — it does not change. Call this frozen snapshot the **"old" policy**.
+
+After collecting the batch, training begins. Gradient descent starts tweaking the network's 33,000 parameters to improve the policy. But it does not collect new data — it reuses the same 256 steps it already collected. This is efficient (no need to re-simulate the market) but creates a problem: after a few gradient updates, the parameters have changed, so the policy is no longer the same as when the data was collected. The updated policy is the **"new" policy**.
+
+This matters because the data was collected by the old policy. If the new policy drifts too far from the old one, the collected data becomes misleading — the actions in the batch were chosen by the old policy's logic, so they might not be representative of what the new policy would do. It is like studying for an exam using someone else's notes — useful if their approach is similar to yours, but misleading if it's completely different. PPO's clipping keeps the new policy within ±20% of the old one, so the collected data stays relevant.
+
+In the code ([`rl_weight_agent.py:1075-1076`](rl_weight_agent.py#L1075)), these are the batch size and the number of training passes over that same batch:
+```python
+n_steps = 256    # collect 256 steps with the old policy
+n_epochs = 6     # then train on that same batch 6 times
+```
+
+**The two questions PPO asks.** For every action in the batch, PPO checks:
 
 1. **Was this action good or bad?** That is the advantage $A_t$ from Step 3. Positive = better than expected, negative = worse.
-2. **How much has the policy already changed?** Compare the probability of taking that action under the new (updated) policy vs. the old policy:
+2. **How much has the policy already drifted?** Compare the probability of this action under the new (updated) policy vs. the old (frozen) policy that actually collected the data:
 
 $$r_t = \frac{\text{new policy's probability of this action}}{\text{old policy's probability of this action}}$$
 
+At the start of training (before any gradient updates), the new and old policies are identical, so $r_t = 1.0$ for every action. As gradient descent updates the parameters, the new policy starts to diverge, and $r_t$ moves away from 1.0:
+
 | $r_t$ value | What it means |
 |:---|:---|
-| 1.0 | The policy hasn't changed at all |
-| 1.3 | The new policy is 30% more likely to take this action |
+| 1.0 | The policy hasn't changed yet — new and old are identical |
+| 1.3 | The new policy is 30% more likely to take this action than the old one was |
 | 0.7 | The new policy is 30% less likely to take this action |
 
-In the code ([`rl_weight_agent.py:1116`](rl_weight_agent.py#L1116)), this ratio is computed in log space (to avoid numerical overflow):
+In the code ([`rl_weight_agent.py:1116`](rl_weight_agent.py#L1116)), this ratio is computed in log space (subtracting logs then exponentiating is the same as dividing: $e^{\log a - \log b} = a/b$):
 ```python
 ratio = mx.exp(new_log_probs - old_logprob_batch)
 ```
-Subtracting logs and exponentiating is the same as dividing: $e^{\log a - \log b} = a/b$.
 
 **The clipping rule.** Now PPO combines the advantage and the ratio, but with a safety limit. The rule is:
 

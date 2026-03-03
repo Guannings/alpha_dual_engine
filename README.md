@@ -2682,7 +2682,7 @@ $$\pi_\theta(a | s) = \frac{e^{\ell_a}}{\sum_i e^{\ell_i}}$$
 
 **Reading the notation:** $\pi_\theta(a | s)$ reads as "the probability of choosing action $a$ given state $s$, according to the policy with parameters $\theta$." So it answers: "given what the agent sees right now, how likely is it to pick each regime?"
 
-**Continuous case** (weight agent): The regime agent picks from 3 options — that is a discrete choice. But the weight agent outputs 12 continuous numbers (portfolio weights). You cannot use softmax-over-logits here because the action space is continuous, not a menu of choices. Instead, the agent outputs a **bell curve** and samples from it.
+**Continuous case** (weight agent): The regime agent picks from 3 options — that is a discrete choice. But the weight agent outputs 12 continuous numbers (portfolio weights). The policy itself cannot be softmax here because there is no finite menu to pick from — the agent needs to output any combination of 12 numbers. So it uses **bell curves** instead: the network outputs a mean $\mu$ and width $\sigma$ for each asset, and the agent samples from those curves. Softmax still shows up later (Step 2 below), but only as a post-processing step to force the 12 sampled numbers to sum to 1 — it is not the decision-making mechanism.
 
 The network outputs two things:
 - $\mu$ — the **mean vector**: a list of 12 numbers representing "my best guess" for each weight. This is the center of 12 bell curves.

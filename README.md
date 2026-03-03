@@ -3029,7 +3029,11 @@ The `next_non_terminal` part handles episode endings — if the episode ended at
 
 **The problem PPO solves.** Imagine the agent tries some portfolio weights and gets a great reward. The simplest learning rule is: "that worked well, do way more of it next time." So the agent massively increases the probability of those weights. But here is the danger — that one great result might have been partly luck (a favourable random draw in Step 1). By swinging the policy hard toward that one experience, the agent might completely wreck its behaviour for all other market conditions. It goes from decent to catastrophically broken in a single update.
 
-This actually happens in practice. Before PPO existed, RL agents would frequently "blow up" during training — one big gradient step would destroy a policy that took thousands of steps to build. PPO's entire purpose is to prevent this: **learn from good and bad experiences, but never change the policy too much in one update.**
+This actually happens in practice. The pre-PPO approach (called "vanilla policy gradient") is:
+
+$$L = -\mathbb{E}\left[\log\pi_\theta(a_t | s_t) \cdot A_t\right]$$
+
+In plain English: for each action the agent took, multiply its log probability by its advantage, then adjust the policy via gradient descent. If $A_t$ is positive (good action), gradient descent increases $\log\pi$ — making this action more likely next time. If $A_t$ is negative (bad action), it decreases $\log\pi$. The problem is there is **no limit** on how much the policy can change in one step. A single action with a large advantage can swing the entire policy, destroying behaviour that took thousands of steps to learn. PPO's entire purpose is to prevent this: **learn from good and bad experiences, but never change the policy too much in one update.**
 
 **The core idea in plain English.** After each batch of experience, PPO asks two questions for every action the agent took:
 

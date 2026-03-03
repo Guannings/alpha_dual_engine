@@ -2800,13 +2800,47 @@ Each of the three parts inside the sum has a concrete meaning:
 
 ### **Step 2: The Value Function $V(s)$**
 
-The same network also outputs a scalar estimate $V(s)$ — "how much total future reward do I expect from this state?"
+Go back to the network architecture from Step 1. The policy head outputs actions (regime logits or portfolio weights) — that is the **Actor**, the part that decides what to do. But the same network has a second output that we have not discussed yet: the **value head**. It outputs a single number $V(s)$ that answers one question: **"given what the market looks like right now, how much total reward do I expect to earn from here until the end of the episode?"**
 
-Both agents use a **shared trunk** (2 hidden layers with `tanh` activation) with two separate heads:
-- **Policy head** (the Actor) outputs action probabilities or Gaussian parameters
-- **Value head** (the Critic) outputs a single number — the estimated state value
+Why does the agent need this? Consider an analogy: a poker player who only remembers whether each hand won or lost, but not whether the hand was *expected* to win. They cannot distinguish a smart fold from a cowardly one, or a lucky bluff from a skilled read. $V(s)$ gives the agent that missing context — it is the agent's estimate of "how good is this situation, on average, before I even act?" Step 3 (Advantage Estimation) will use this to ask: "did my action produce a better outcome than I would have expected from this state?" That comparison is what drives learning.
 
-This is the **Actor-Critic** architecture. The Actor decides what to do. The Critic judges how good the current state is.
+**Concrete example:** Suppose the market is in a strong uptrend. $V(s)$ might output 1.8, meaning "from states like this, I usually earn reward around 1.8." If the agent then picks weights that earn a reward of 2.5, the advantage is $2.5 - 1.8 = +0.7$ — the action was **better** than expected, so the agent should do more of it. If the reward is only 0.9, the advantage is $0.9 - 1.8 = -0.9$ — **worse** than expected, so the agent should do less of it. Without $V(s)$, the agent only knows "0.9 is a low reward" but not whether that's because the action was bad or because the market was bad.
+
+**How the network is structured.** Both agents use a **shared trunk** — two hidden layers that process the observation into a compressed representation — with two separate output branches:
+
+```
+Observation (103 numbers for weight agent, 25 for regime agent)
+    │
+    ▼
+┌──────────────────────┐
+│  Shared Layer 1      │  103 → 128 neurons (weight agent)
+│  tanh activation     │   25 →  64 neurons (regime agent)
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│  Shared Layer 2      │  128 → 128 neurons (weight agent)
+│  tanh activation     │   64 →  64 neurons (regime agent)
+└──────────┬───────────┘
+           │
+     ┌─────┴─────┐
+     ▼           ▼
+┌─────────┐ ┌─────────┐
+│ Policy  │ │  Value  │
+│  Head   │ │  Head   │
+│ (Actor) │ │(Critic) │
+└─────────┘ └─────────┘
+     │           │
+     ▼           ▼
+  Actions      V(s)
+```
+
+- **Policy head (Actor)**: outputs the action — 3 regime logits ([`rl_regime_agent.py:568`](rl_regime_agent.py#L568)) or 12 weight means $\mu$ ([`rl_weight_agent.py:448`](rl_weight_agent.py#L448))
+- **Value head (Critic)**: outputs a single number $V(s)$ — the estimated future reward from this state ([`rl_weight_agent.py:449`](rl_weight_agent.py#L449))
+
+**Why share layers?** The first two layers learn to compress the raw observation into useful features ("the market is trending up", "volatility is spiking"). Both the actor and the critic need this same understanding of the market state, so sharing the computation is efficient. The heads then specialise: the actor uses those features to pick actions, the critic uses them to estimate value.
+
+This is called the **Actor-Critic** architecture. The Actor decides what to do. The Critic judges how good the current situation is — not how good the action was (that comes from the advantage in Step 3).
 
 ### **Step 3: Advantage Estimation — "Was this action better than average?"**
 

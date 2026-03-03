@@ -2722,11 +2722,31 @@ This is how the agent **explores**. Here is what "trying" looks like concretely:
 ```python
 entropy = 0.5 * n_assets * (1 + log(2*pi)) + sum(log_std)
 ```
-Notice that entropy depends directly on `log_std` — when $\sigma$ shrinks, `log_std` decreases, entropy drops, and the bonus gets smaller. The loss function *subtracts* this entropy term ([line 1127](rl_weight_agent.py#L1127)):
+
+**Where does this formula come from?** It is the textbook entropy of a Gaussian (bell curve) distribution. For a single bell curve with width $\sigma$, the entropy is:
+
+$$H = \frac{1}{2}\left(1 + \ln(2\pi)\right) + \ln\sigma$$
+
+This comes from the definition of continuous entropy — "take the bell curve formula, multiply each height by its own log, integrate over the entire curve." The integral has a known closed-form answer (derived in any probability textbook), and the result is the formula above. The important thing is what each piece means:
+
+| Piece | Value | What it does |
+|:---|:---|:---|
+| $\frac{1}{2}(1 + \ln(2\pi))$ | ≈ 1.42 | A constant — same for every bell curve regardless of width. Does not change during training. |
+| $\ln\sigma$ | varies | The only part that changes. When $\sigma$ is large, $\ln\sigma$ is large → high entropy. When $\sigma$ shrinks toward zero, $\ln\sigma$ goes to $-\infty$ → entropy plummets. |
+
+So entropy is really just tracking $\ln\sigma$ plus a constant. The constant is irrelevant to training because the optimizer only cares about *changes* in the loss — adding or subtracting a fixed number doesn't change which direction the gradient points.
+
+The weight agent has 12 independent bell curves (one per asset), so the total entropy is the sum across all 12:
+
+$$H_{\text{total}} = \sum_{i=1}^{12}\left[\frac{1}{2}(1 + \ln(2\pi)) + \ln\sigma_i\right] = \frac{12}{2}(1 + \ln(2\pi)) + \sum_{i=1}^{12}\ln\sigma_i$$
+
+Which is exactly what the code computes: `0.5 * n_assets * (1 + log(2*pi)) + sum(log_std)` where `n_assets = 12` and `log_std` is $\ln\sigma$ for each asset.
+
+**How the entropy bonus enters the loss.** The loss function *subtracts* this entropy term ([line 1127](rl_weight_agent.py#L1127)):
 ```python
 total_loss = policy_loss + vf_coef * value_loss - ent_coef * entropy
 ```
-The minus sign means: higher entropy → lower loss → the optimizer is rewarded for keeping the bell curves wide. The coefficient `ent_coef = 0.10` ([line 1080](rl_weight_agent.py#L1080)) controls how strongly this force pushes back — at 0.10, it is a moderate nudge, not an overwhelming force.
+The minus sign means: higher entropy → lower loss → the optimizer is rewarded for keeping the bell curves wide. Since the constant part of entropy never changes, the gradient of `- ent_coef * entropy` with respect to `log_std` is simply `- ent_coef` — a steady downward push on the loss whenever $\sigma$ tries to shrink. The coefficient `ent_coef = 0.10` ([line 1080](rl_weight_agent.py#L1080)) controls how strongly this force pushes back — at 0.10, it is a moderate nudge, not an overwhelming force.
 
 **Why bother keeping $\sigma$ from collapsing?** Without the entropy bonus, the agent would quickly narrow its bell curves to near-zero width, locking in whatever allocation it found first. If that allocation happened to be mediocre (a "local optimum"), the agent would be stuck — it would never explore enough to discover something better. The entropy bonus forces the agent to keep trying new things even when it thinks it knows the answer. It is the difference between a student who only re-reads the one textbook they already own vs. one who occasionally picks up a new book.
 

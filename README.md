@@ -3173,11 +3173,29 @@ What we just covered. Makes the Actor better at choosing actions.
 
 #### **Part 2: Value loss $L^{\text{VF}}$**
 
-Trains the Critic to predict returns accurately:
+Remember the value head from Step 2 — the Critic that outputs $V(s)$, a single number estimating "how much total reward do I expect from this state?" That estimate needs to be accurate for the advantage calculation in Step 3 to work. If the Critic's predictions are wrong, the advantages are wrong, and the agent learns from garbage signals.
 
-$$L^{\text{VF}} = \frac{1}{N}\sum_t\left(V_\theta(s_t) - R_t\right)^2$$
+The value loss trains the Critic by asking: **"after the episode played out, how far off was your prediction?"**
 
-Where $R_t = A_t + V_{\text{old}}(s_t)$ are the target returns (advantage + old value estimate). This is just mean squared error — "make the critic's predictions match reality." The code uses $c_1 = 0.5$ (`vf_coef`).
+$$L_{\text{VF}} = \frac{1}{N}\sum_t(V_\theta(s_t) - R_t)^2$$
+
+This is the same mean squared error from [Section 0](#what-is-a-loss-function) — the house price example where $L = (\text{guess} - \text{actual})^2$. Here:
+
+- $V_\theta(s_t)$ = the Critic's **guess** — "from this state, I predict total reward of X"
+- $R_t$ = the **actual** target return — what really happened (computed from the rewards the agent actually earned)
+- $(V_\theta(s_t) - R_t)^2$ = squared error for one step — how wrong the guess was
+- $\frac{1}{N}\sum_t$ = average across all $N$ steps in the batch
+
+**Where does the target $R_t$ come from?** It is the advantage from Step 3 plus the old Critic's estimate: $R_t = A_t + V_{\text{old}}(s_t)$. Why? Rearranging the advantage formula: $A_t = R_t - V(s_t)$, so $R_t = A_t + V(s_t)$. The advantage tells us how much better (or worse) reality was compared to the prediction, so adding it back to the old prediction recovers what reality was.
+
+**Concrete example:** The Critic looked at a bull market and predicted $V(s) = 2.0$. The advantage turned out to be $A_t = +0.3$ (slightly better than expected). So the target is $R_t = 0.3 + 2.0 = 2.3$. The value loss for this step is $(2.0 - 2.3)^2 = 0.09$. Gradient descent nudges the Critic's parameters so that next time it sees a similar state, it predicts something closer to 2.3 instead of 2.0.
+
+In the code ([`rl_weight_agent.py:1121`](rl_weight_agent.py#L1121)):
+```python
+value_loss = ((values - return_batch) ** 2).mean()
+```
+
+The coefficient $c_1 = 0.5$ (`vf_coef` at [line 1081](rl_weight_agent.py#L1081)) scales this loss down by half before adding it to the total — this prevents the Critic's updates from overwhelming the Actor's updates.
 
 #### **Part 3: Entropy bonus $H[\pi]$**
 

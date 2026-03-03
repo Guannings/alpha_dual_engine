@@ -2963,9 +2963,18 @@ The other extreme is to wait until the entire episode finishes and use the total
 
 **Generalized Advantage Estimation (GAE)** is a compromise: look at TD errors from multiple future steps, but weight nearby steps more heavily than distant ones:
 
-$$A_t = \delta_t + (0.99 \times 0.95) \cdot \delta_{t+1} + (0.99 \times 0.95)^2 \cdot \delta_{t+2} + \ldots$$
+$$A_t = \delta_t + (\gamma \lambda) \cdot \delta_{t+1} + (\gamma \lambda)^2 \cdot \delta_{t+2} + \ldots$$
 
-Each future TD error is multiplied by $(0.99 \times 0.95)^k \approx 0.94^k$, which shrinks rapidly:
+Where do $\gamma$ and $\lambda$ come from? They are two hyperparameters set in the code ([`rl_weight_agent.py:1077-1078`](rl_weight_agent.py#L1077)):
+
+```python
+gamma = 0.99       # discount factor — same γ from the TD error above
+gae_lambda = 0.95  # GAE blending — how many future steps to include
+```
+
+$\gamma = 0.99$ is the same discount factor from the TD error — "future rewards are worth slightly less than immediate ones." $\lambda = 0.95$ is new: it controls how aggressively GAE blends in future TD errors. Higher $\lambda$ = look further ahead, lower $\lambda$ = mostly trust the immediate step. Both are design choices picked by the developer, same as `hidden = 128` or `ent_coef = 0.10`.
+
+Their product $\gamma \lambda = 0.99 \times 0.95 \approx 0.94$ is the decay rate — each future TD error is multiplied by $0.94^k$, which shrinks rapidly:
 
 | Steps ahead | Weight | How much it counts |
 |:---|:---|:---|

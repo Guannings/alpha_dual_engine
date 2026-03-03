@@ -2926,9 +2926,15 @@ This is why we built $V(s)$ in Step 2 — it provides the "what the critic expec
 
 The simplest way to measure advantage is to look at what happened in a single step. At step $t$, the agent is in state $s_t$, takes an action, gets reward $r_t$, and lands in a new state $s_{t+1}$. The **TD error** (temporal difference) compares what happened to what the critic predicted:
 
-$$\delta_t = \underbrace{r_t + \gamma \cdot V(s_{t+1})}_{\text{what actually happened}} - \underbrace{V(s_t)}_{\text{what the critic predicted}}$$
+$$\delta_t = \underbrace{r_t}_{\text{actual reward}} + \underbrace{\gamma \cdot V(s_{t+1})}_{\text{estimated future}} - \underbrace{V(s_t)}_{\text{original estimate}}$$
 
-The left side is "actual": the reward I got ($r_t$) plus what the critic thinks the future is worth from the new state ($V(s_{t+1})$), discounted by $\gamma = 0.99$ (a dollar tomorrow is worth 99 cents today). The right side is "predicted": what the critic thought this state was worth before I acted.
+Think of it this way. Before the agent acts, the critic looks at the current state and makes a guess: "from here, I expect a total of $V(s_t)$." That is the **original estimate** — one number covering everything (this step's reward + all future rewards).
+
+Then the agent acts, and one step of reality plays out. The agent earns an actual reward $r_t$ — this is the only part that truly happened, not a guess. The agent also lands in a new state $s_{t+1}$, and the critic now estimates the future from there: $V(s_{t+1})$. This is still a guess, but it's an **updated guess** — the critic has seen one more step of reality and is now estimating from a new position.
+
+The TD error asks: "was the **updated picture** (actual reward + new estimate of the future) better or worse than the **original estimate**?" If it's higher, the situation turned out better than predicted — the action was above average. If it's lower, worse than predicted.
+
+The $\gamma = 0.99$ is a **discount factor** — it slightly shrinks the future estimate, reflecting the idea that rewards sooner are worth slightly more than rewards later ($1 tomorrow is worth $0.99 today). At 0.99, the agent cares about the future almost as much as the present.
 
 In the code ([`rl_weight_agent.py:554`](rl_weight_agent.py#L554)):
 ```python

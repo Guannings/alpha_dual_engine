@@ -3278,10 +3278,40 @@ adv_mean, adv_std = advantages.mean(), advantages.std() + 1e-8
 advantages = (advantages - adv_mean) / adv_std
 ```
 
-**4. PPO update** (run `n_epochs = 6-10` passes over the collected data):
-   - Shuffle the buffer into mini-batches of size 64
-   - For each mini-batch: compute the clipped loss + value loss + entropy bonus, backpropagate, update network weights
-   - Clip gradient norms to 0.5 (`max_grad_norm`) to prevent gradient explosion
+**4. PPO update** (run `n_epochs = 6` passes over the collected data):
+
+You just collected 256 steps of experience. Instead of feeding all 256 into the loss function at once, the code randomly shuffles them and chops them into **4 mini-batches of 64**. Think of it like shuffling a deck of 256 cards and dealing 4 hands. Why not use all 256 at once? Smaller batches mean more frequent weight updates (4 updates per pass instead of 1), and the randomness from shuffling helps the network avoid getting stuck in a rut.
+
+For each mini-batch of 64 steps, the code does three things:
+
+1. **Compute the loss** — run the [Step 5 combined loss function](#step-5-the-full-loss-function) on those 64 examples (clipped policy loss + value loss + entropy bonus)
+2. **Backpropagate** — the computer calculates "if I nudge each of the ~33,000 network weights up or down slightly, how would the loss change?" This gives a direction to move each weight (called the **gradient**)
+3. **Update the weights** — move each weight a tiny step in that direction. The Adam optimizer decides the step size (learning rate `lr = 0.0001`)
+
+After processing all 4 mini-batches, the code checks: **is the total gradient magnitude larger than 0.5?** If so, it shrinks the gradient proportionally down to exactly 0.5. This is a speed limit on how fast the weights can change in a single update — without it, one weird mini-batch could produce a huge gradient that wrecks the network in one step.
+
+```python
+# Gradient clipping (rl_weight_agent.py:1199-1203)
+if gn > max_grad_norm:           # max_grad_norm = 0.5
+    scale = max_grad_norm / gn   # e.g. if gn = 2.0, scale = 0.25
+    grads = grads * scale        # shrink all gradients proportionally
+```
+
+Then the entire shuffle-and-process cycle **repeats 6 times** (`n_epochs = 6`) on the same 256 steps:
+
+| | Per epoch | Total (6 epochs) |
+|:---|:---|:---|
+| Mini-batches processed | 4 (= 256 / 64) | 24 |
+| Weight updates | 4 | 24 |
+| Gradient clips checked | 4 | 24 |
+
+In the code ([`rl_weight_agent.py:1175-1206`](rl_weight_agent.py#L1175)):
+```python
+for epoch in range(n_epochs):                    # 6 passes
+    indices = np.random.permutation(buf_len)     # reshuffle each time
+    for start in range(0, buf_len, batch_size):  # 4 mini-batches of 64
+        # ... compute loss, backpropagate, clip gradients, update weights
+```
 
 **5. Repeat** from step 1 until `total_timesteps` is reached
 

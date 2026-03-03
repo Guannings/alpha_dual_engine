@@ -3105,7 +3105,14 @@ Without clipping, $r_t$ could reach 3.0 or 10.0, completely rewriting the policy
 
 **The formal formula** says exactly this:
 
-$$L^{\text{CLIP}} = -\min\left(r_t \cdot A_t,\; \text{clip}(r_t,\; 0.8,\; 1.2) \cdot A_t\right)$$
+$$L_{\text{CLIP}} = -\min(r_t \cdot A_t, \enspace \text{clip}(r_t, 0.8, 1.2) \cdot A_t)$$
+
+| Piece | What it does |
+|:---|:---|
+| $r_t \cdot A_t$ | The unclipped version — ratio × advantage, no safety limit |
+| $\text{clip}(r_t, 0.8, 1.2) \cdot A_t$ | The clipped version — if $r_t$ goes outside $[0.8, 1.2]$, force it back to the boundary |
+| $\min(\ldots)$ | Take whichever is smaller — always pick the more conservative update |
+| $-$ | Negate so gradient descent minimizes (same trick as the vanilla formula above) |
 
 The $\min$ (take the smaller of two values) ensures the update is always **conservative** — if the unclipped version and the clipped version disagree, pick the one that changes the policy less. This is the "proximal" in Proximal Policy Optimization — "proximal" means "stay close to where you were."
 

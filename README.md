@@ -2754,11 +2754,11 @@ The minus sign means: higher entropy → lower loss → the optimizer is rewarde
 
 **The gradient — why it's a constant push.** Let's work out exactly how the entropy bonus pushes on $\sigma$. The entropy bonus part of the loss is:
 
-$$L_{\text{entropy}} = -\text{ent\_coef} \times \left[\underbrace{\frac{12}{2}(1 + \ln 2\pi)}_{\text{constant } \approx 17.0} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
+$$L_{\text{entropy}} = -0.10 \times \left[\underbrace{\frac{12}{2}(1 + \ln 2\pi)}_{\text{constant } \approx 17.0} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
 
 Now take the derivative with respect to a single asset's $\ln\sigma_j$ (say, SMH's bell curve width). The derivative asks: "if I make SMH's $\ln\sigma$ slightly bigger, how does the loss change?"
 
-$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -\text{ent\_coef} \times \frac{\partial}{\partial \ln\sigma_j}\left[\text{constant} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
+$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -0.10 \times \frac{\partial}{\partial \ln\sigma_j}\left[\text{constant} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
 
 Step by step:
 - The constant $\frac{12}{2}(1 + \ln 2\pi)$ doesn't depend on $\ln\sigma_j$ at all, so its derivative is **0** — it vanishes.
@@ -2766,7 +2766,7 @@ Step by step:
 
 What's left:
 
-$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -\text{ent\_coef} \times 1 = -0.10$$
+$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -0.10 \times 1 = -0.10$$
 
 This is the same for every asset, at every point in training, regardless of what $\sigma$ currently is. It is a **constant downward push of $-0.10$ on the loss for each asset's `log_std`**. In gradient descent, a negative gradient means "increasing this parameter decreases the loss" — so the optimizer is always nudged toward making $\ln\sigma$ larger (i.e., keeping $\sigma$ wide). This is what prevents $\sigma$ from collapsing: no matter how small $\sigma$ gets, the entropy bonus keeps pushing back with the same steady force.
 

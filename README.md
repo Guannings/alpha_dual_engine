@@ -3163,13 +3163,27 @@ policy_loss = -mx.minimum(surr1, surr2).mean()                           # take 
 
 ### **Step 5: The Full Loss Function**
 
-PPO's total loss combines three components:
+PPO's total loss combines three components into one number (as previewed in [Section 0](#what-is-a-loss-function)):
 
-$$L^{\text{total}} = L^{\text{CLIP}} + c_1 \cdot L^{\text{VF}} - c_2 \cdot H[\pi]$$
+$$L_{\text{total}} = L_{\text{CLIP}} + 0.5 \times L_{\text{VF}} - \text{ent\_coef} \times H$$
 
-#### **Part 1: Policy loss $L^{\text{CLIP}}$**
+Which maps directly to the code at [`rl_weight_agent.py:1127`](rl_weight_agent.py#L1127):
 
-What we just covered. Makes the Actor better at choosing actions.
+```python
+total_loss = policy_loss + vf_coef * value_loss - ent_coef * entropy
+```
+
+| Term | Code name | What it does | Coefficient |
+|:---|:---|:---|:---|
+| $L_{\text{CLIP}}$ | `policy_loss` | Makes the Actor better at choosing actions ([Step 4](#step-4-the-ppo-clipped-surrogate-objective--the-core-formula)) | 1.0 (no scaling) |
+| $L_{\text{VF}}$ | `value_loss` | Makes the Critic better at predicting rewards (Part 2 below) | 0.5 (`vf_coef`) |
+| $H$ | `entropy` | Keeps the agent exploring (Part 3 below) | 0.10 for weight agent, 0.05 for regime (`ent_coef`) |
+
+The $+$ means policy loss and value loss are added (both should shrink). The $-$ means entropy is subtracted (higher entropy = lower loss = rewarded). Gradient descent minimizes this single number, which simultaneously improves the Actor, improves the Critic, and maintains exploration.
+
+#### **Part 1: Policy loss $L_{\text{CLIP}}$**
+
+What we just covered in [Step 4](#step-4-the-ppo-clipped-surrogate-objective--the-core-formula). Makes the Actor better at choosing actions — increase the probability of actions that were better than expected, decrease for worse, but never change more than ±20% per batch.
 
 #### **Part 2: Value loss $L^{\text{VF}}$**
 

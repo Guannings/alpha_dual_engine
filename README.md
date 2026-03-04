@@ -1129,11 +1129,11 @@ Lower loss means a better guess. The computer tries many guesses and adjusts to 
 
 **The three loss functions in the Alpha Dual Engine:**
 
-| Loss function | What it measures | Minimized by | Detailed in |
-|:---|:---|:---|:---|
-| Portfolio objective | Risk minus momentum minus diversification | SLSQP solver | Section A below |
-| PPO policy loss | How much to adjust action probabilities | PPO actor (gradient descent) | Section D below |
-| PPO value loss | How wrong the critic's prediction was (mean squared error) | PPO critic (gradient descent) | Section D below |
+| Loss function | What it measures | Minimized by | Code | Detailed in |
+|:---|:---|:---|:---|:---|
+| Portfolio objective | Risk minus momentum minus diversification | SLSQP solver | [`alpha_engine.py:775`](alpha_engine.py#L775) | Section A below |
+| PPO policy loss | How much to adjust action probabilities | PPO actor (gradient descent) | [`rl_weight_agent.py:1116-1119`](rl_weight_agent.py#L1116) | Section D below |
+| PPO value loss | How wrong the critic's prediction was (mean squared error) | PPO critic (gradient descent) | [`rl_weight_agent.py:1121`](rl_weight_agent.py#L1121) | Section D below |
 
 Each is explained with its full formula in the referenced section. The key insight: all three do the same thing conceptually — define "what is wrong" as a number, then make that number smaller.
 
@@ -1141,6 +1141,11 @@ Each is explained with its full formula in the referenced section. The key insig
 
 ```
 total_loss = policy_loss + 0.5 × value_loss − 0.10 × entropy
+```
+
+In the code ([`rl_weight_agent.py:1127`](rl_weight_agent.py#L1127)):
+```python
+total_loss = policy_loss + vf_coef * value_loss - ent_coef * entropy
 ```
 
 Why combine them? Because gradient descent (explained below) can only walk downhill on **one** landscape at a time. By adding the three terms into a single number, the optimizer can adjust all the network's parameters in one pass. The three terms pull in different directions — policy loss wants better actions, value loss wants better predictions, and the entropy bonus wants the agent to keep exploring — and gradient descent finds a compromise that improves all three simultaneously. The full derivation of each term and how they interact is in [Section D](#d-proximal-policy-optimization-ppo--the-complete-math).
@@ -1167,7 +1172,7 @@ $$w_{\text{new}} = w_{\text{old}} - \alpha \cdot \nabla L$$
 
 Three pieces: $w_{\text{old}}$ is the current guess, $\nabla L$ is the slope (which direction is uphill), and $\alpha$ is the **learning rate** (how big of a step to take). The minus sign means "go opposite to the slope" — i.e., go downhill.
 
-**The learning rate matters:** Too big and you overshoot the valley and bounce around forever. Too small and you creep toward the answer in a million steps. In the RL agents, $\alpha = 0.0003$ — very small steps, because large steps in RL can destroy the policy.
+**The learning rate matters:** Too big and you overshoot the valley and bounce around forever. Too small and you creep toward the answer in a million steps. In the RL agents, $\alpha$ is very small — the regime agent uses 0.0003 ([`rl_regime_agent.py:670`](rl_regime_agent.py#L670)) and the weight agent uses 0.0001 ([`rl_weight_agent.py:1074`](rl_weight_agent.py#L1074)) — because large steps in RL can destroy the policy.
 
 **Concrete example:** Minimize $f(x) = x^2$. The answer is obviously $x = 0$, but the computer does not know that.
 
@@ -1186,11 +1191,11 @@ Each step: compute slope, step opposite. The loss shrinks every time. After enou
 
 **How gradient descent connects to the project:**
 
-| Component | Uses gradient descent? | What it does instead |
-|:---|:---|:---|
-| SLSQP (portfolio optimizer) | No | Quadratic subproblems (Section A) — more sophisticated but same spirit |
-| PPO actor (policy network) | **Yes** | Adam optimizer (a fancier gradient descent with momentum) |
-| PPO critic (value network) | **Yes** | Adam optimizer — adjusts predictions to match actual returns |
+| Component | Uses gradient descent? | What it does instead | Code |
+|:---|:---|:---|:---|
+| SLSQP (portfolio optimizer) | No | Quadratic subproblems (Section A) — more sophisticated but same spirit | [`alpha_engine.py:883`](alpha_engine.py#L883) |
+| PPO actor (policy network) | **Yes** | Adam optimizer (a fancier gradient descent with momentum) | [`rl_weight_agent.py:1102`](rl_weight_agent.py#L1102) |
+| PPO critic (value network) | **Yes** | Adam optimizer — adjusts predictions to match actual returns | Same network and optimizer |
 
 The neural networks in the RL agents have thousands of parameters. Gradient descent adjusts all of them simultaneously — each one nudged in the direction that reduces the loss.
 
@@ -1209,6 +1214,17 @@ The heart of the portfolio optimizer is the function it tries to minimize:
 $$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$$
 
 The goal: find the weight vector $\mathbf{w}$ (12 numbers that add up to 1) that makes this as small as possible.
+
+In the code ([`alpha_engine.py:775-801`](alpha_engine.py#L775)):
+```python
+def objective(w):
+    momentum_reward = np.dot(w, mom_arr) * config.ir_score_multiplier
+    w_pos = w[w > 1e-6]
+    entropy = -np.sum(w_pos * np.log(w_pos)) if len(w_pos) > 0 else 0
+    norm_entropy = entropy / max_entropy
+    port_vol = np.sqrt(np.dot(w.T, np.dot(cov_arr, w)))
+    return -momentum_reward - config.entropy_lambda * norm_entropy + growth_penalty + turnover_penalty + vol_penalty
+```
 
 ### **Is this a standard formula?**
 
@@ -1252,7 +1268,7 @@ SLSQP's **active set method** handles this automatically: it maintains a working
 
 ### **How SLSQP actually solves it**
 
-The code uses `scipy.optimize.minimize` with the **SLSQP** method (Sequential Least Squares Quadratic Programming).
+The code uses `scipy.optimize.minimize` with the **SLSQP** method ([`alpha_engine.py:883-890`](alpha_engine.py#L883)) (Sequential Least Squares Quadratic Programming).
 
 **The name, decoded:**
 - **Sequential** — it solves the problem step by step, not all at once
@@ -1265,7 +1281,7 @@ Imagine you are blindfolded on a hilly landscape and you need to find the lowest
 
 **What SLSQP does at each step:**
 
-**Step 1 — Start with a guess.** The solver picks an initial set of weights (actually it tries multiple random starting points via `_multi_start_optimize`).
+**Step 1 — Start with a guess.** The solver picks an initial set of weights (actually it tries multiple random starting points via [`_multi_start_optimize`](alpha_engine.py#L853)).
 
 **Step 2 — Feel the ground around you.** Compute the gradient (slope) and curvature (is the slope getting steeper or flatter?) at the current position.
 
@@ -1808,12 +1824,17 @@ Total unique numbers $= 12 + 66 = 78$, or equivalently $n(n+1)/2 = 12 \times 13 
 
 **Step 4 — How the code computes it from real data**
 
-The code calculates the covariance matrix from historical daily returns:
+The code calculates the covariance matrix from historical daily returns ([`alpha_engine.py:534-535`](alpha_engine.py#L534)):
+
+```python
+mean_ret = returns.mean() * 252
+cov = returns.cov() * 252
+```
 
 1. **Daily returns** — for each asset, compute the percentage change each day (e.g., the price went from 100 to 102, so the daily return is +2%)
 2. **Standard deviation** — measure how spread out those daily returns are over a 60-day rolling window. This is the daily volatility.
 3. **Annualize** — multiply by $\sqrt{252}$ (there are 252 trading days per year). The square root comes from a statistical property: variance scales linearly with time, so standard deviation scales with the square root. For example, if daily volatility is 1.5%, annual volatility is $1.5\% \times \sqrt{252} \approx 24\%$.
-4. **Covariance matrix** — compute `returns.cov()` across all assets, then multiply by 252 to annualize (covariance is variance-like, so it scales linearly with time, not with the square root). The diagonal of this matrix contains each asset's variance; the off-diagonals contain pairwise covariances.
+4. **Covariance matrix** — `returns.cov()` computes pairwise covariances across all assets, then `* 252` annualizes (covariance is variance-like, so it scales linearly with time, not with the square root). The diagonal of this matrix contains each asset's variance; the off-diagonals contain pairwise covariances.
 
 **The formulas (the general versions of what we just computed by hand):**
 
@@ -1924,7 +1945,11 @@ $$1.0 \times 0.5 + 0.6 \times 0.3 + 0.4 \times 0.2 = 0.50 + 0.18 + 0.08 = 0.76$$
 
 Result: $0.76$ — shape (1 x 1). One single number. This is the total portfolio risk for the allocation [50%, 30%, 20%] given the covariance matrix above.
 
-The whole point of the sandwich is to take a list of simple numbers (your portfolio weights), run them through a table of 78 pairwise interactions (the covariance matrix), and collapse everything into **one single number** — total portfolio risk. That single number is what the optimizer tries to make as small as possible.
+The whole point of the sandwich is to take a list of simple numbers (your portfolio weights), run them through a table of 78 pairwise interactions (the covariance matrix), and collapse everything into **one single number** — total portfolio risk. That single number is what the optimizer tries to make as small as possible. In the code ([`alpha_engine.py:794`](alpha_engine.py#L794)):
+
+```python
+port_vol = np.sqrt(np.dot(w.T, np.dot(cov_arr, w)))
+```
 
 **By contrast, the momentum term $w \cdot M$ is much simpler.** It is a **dot product** — two vectors of the same length, multiplied pair by pair and added up. No matrix involved, no sandwich, no two-step process. Just one step:
 
@@ -2172,6 +2197,11 @@ Claude Shannon invented entropy in 1948 for information theory — specifically 
 
 $$H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$$
 
+In the code ([`alpha_engine.py:782`](alpha_engine.py#L782)):
+```python
+entropy = -np.sum(w_pos * np.log(w_pos))
+```
+
 You have 12 assets with weights $w_1, w_2, \ldots, w_{12}$. For each one:
 1. Take the weight (e.g., 0.30)
 2. Take the natural log of that weight ($\ln(0.30) = -1.20$)
@@ -2234,13 +2264,17 @@ $$\mathcal{L}(\mathbf{w}) = \ldots - \lambda_{\text{entropy}} H(\mathbf{w})$$
 
 That minus sign means the optimizer rewards higher entropy (more spread). Without it, the momentum term would happily shove 100% into the single best stock. The entropy term gently pushes back: "spread the money around a little."
 
-But $\lambda_{\text{entropy}} = 0.02$ is tiny, so it is a whisper, not a shout. The momentum term easily overpowers it. The result: the portfolio concentrates in the top 3-4 winners but does not go full degenerate into just 1.
+But $\lambda_{\text{entropy}} = 0.02$ ([`alpha_engine.py:88`](alpha_engine.py#L88)) is tiny, so it is a whisper, not a shout. The momentum term easily overpowers it. The result: the portfolio concentrates in the top 3-4 winners but does not go full degenerate into just 1.
 
 ### **Why not just use Effective N instead?**
 
 The difference is where they are used:
 - **Entropy** goes inside the objective function as a smooth, differentiable penalty. The optimizer can compute its gradient and smoothly adjust weights. It is a **soft nudge during optimization**.
-- **Effective N** ($1/\sum w_i^2$) is used as a **hard check after optimization**. It is a pass/fail gate: "does this portfolio look like at least 3 bets?"
+- **Effective N** ($1/\sum w_i^2$) is used as a **hard check after optimization**. It is a pass/fail gate: "does this portfolio look like at least 3 bets?" In the code, this is computed as $e^H$ ([`alpha_engine.py:1054-1055`](alpha_engine.py#L1054)):
+```python
+entropy = -np.sum(w_pos * np.log(w_pos)) if len(w_pos) > 0 else 0
+effective_n = np.exp(entropy)
+```
 
 Entropy is the carrot (gentle reward for spreading). Effective N is the stick (reject the portfolio if it is too concentrated).
 
@@ -2251,6 +2285,8 @@ Shannon Entropy measures how spread out the portfolio weights are on a scale fro
 ---
 
 ## **C. Geometric Brownian Motion — The Complete Derivation**
+
+> **Code:** The entire GBM simulation is implemented in the [`MonteCarloSimulator`](alpha_engine.py#L1555) class ([`alpha_engine.py:1555-1621`](alpha_engine.py#L1555)).
 
 ### **Start with regular Brownian Motion**
 
@@ -2485,7 +2521,7 @@ Consider two scenarios over 2 days, both with 25% volatility:
 
 The average return is 0% (one up, one down), but you **lost money both ways**. This asymmetry — percentage gains and losses do not cancel out — is the volatility drag. The $-\frac{1}{2}\sigma^2$ term accounts for exactly this effect.
 
-With $\sigma = 0.25$: drag = $\frac{1}{2}(0.25)^2 = 0.03125$ = 3.125% per year eaten by volatility.
+With $\sigma = 0.25$: drag = $\frac{1}{2}(0.25)^2 = 0.03125$ = 3.125% per year eaten by volatility. In the code, this correction appears as `- 0.5 * sigma_daily ** 2` ([`alpha_engine.py:1593`](alpha_engine.py#L1593)).
 
 ### **The final simulation formula**
 
@@ -2501,7 +2537,16 @@ Rearrange:
 
 $$S_{t+1} = S_t \exp\left[\left(\mu - \frac{1}{2}\sigma^2\right)\Delta t + \sigma\sqrt{\Delta t} ~ Z\right]$$
 
-This is the exact formula used in the Monte Carlo simulation code. Here is every piece labeled:
+This is the exact formula used in the Monte Carlo simulation code ([`alpha_engine.py:1593-1610`](alpha_engine.py#L1593)):
+
+```python
+drift = mu_daily - 0.5 * sigma_daily ** 2          # μ - ½σ² (volatility drag)
+Z = np.random.standard_normal(self.n_simulations)  # 1M random draws from N(0,1)
+daily_returns = np.exp(drift + sigma_daily * Z)     # the GBM formula
+current_values *= daily_returns                     # S_{t+1} = S_t × exp(...)
+```
+
+Here is every piece labeled:
 
 | Symbol | What it is | Example value |
 |:---|:---|:---|
@@ -2539,7 +2584,7 @@ The portfolio dropped 1,806 dollars on this simulated day. Notice how the drift 
 
 ### **How 1,000,000 paths work**
 
-The code does this exact calculation 1,260 times (5 years times 252 trading days) for each path, and runs 1,000,000 paths in parallel using NumPy vectorization. Each path draws its own independent sequence of $Z$ values, so each path is a different possible future.
+The code ([`alpha_engine.py:1558-1621`](alpha_engine.py#L1558)) does this exact calculation 1,260 times (5 years times 252 trading days) for each path, and runs 1,000,000 paths in parallel using NumPy vectorization. Each path draws its own independent sequence of $Z$ values, so each path is a different possible future.
 
 After all paths complete, you have 1,000,000 final portfolio values. Sort them and you get:
 - Mean = expected outcome

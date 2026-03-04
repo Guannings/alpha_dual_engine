@@ -184,7 +184,7 @@ d. entropy_lambda (0.02)
 
 * Logic: A low lambda value (0.02) tells the optimizer that we prefer concentration over diversification. It allows the weights to cluster near the 30% maximums rather than being flattened out equally across all assets.
 
-Shannon Entropy $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ quantifies weight dispersion: equal weighting across 12 assets yields the maximum ($\approx 2.48$), while full concentration yields 0. The optimizer includes $0.02 \times H(\mathbf{w})$ as a soft diversification bonus. Since $\lambda_{\text{entropy}} = 0.02$ is deliberately small, momentum signals dominate — the portfolio remains concentrated in top performers but avoids extreme single-asset allocation. See Appendix Section B for the full derivation.
+Shannon Entropy $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ quantifies weight dispersion: equal weighting across 12 assets yields the maximum ($\approx 2.48$), while full concentration yields 0. The optimizer includes $0.02 \times H(\mathbf{w})$ as a soft diversification bonus. Since $\lambda_{\text{entropy}} = 0.02$ is deliberately small, momentum signals dominate — the portfolio remains concentrated in top performers but avoids extreme single-asset allocation. See Appendix Section C for the full derivation.
 
 **2. Execution & Cost Control (The "Fee Guillotine")**
 
@@ -435,7 +435,7 @@ The heart of the optimizer is the function it tries to minimize:
 
 $$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$$
 
-This objective function balances three competing goals — minimize risk, maximize momentum exposure, and maintain diversification — through a single scalar that the SLSQP solver minimizes. The full mathematical derivation is provided in Appendix Section A.
+This objective function balances three competing goals — minimize risk, maximize momentum exposure, and maintain diversification — through a single scalar that the SLSQP solver minimizes. The full mathematical derivation is provided in Appendix Section B.
 
 **Variables:**
 - $\mathbf{w}$ = The portfolio weight vector (e.g., $[0.25, 0.30, 0.10, \ldots]$ representing 25% SMH, 30% QQQ, 10% TLT). This is the unknown the optimizer solves for.
@@ -452,7 +452,7 @@ $w \cdot M$ is the dot product of weights and cubed momentum scores. Since the o
 
 **Term 3: Entropy** — $-\lambda_{entropy} \cdot H(w)$ (maximized via negation)
 
-$H(w) = -\sum_i w_i \ln(w_i)$ is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum ($\ln 12 \approx 2.48$) when equally distributed. The coefficient $\lambda_{entropy} = 0.02$ is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section B: Shannon Entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification).
+$H(w) = -\sum_i w_i \ln(w_i)$ is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum ($\ln 12 \approx 2.48$) when equally distributed. The coefficient $\lambda_{entropy} = 0.02$ is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section C: Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
 
 **Net effect:** The optimizer produces aggressive, momentum-driven portfolios concentrated in the top 3-4 trending assets, while the entropy term and bound constraints prevent full single-asset concentration.
 
@@ -673,7 +673,7 @@ This adjustment accounts for **volatility drag** — the mathematical asymmetry 
 
 - $\mu$ = annualized expected return (e.g., 0.20 = 20% per year)
 - $\sigma$ = annualized volatility (e.g., 0.25 = 25% per year)
-- With $\mu = 0.20$ and $\sigma = 0.25$: $\mu_{adj} = 0.20 - (0.25)^2 / 2 = 0.20 - 0.03125 = 0.169$, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in [Appendix Section C](#c-geometric-brownian-motion--the-complete-derivation).
+- With $\mu = 0.20$ and $\sigma = 0.25$: $\mu_{adj} = 0.20 - (0.25)^2 / 2 = 0.20 - 0.03125 = 0.169$, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation).
 
 c. Diffusion Component ($\sigma$): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable ($Z$):
 
@@ -788,7 +788,7 @@ The Alpha Dual Engine now includes an optional **Hierarchical RL** system that r
 
 **1. Architecture: Two-Level PPO Hierarchy**
 
-The system operates as a principal-agent hierarchy. The high-level **Regime Agent** selects the macro strategy (RISK_ON / RISK_REDUCED / DEFENSIVE) based on market conditions. The low-level **Weight Agent** then allocates portfolio weights conditioned on that regime decision. Both agents are trained using **Proximal Policy Optimization (PPO)** — an on-policy actor-critic algorithm that stabilizes learning by clipping policy updates to prevent catastrophic forgetting. The full mathematical derivation of PPO is provided in [Appendix Section D](#d-proximal-policy-optimization-ppo--the-complete-math).
+The system operates as a principal-agent hierarchy. The high-level **Regime Agent** selects the macro strategy (RISK_ON / RISK_REDUCED / DEFENSIVE) based on market conditions. The low-level **Weight Agent** then allocates portfolio weights conditioned on that regime decision. Both agents are trained using **Proximal Policy Optimization (PPO)** — an on-policy actor-critic algorithm that stabilizes learning by clipping policy updates to prevent catastrophic forgetting. The full mathematical derivation of PPO is provided in [Appendix Section E](#e-proximal-policy-optimization-ppo--the-complete-math).
 
 **Key terminology:**
 - **PPO (Proximal Policy Optimization):** "Policy" refers to the agent's decision-making function. "Proximal" constrains how much the policy can change per update, ensuring stable convergence.
@@ -1007,18 +1007,20 @@ This section provides rigorous mathematical interpretations of every core formul
 |:---:|:---|:---|:---|:---|
 | 0 | [Foundational Concepts](#0-foundational-concepts) | Mean Squared Error (Loss) | $L = (\text{guess} - \text{actual})^2$ | What is a loss function? |
 | | | Gradient Descent Update | $w_{\text{new}} = w_{\text{old}} - \alpha \nabla L$ | How does the computer minimize any function? |
-| A | [The Objective Function & SLSQP](#a-the-objective-function--slsqp-solver) | Portfolio Objective Function | $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ | How does the optimizer pick portfolio weights? |
+| A | [XGBoost Ensemble Classifier](#a-the-xgboost-ensemble-classifier--regime-detection) | Log Loss (Binary Cross-Entropy) | $L = -\frac{1}{N}\sum[y_i \ln \hat{p}_i + (1-y_i)\ln(1-\hat{p}_i)]$ | How does the ML classifier detect market regimes? |
+| | | Gradient Boosting | Sequential trees correcting residuals | How does XGBoost build 50 trees into one prediction? |
+| B | [The Objective Function & SLSQP](#b-the-objective-function--slsqp-solver) | Portfolio Objective Function | $\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$ | How does the optimizer pick portfolio weights? |
 | | | SLSQP Quadratic Subproblem | $\mathcal{L}(\mathbf{w}) \approx \mathcal{L}(\mathbf{w}_k) + \nabla \mathcal{L}^\top (\mathbf{w} - \mathbf{w}_k) + \frac{1}{2}(\mathbf{w} - \mathbf{w}_k)^\top B (\mathbf{w} - \mathbf{w}_k)$ | How does SLSQP approximate the objective at each iteration? |
 | | | Lagrangian | $\mathcal{L} = f(\mathbf{w}) + \mu(\sum w_i - 1)$ | What are Lagrange multipliers and shadow prices? |
 | | | Hessian Matrix | $H_{ij} = \partial^2 f / \partial w_i \partial w_j$ | How does the solver know the shape of the bowl? |
 | | | Covariance Matrix | $\sigma_{ij} = \frac{1}{N-1}\sum(r_i - \bar{r}_i)(r_j - \bar{r}_j)$ | How is portfolio risk measured from historical data? |
 | | | Scalar / Vector / Matrix | $w_i$ = number, $w$ = list, $\Sigma$ = table | What is $w$ and how does the sandwich $w^\top \Sigma w$ work? |
 | | | Dot Product (Momentum) | $w \cdot M = w_1 M_1 + w_2 M_2 + \cdots + w_n M_n$ | Why does risk need a matrix but momentum does not? |
-| B | [Shannon Entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification) | Shannon Entropy | $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ | How does the system measure diversification? |
+| C | [Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) | Shannon Entropy | $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ | How does the system measure diversification? |
 | | | Effective N | $N_{\text{eff}} = e^{H(\mathbf{w})}$ | What is "Effective N" and why require at least 3? |
-| C | [Geometric Brownian Motion](#c-geometric-brownian-motion--the-complete-derivation) | GBM Stochastic Differential Equation | $dS = \mu S \cdot dt + \sigma S \cdot dW$ | How are future stock prices simulated? |
+| D | [Geometric Brownian Motion](#d-geometric-brownian-motion--the-complete-derivation) | GBM Stochastic Differential Equation | $dS = \mu S \cdot dt + \sigma S \cdot dW$ | How are future stock prices simulated? |
 | | | Discrete Simulation (Ito's Lemma) | $\Delta S = S \cdot e^{(\mu - \sigma^2/2)\Delta t + \sigma \sqrt{\Delta t} \cdot Z}$ | What is the $-\sigma^2/2$ correction? |
-| D | [Proximal Policy Optimization (PPO)](#d-proximal-policy-optimization-ppo--the-complete-math) | PPO Clipped Surrogate Objective | $L^{CLIP} = -E[\min(r_t A_t, \text{clip}(r_t, 1 \pm \epsilon) A_t)]$ | How does the RL agent learn without destroying itself? |
+| E | [Proximal Policy Optimization (PPO)](#e-proximal-policy-optimization-ppo--the-complete-math) | PPO Clipped Surrogate Objective | $L^{CLIP} = -E[\min(r_t A_t, \text{clip}(r_t, 1 \pm \epsilon) A_t)]$ | How does the RL agent learn without destroying itself? |
 | | | Generalized Advantage Estimation | $A_t = \delta_t + (\gamma\lambda)\delta_{t+1} + (\gamma\lambda)^2\delta_{t+2} + \ldots$ | What is GAE and the actor-critic architecture? |
 
 **[Math Flow: From Market Data to Portfolio Weights](#math-flow-from-market-data-to-portfolio-weights)** — Visual flowchart of the entire mathematical pipeline
@@ -1029,7 +1031,15 @@ This section provides rigorous mathematical interpretations of every core formul
 - [What is a loss function?](#what-is-a-loss-function) — Squared error, loss vs reward, the three losses in this project
 - [What is gradient descent?](#what-is-gradient-descent) — The update rule, learning rate, worked numerical example
 
-**Section A — The Objective Function & SLSQP**
+**Section A — XGBoost Ensemble Classifier**
+- [What problem it solves](#what-problem-it-solves) — Regime detection: RISK_ON vs DEFENSIVE
+- [What is gradient boosting?](#what-is-gradient-boosting) — Sequential trees correcting errors, log loss
+- [The 7 input features](#the-7-input-features) — VIX, momentum, trend, cross-asset signals
+- [Monotonic constraints](#monotonic-constraints--forcing-domain-logic) — Enforcing financial logic on the learned function
+- [The consensus logic](#the-consensus-logic--both-must-agree) — XGBoost + Decision Tree must independently agree
+- [Walk-forward training](#walk-forward-training--why-not-a-standard-traintest-split) — Expanding windows, never testing on training data
+
+**Section B — The Objective Function & SLSQP**
 - [What the formula actually says](#what-the-formula-actually-says) — Breaking down each term (risk, momentum, entropy)
 - [How SLSQP actually solves it](#how-slsqp-actually-solves-it) — The "approximate as a parabola and step" method
 - [What is the Hessian matrix?](#what-is-the-hessian-matrix-b) — Second partial derivatives, curvature, and the BFGS approximation
@@ -1040,18 +1050,18 @@ This section provides rigorous mathematical interpretations of every core formul
 - [Solving the Linear System: Gaussian Elimination](#solving-the-linear-system-gaussian-elimination) — Forward elimination, back-substitution, worked examples
 - [The complete picture](#the-complete-picture) — Summary table: which layer uses which math
 
-**Section B — Shannon Entropy**
+**Section C — Shannon Entropy**
 - [The formula](#the-formula) — Step-by-step calculation with real numbers
 - [Why does ln show up?](#why-does-ln-show-up) — Intuition: "importance-weighted surprise"
 - [Concrete examples with real numbers](#concrete-examples-with-real-numbers) — All-in vs equal-weight vs the actual portfolio
 
-**Section C — Geometric Brownian Motion**
+**Section D — Geometric Brownian Motion**
 - [The continuous-time SDE](#the-continuous-time-sde-the-textbook-form) — Drift and diffusion decomposition
 - [Ito's Lemma and the volatility drag correction](#from-the-sde-to-the-formula-you-can-actually-compute-itos-lemma) — Why symmetric gains/losses do not cancel
 - [The final simulation formula](#the-final-simulation-formula) — The discrete-time equation the code actually uses
 - [A full worked example](#a-full-worked-example--one-simulated-day) — One simulated day with real numbers
 
-**Section D — Proximal Policy Optimization (PPO)**
+**Section E — Proximal Policy Optimization (PPO)**
 - [Softmax](#softmax--turning-arbitrary-numbers-into-valid-allocations) — Formula, worked example, why $e$, key properties
 - [Step 1: The Policy](#step-1-the-policy-pi_theta) — Discrete (softmax) vs continuous (Gaussian) action spaces
 - [Step 2: The Value Function](#step-2-the-value-function-vs) — Shared trunk, actor-critic architecture
@@ -1065,7 +1075,7 @@ This section provides rigorous mathematical interpretations of every core formul
 
 ## **Math Flow: From Market Data to Portfolio Weights**
 
-> This flowchart traces the entire mathematical pipeline — from raw prices to final allocation. Appendix section references (A, B, C, D) link to the full derivations below.
+> This flowchart traces the entire mathematical pipeline — from raw prices to final allocation. Appendix section references (A, B, C, D, E) link to the full derivations below.
 
 ```mermaid
 graph TD
@@ -1131,9 +1141,9 @@ Lower loss means a better guess. The computer tries many guesses and adjusts to 
 
 | Loss function | What it measures | Minimized by | Code | Detailed in |
 |:---|:---|:---|:---|:---|
-| Portfolio objective | Risk minus momentum minus diversification | SLSQP solver | [`alpha_engine.py:775`](alpha_engine.py#L775) | Section A below |
-| PPO policy loss | How much to adjust action probabilities | PPO actor (gradient descent) | [`rl_weight_agent.py:1116-1119`](rl_weight_agent.py#L1116) | Section D below |
-| PPO value loss | How wrong the critic's prediction was (mean squared error) | PPO critic (gradient descent) | [`rl_weight_agent.py:1121`](rl_weight_agent.py#L1121) | Section D below |
+| Portfolio objective | Risk minus momentum minus diversification | SLSQP solver | [`alpha_engine.py:775`](alpha_engine.py#L775) | Section B below |
+| PPO policy loss | How much to adjust action probabilities | PPO actor (gradient descent) | [`rl_weight_agent.py:1116-1119`](rl_weight_agent.py#L1116) | Section E below |
+| PPO value loss | How wrong the critic's prediction was (mean squared error) | PPO critic (gradient descent) | [`rl_weight_agent.py:1121`](rl_weight_agent.py#L1121) | Section E below |
 
 Each is explained with its full formula in the referenced section. The key insight: all three do the same thing conceptually — define "what is wrong" as a number, then make that number smaller.
 
@@ -1148,7 +1158,7 @@ In the code ([`rl_weight_agent.py:1127`](rl_weight_agent.py#L1127)):
 total_loss = policy_loss + vf_coef * value_loss - ent_coef * entropy
 ```
 
-Why combine them? Because gradient descent (explained below) can only walk downhill on **one** landscape at a time. By adding the three terms into a single number, the optimizer can adjust all the network's parameters in one pass. The three terms pull in different directions — policy loss wants better actions, value loss wants better predictions, and the entropy bonus wants the agent to keep exploring — and gradient descent finds a compromise that improves all three simultaneously. The full derivation of each term and how they interact is in [Section D](#d-proximal-policy-optimization-ppo--the-complete-math).
+Why combine them? Because gradient descent (explained below) can only walk downhill on **one** landscape at a time. By adding the three terms into a single number, the optimizer can adjust all the network's parameters in one pass. The three terms pull in different directions — policy loss wants better actions, value loss wants better predictions, and the entropy bonus wants the agent to keep exploring — and gradient descent finds a compromise that improves all three simultaneously. The full derivation of each term and how they interact is in [Section E](#e-proximal-policy-optimization-ppo--the-complete-math).
 
 ### **What is gradient descent?**
 
@@ -1193,7 +1203,7 @@ Each step: compute slope, step opposite. The loss shrinks every time. After enou
 
 | Component | Uses gradient descent? | What it does instead | Code |
 |:---|:---|:---|:---|
-| SLSQP (portfolio optimizer) | No | Quadratic subproblems (Section A) — more sophisticated but same spirit | [`alpha_engine.py:883`](alpha_engine.py#L883) |
+| SLSQP (portfolio optimizer) | No | Quadratic subproblems (Section B) — more sophisticated but same spirit | [`alpha_engine.py:883`](alpha_engine.py#L883) |
 | PPO actor (policy network) | **Yes** | Adam optimizer (a fancier gradient descent with momentum) | [`rl_weight_agent.py:1102`](rl_weight_agent.py#L1102) |
 | PPO critic (value network) | **Yes** | Adam optimizer — adjusts predictions to match actual returns | Same network and optimizer |
 
@@ -1205,7 +1215,226 @@ A **loss function** (also called cost function or objective function) is a scala
 
 ---
 
-## **A. The Objective Function & SLSQP Solver**
+## **A. The XGBoost Ensemble Classifier — Regime Detection**
+
+> **Code:** The entire classifier is implemented in the [`AdaptiveRegimeClassifier`](alpha_engine.py#L271) class ([`alpha_engine.py:271-477`](alpha_engine.py#L271)).
+
+### **What problem it solves**
+
+Before the optimizer can pick portfolio weights, the system needs to answer one question: **"Is now a good time to take risk?"** The answer determines the entire strategy — RISK_ON (aggressive growth), RISK_REDUCED (cautious), or DEFENSIVE (capital preservation). Getting this wrong is catastrophic: being aggressive during a crash wipes out the portfolio; being defensive during a bull run means missing all the gains.
+
+The classifier takes 7 market features as input and outputs a probability between 0 and 1 — the likelihood that the next 21 trading days will be positive for the S&P 500. If the probability is high enough, the system enters RISK_ON. If not, it stays defensive.
+
+### **The two models — why not just one?**
+
+The system uses two structurally different models and requires **both to agree** before taking risk. This consensus acts as a confirmation filter — if two models built from completely different logic independently say "go," the signal is more trustworthy than either model alone.
+
+**Model Alpha: XGBoost — "The Aggressor"** ([`alpha_engine.py:281-291`](alpha_engine.py#L281))
+
+```python
+self.model_alpha = XGBClassifier(
+    n_estimators=50,       # 50 sequential trees
+    max_depth=3,           # each tree has at most 3 splits
+    learning_rate=0.05,    # each tree contributes only 5% of the correction
+    monotone_constraints=(-1, -1, 0, 1, 1, 1, 0),  # domain logic enforced
+    subsample=0.7,         # each tree sees 70% of the data (randomness)
+    colsample_bytree=0.7,  # each tree sees 70% of the features (randomness)
+    reg_lambda=1.0,        # L2 regularization to prevent overfitting
+    random_state=42,
+)
+```
+
+**Model Beta: Decision Tree — "The Skeptic"** ([`alpha_engine.py:294-298`](alpha_engine.py#L294))
+
+```python
+self.model_beta = DecisionTreeClassifier(
+    max_depth=2,           # only 2 splits — extremely simple
+    min_samples_leaf=200,  # each leaf must contain at least 200 data points
+    random_state=99,
+)
+```
+
+The Decision Tree is deliberately shallow (max 2 splits = at most 4 possible outcomes). It cannot learn complex patterns — it acts as a conservative baseline that prevents XGBoost from overreacting to noise.
+
+### **What is gradient boosting?**
+
+XGBoost stands for e**X**treme **G**radient **Boost**ing. The key idea: build many small, weak models (shallow decision trees) **sequentially**, where each new tree focuses on correcting the mistakes of all the trees before it.
+
+**The analogy:** Imagine 50 students taking a test one after another. Student 1 answers all questions and gets some wrong. Student 2 sees which questions Student 1 got wrong and focuses on those. Student 3 sees which questions are STILL wrong after Students 1 and 2, and focuses on those. By Student 50, the remaining errors are tiny. The final answer is the combined effort of all 50 students.
+
+**How it works step by step:**
+
+1. **Tree 1** makes predictions for the entire training set. Some predictions are wrong — these errors are called **residuals**.
+2. **Tree 2** is trained NOT on the original target, but on the residuals from Tree 1. It learns to predict "how wrong was Tree 1?"
+3. The combined prediction is: Tree 1's prediction + (learning_rate × Tree 2's correction). The `learning_rate = 0.05` means each tree only contributes 5% of its correction — this prevents any single tree from dominating.
+4. **Tree 3** is trained on the residuals of the combined prediction (Trees 1+2). It corrects what's still wrong.
+5. Repeat for all 50 trees.
+
+**The loss function XGBoost minimizes** is **log loss** (binary cross-entropy) — the standard loss for binary classification (bull vs bear):
+
+$$L = -\frac{1}{N}\sum_{i=1}^{N} \left[ y_i \ln(\hat{p}_i) + (1 - y_i) \ln(1 - \hat{p}_i) \right]$$
+
+| Symbol | What it is | Example |
+|:---|:---|:---|
+| $N$ | Number of training examples | 2,500 trading days |
+| $y_i$ | Actual outcome: 1 = bull, 0 = bear | 1 (next 21 days were positive) |
+| $\hat{p}_i$ | Model's predicted probability of bull | 0.73 |
+| $\ln$ | Natural logarithm | $\ln(0.73) = -0.31$ |
+
+**Why log loss and not just "percentage correct"?** Accuracy treats all mistakes equally — predicting 0.51 when the answer is 1 counts the same as predicting 0.99 when the answer is 1. Log loss instead rewards **confidence** in the right answer. If the model says "73% bull" and it was indeed bull, the penalty is small ($-\ln(0.73) = 0.31$). If the model says "99% bull" and it was actually bear, the penalty is huge ($-\ln(0.01) = 4.61$). This forces the model to produce well-calibrated probabilities, not just correct binary calls.
+
+**Concrete example — one training day:**
+
+The model predicts $\hat{p} = 0.73$ (73% chance of bull). The actual outcome was bull ($y = 1$).
+
+$$L_i = -[1 \times \ln(0.73) + 0 \times \ln(0.27)] = -\ln(0.73) = 0.31$$
+
+If the prediction had been $\hat{p} = 0.95$ (more confident and correct):
+
+$$L_i = -\ln(0.95) = 0.05$$
+
+Lower loss — rewarding the model for being both correct AND confident.
+
+### **How a single decision tree splits**
+
+Each of the 50 trees in the XGBoost ensemble is a shallow decision tree. A decision tree asks a series of yes/no questions to split the data into groups:
+
+```
+              VIX > 25?
+             /         \
+          YES            NO
+      (high fear)    (calm market)
+         /                \
+   SPY momentum       Trend score
+    < -5%?              > 2%?
+    /     \             /     \
+  BEAR   UNSURE    BULL    UNSURE
+```
+
+With `max_depth=3`, the tree can ask at most 3 questions. This is intentionally shallow — a deep tree (max_depth=10) would memorize the training data ("on March 15, 2018, VIX was 23.4 and it was bull") instead of learning general patterns ("high VIX usually means bear").
+
+**How the tree chooses where to split:** At each node, the tree tries every possible split of every feature (e.g., "VIX > 20?" vs "VIX > 25?" vs "VIX > 30?" vs "momentum > 0?" vs ...) and picks the one that produces the most **information gain** — the split that reduces the log loss the most.
+
+### **The 7 input features**
+
+The classifier uses 7 features, each capturing a different dimension of market conditions ([`alpha_engine.py:207-241`](alpha_engine.py#L207)):
+
+| # | Feature | Code | What it measures |
+|:---|:---|:---|:---|
+| 1 | `realized_vol` | `vix / 100` | Current fear level (VIX, scaled) |
+| 2 | `vol_momentum` | `(vix / vix_21d_ago) - 1` | Is fear rising or falling? |
+| 3 | `equity_risk_premium` | `1/(SPY/SPY_252MA) - risk_free` | Are stocks cheap relative to bonds? |
+| 4 | `trend_score` | `(SPY - SMA200) / SMA200 × 100` | How far is SPY from its 200-day average? |
+| 5 | `momentum_21d` | `SPY 21-day return` | Short-term momentum |
+| 6 | `qqq_vs_spy` | `QQQ 63d return - SPY 63d return` | Is tech leading or lagging? |
+| 7 | `tlt_momentum` | `TLT 21-day return` | Are bonds rallying (flight to safety)? |
+
+### **Monotonic constraints — forcing domain logic**
+
+The `monotone_constraints=(-1, -1, 0, 1, 1, 1, 0)` parameter ([`alpha_engine.py:285`](alpha_engine.py#L285)) is a critical safety feature. Each number corresponds to one of the 7 features:
+
+| Feature | Constraint | Meaning |
+|:---|:---:|:---|
+| `realized_vol` | -1 | Higher VIX must **decrease** bull probability |
+| `vol_momentum` | -1 | Rising fear must **decrease** bull probability |
+| `equity_risk_premium` | 0 | No constraint (relationship is ambiguous) |
+| `trend_score` | +1 | Stronger uptrend must **increase** bull probability |
+| `momentum_21d` | +1 | Higher momentum must **increase** bull probability |
+| `qqq_vs_spy` | +1 | Tech outperformance must **increase** bull probability |
+| `tlt_momentum` | 0 | No constraint (bonds can mean safety OR rate cuts) |
+
+Without these constraints, XGBoost might learn spurious patterns from limited data — for example, "VIX at 35 was bullish" from a single lucky data point during the 2020 recovery. The monotonic constraints enforce that the model's learned function never contradicts basic financial logic: high fear cannot be bullish, strong momentum cannot be bearish.
+
+### **The consensus logic — both must agree**
+
+The regime decision requires **both models to independently agree** ([`alpha_engine.py:356-362`](alpha_engine.py#L356)):
+
+```python
+for pa, pb, t in zip(probs_a, probs_b, test_trends):
+    if pa > 0.55 and pb > 0.50 and t > 0:
+        test_preds.append(1)   # RISK_ON only if ALL THREE conditions met
+    else:
+        test_preds.append(0)   # Default to safety
+```
+
+Three independent conditions must ALL be true:
+1. XGBoost says > 55% bull probability
+2. Decision Tree says > 50% bull probability
+3. The trend score is positive (SPY above its 200-day average)
+
+If **any** condition fails, the system stays defensive. This "default to safety" design ensures the system only takes risk when multiple structurally different signals agree.
+
+The final probability used for regime decisions is the average of both models, smoothed with an exponential moving average ([`alpha_engine.py:396-417`](alpha_engine.py#L396)):
+
+```python
+probabilities.loc[test_dates] = (probs_a + probs_b) / 2
+# ...
+return probabilities.ffill().ewm(span=10).mean()
+```
+
+The EMA smoothing with `span=10` prevents daily jitter — without it, the probability might oscillate between 0.54 and 0.56 and trigger rapid regime flipping.
+
+### **Walk-forward training — why not a standard train/test split?**
+
+A standard ML train/test split would be: train on 2010-2020, test on 2021-2024. But this has a fatal flaw in finance: the market changes over time (regime shifts, new sectors, changing correlations). A model trained only on 2010-2020 data might not generalize to post-2020 conditions.
+
+**Walk-forward training** ([`alpha_engine.py:315-417`](alpha_engine.py#L315)) solves this by repeatedly retraining as new data arrives:
+
+| Window | Train on | Test on | What happens |
+|:---|:---|:---|:---|
+| 1 | 2010–2015 | 2016 | First model, 5 years of training data |
+| 2 | 2010–2016 | 2017 | Retrained with 1 more year of data |
+| 3 | 2010–2017 | 2018 | Retrained again — now has 2018 volatility data |
+| ... | ... | ... | ... |
+| N | 2010–2023 | 2024 | Latest model, all available history |
+
+Each window: train both models on all data up to the cutoff, then predict the next year. The models are **never tested on data they trained on** — this prevents overfitting. The target variable is whether the S&P 500 was positive over the next 21 trading days ([`alpha_engine.py:327`](alpha_engine.py#L327)):
+
+```python
+target = (returns.shift(-21).rolling(21).sum() > 0).astype(int).dropna()
+```
+
+### **SHAP explainability — why each decision was made**
+
+Because black-box models are unacceptable in institutional advisory, the classifier integrates **SHAP** (SHapley Additive exPlanations) ([`alpha_engine.py:384-394`](alpha_engine.py#L384)). SHAP assigns each feature a contribution score for every prediction — for example, on a specific day, it might show:
+
+- VIX = 32 pushed the probability **down** by 0.15
+- Strong SPY momentum pushed it **up** by 0.12
+- Tech underperformance pushed it **down** by 0.08
+- Net: the probability dropped because fear outweighed momentum
+
+This allows the user to explain exactly **why** the system made each regime decision — not just what it decided.
+
+### **How the regime maps to the portfolio**
+
+The classifier's output feeds into the regime decision ([`alpha_engine.py:419-434`](alpha_engine.py#L419)):
+
+```python
+def get_regime(self, ml_prob, spy_above_sma, ...):
+    if spy_above_sma:              # MASTER SWITCH
+        return 'RISK_ON'
+    if ml_prob > 0.55:             # ML tiebreaker
+        return 'RISK_REDUCED'
+    return 'DEFENSIVE'             # Default to safety
+```
+
+The SPY > 200-SMA check is a **master switch** that overrides the ML models: if SPY is above its 200-day moving average, the system goes RISK_ON regardless of what XGBoost says. The ML probability only matters when SPY is below the 200-SMA — in that uncertain zone, the classifier breaks the tie.
+
+The regime then flows to the optimizer ([Section B](#b-the-objective-function--slsqp-solver)), which selects a different objective function depending on the regime:
+
+| Regime | Objective | Effect on portfolio |
+|:---|:---|:---|
+| RISK_ON | Maximize momentum, minimize risk | Concentrated in top performers |
+| RISK_REDUCED | Mean-variance with higher risk aversion | More balanced, lower exposure |
+| DEFENSIVE | Minimize risk, maximize safe havens | Heavily weighted toward bonds and gold |
+
+### **Technical Summary**
+
+The AdaptiveRegimeClassifier is a consensus ensemble combining XGBoost (50 gradient-boosted trees, max depth 3, with monotonic constraints encoding financial domain logic) and a shallow Decision Tree (max depth 2, min 200 samples per leaf) that serves as a conservative baseline. Both models must independently signal bullish probability above their respective thresholds (55% for XGBoost, 50% for Decision Tree) while SPY trend is positive for the system to enter RISK_ON. The ensemble is trained using walk-forward validation with expanding windows (initial 5-year training period, 12-month step), ensuring models are never evaluated on training data. The loss function minimized is binary cross-entropy (log loss), and SHAP values provide per-prediction feature attribution for explainability. The classifier's output probability, smoothed via a 10-day EMA, feeds into a hierarchical regime decision where SPY > 200-SMA acts as a master override.
+
+---
+
+## **B. The Objective Function & SLSQP Solver**
 
 ### **What the formula actually says**
 
@@ -2085,9 +2314,9 @@ $$\lambda \cdot (w_1 \ln w_1 + w_2 \ln w_2 + w_3 \ln w_3 + \cdots + w_{12} \ln w
 
 $$\mathcal{L} = \underbrace{78 \text{ risk terms}}_{\text{quadratic}} - \underbrace{12 \text{ momentum terms}}_{\text{linear}} - \underbrace{12 \text{ entropy terms}}_{\text{nonlinear}}$$
 
-The risk term is quadratic ( $w^2$ and $w_i w_j$ terms) — it is already a parabola. The momentum term is linear (just $w$ times constants) — it is a straight line. SLSQP solves both of these exactly in its quadratic subproblems. The entropy term ( $w \ln w$ ) is the only part that is nonlinear and non-quadratic — the logarithm is a curve that does not match any polynomial shape, so it cannot be solved in one step. This is why SLSQP must iterate: it approximates the $\ln$ curve as a parabola at the current point, solves that simpler problem, moves to the answer, then draws a new parabola at the new point and solves again. Each iteration the approximation fits the real curve more closely until the answer stops changing (typically in 20–50 iterations). For a full derivation of the entropy term and what $w \ln w$ measures, see [Section B: Shannon Entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification).
+The risk term is quadratic ( $w^2$ and $w_i w_j$ terms) — it is already a parabola. The momentum term is linear (just $w$ times constants) — it is a straight line. SLSQP solves both of these exactly in its quadratic subproblems. The entropy term ( $w \ln w$ ) is the only part that is nonlinear and non-quadratic — the logarithm is a curve that does not match any polynomial shape, so it cannot be solved in one step. This is why SLSQP must iterate: it approximates the $\ln$ curve as a parabola at the current point, solves that simpler problem, moves to the answer, then draws a new parabola at the new point and solves again. Each iteration the approximation fits the real curve more closely until the answer stops changing (typically in 20–50 iterations). For a full derivation of the entropy term and what $w \ln w$ measures, see [Section C: Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
 
-**Important distinction — SLSQP is not machine learning.** SLSQP is classical numerical optimization (math from the 1970s). It iterates, but it does not *learn* anything — it is solving an equation step by step, the same way Newton's method finds a square root. Given the same inputs, it always produces the same output. The **machine learning** part of this project is the two PPO agents (see [Section D: PPO](#d-proximal-policy-optimization-ppo--the-complete-math)): a **regime agent** (a neural network that observes 25 macro features like VIX and yield curve spreads and learns which market regime we are in) and a **weight agent** (a neural network that observes 103 per-asset features and learns how to adjust the SLSQP weights). These are actual ML because they have neural networks that train on experience (50,000 episodes), update their parameters via gradient descent, and generalize to unseen market conditions. The full flow is: SLSQP (math, not ML) finds optimal weights using risk, momentum, and entropy → PPO agents (ML) observe market conditions and learn to adjust those weights.
+**Important distinction — SLSQP is not machine learning.** SLSQP is classical numerical optimization (math from the 1970s). It iterates, but it does not *learn* anything — it is solving an equation step by step, the same way Newton's method finds a square root. Given the same inputs, it always produces the same output. The **machine learning** part of this project is the two PPO agents (see [Section E: PPO](#e-proximal-policy-optimization-ppo--the-complete-math)): a **regime agent** (a neural network that observes 25 macro features like VIX and yield curve spreads and learns which market regime we are in) and a **weight agent** (a neural network that observes 103 per-asset features and learns how to adjust the SLSQP weights). These are actual ML because they have neural networks that train on experience (50,000 episodes), update their parameters via gradient descent, and generalize to unseen market conditions. The full flow is: SLSQP (math, not ML) finds optimal weights using risk, momentum, and entropy → PPO agents (ML) observe market conditions and learn to adjust those weights.
 
 **Step 1 — Build the Lagrangian.** The optimizer cannot just minimize the objective freely — it must obey the rule that all weights sum to 1 (you must invest 100% of your money, no more, no less). The Lagrangian is the trick that bakes this constraint directly into the formula: take the original objective and add $\mu \times (\text{weights} - 1)$, where $\mu$ is a new unknown called the Lagrange multiplier (as described in the [Lagrange multiplier section](#what-is-a-lagrange-multiplier-exactly) above). Now instead of "minimize this subject to a rule," we have a single formula with no rules — just more unknowns to solve for:
 
@@ -2187,7 +2416,7 @@ The genius of SLSQP is converting an impossible problem (nonlinear with constrai
 
 ---
 
-## **B. Shannon Entropy — From Information Theory to Portfolio Diversification**
+## **C. Shannon Entropy — From Information Theory to Portfolio Diversification**
 
 ### **Where it came from**
 
@@ -2284,7 +2513,7 @@ Shannon Entropy measures how spread out the portfolio weights are on a scale fro
 
 ---
 
-## **C. Geometric Brownian Motion — The Complete Derivation**
+## **D. Geometric Brownian Motion — The Complete Derivation**
 
 > **Code:** The entire GBM simulation is implemented in the [`MonteCarloSimulator`](alpha_engine.py#L1555) class ([`alpha_engine.py:1555-1621`](alpha_engine.py#L1555)).
 
@@ -2611,13 +2840,13 @@ GBM models stock prices as a random walk in log-space. The price change each day
 
 ---
 
-## **D. Proximal Policy Optimization (PPO) — The Complete Math**
+## **E. Proximal Policy Optimization (PPO) — The Complete Math**
 
-### **How Section D relates to Section A — the "Dual" in Alpha Dual Engine**
+### **How Section E relates to Section B — the "Dual" in Alpha Dual Engine**
 
 The system has two decisions to make every rebalance day: (1) which regime are we in? and (2) what should the 12 portfolio weights be? Each decision has a classical approach and an RL approach — that is the "Dual" in Alpha Dual Engine.
 
-| | Classical (Section A + rule-based regime) | RL (Section D: PPO) |
+| | Classical (Section B + rule-based regime) | RL (Section E: PPO) |
 |:---|:---|:---|
 | **Regime decision** | Rule-based classifier: SPY > 200-SMA → RISK_ON, else check ml_prob | **Regime agent:** neural network observes 25 macro features → picks 1 of 3 regimes |
 | **Weight decision** | SLSQP optimizer: solves risk − momentum − entropy equation | **Weight agent:** neural network observes 103 per-asset features → outputs 12 weights |
@@ -2625,7 +2854,7 @@ The system has two decisions to make every rebalance day: (1) which regime are w
 | **Deterministic?** | Yes — same inputs always give same output | No — samples from distributions (exploration), but converges over training |
 | **Adapts over time?** | No — fixed formulas | Yes — neural networks update parameters based on rewards |
 
-**Where does Section C fit?** Section C (GBM / Monte Carlo) is not part of either decision. It runs **after** the weights are already chosen — it takes the final portfolio weights and simulates 1 million future price paths to assess risk (tail losses, drawdown probabilities, etc.). It is a downstream evaluation step, not a competing weight engine.
+**Where does Section D fit?** Section D (GBM / Monte Carlo) is not part of either decision. It runs **after** the weights are already chosen — it takes the final portfolio weights and simulates 1 million future price paths to assess risk (tail losses, drawdown probabilities, etc.). It is a downstream evaluation step, not a competing weight engine.
 
 **Why build two approaches?** The classical path is the reliable baseline — SLSQP is mathematically guaranteed to find the optimal weights for its objective function, and the rule-based regime classifier is simple and interpretable. The RL path is the ambitious alternative — it can potentially learn patterns that fixed formulas cannot capture (like "when VIX spikes, rotate to bonds faster than the momentum signal suggests").
 
@@ -2775,7 +3004,7 @@ This is how the agent **explores**. Here is what "trying" looks like concretely:
 
 **Force 2 — The entropy bonus** wants $\sigma$ **large**. Entropy measures how "spread out" the bell curves are — wide curves = high entropy = lots of randomness, narrow curves = low entropy = predictable. The entropy bonus is an extra term added to the loss function that **rewards** the agent for keeping entropy high.
 
-> **Not the same entropy as Section B.** The word "entropy" appears in two completely different places in this system. [Section B](#b-shannon-entropy--from-information-theory-to-portfolio-diversification) uses **Shannon entropy** $H(\mathbf{w}) = -\sum w_i \ln w_i$ — it measures how spread out the portfolio *weights* are (diversification). Here in Section D, the entropy is **Gaussian entropy** $H = \frac{1}{2}(1 + \ln 2\pi) + \ln\sigma$ — it measures how wide the agent's *bell curves* are (exploration randomness). They share the name because both come from information theory (Shannon's idea of measuring "uncertainty"), but they measure different things: one asks "is the money spread across many assets?", the other asks "is the agent still trying new things?"
+> **Not the same entropy as Section C.** The word "entropy" appears in two completely different places in this system. [Section C](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) uses **Shannon entropy** $H(\mathbf{w}) = -\sum w_i \ln w_i$ — it measures how spread out the portfolio *weights* are (diversification). Here in Section E, the entropy is **Gaussian entropy** $H = \frac{1}{2}(1 + \ln 2\pi) + \ln\sigma$ — it measures how wide the agent's *bell curves* are (exploration randomness). They share the name because both come from information theory (Shannon's idea of measuring "uncertainty"), but they measure different things: one asks "is the money spread across many assets?", the other asks "is the agent still trying new things?"
 
 In the code ([line 1124](rl_weight_agent.py#L1124)):
 ```python
@@ -3266,7 +3495,7 @@ This is the same entropy bonus explained in detail in [Force 2 of the σ tug-of-
 
 **The two agents compute entropy differently:**
 
-**Regime agent** (discrete — picking 1 of 3 regimes). The entropy is [Shannon entropy](#b-shannon-entropy--from-information-theory-to-portfolio-diversification) applied to the regime probabilities:
+**Regime agent** (discrete — picking 1 of 3 regimes). The entropy is [Shannon entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) applied to the regime probabilities:
 
 $$H = -\sum_a \pi(a|s) \log\pi(a|s)$$
 

@@ -194,8 +194,8 @@ $$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w
 
 This formula computes the total transaction cost per rebalance:
 - $V_{\text{portfolio}}$ = total portfolio value
-- $|w_i^{\text{new}} - w_i^{\text{old}}|$ = absolute weight change per asset (e.g., SMH moving from 20% to 30% produces a change of 0.10)
-- $\sum_i |\cdot|$ = total turnover across all assets
+- $\vert w_i^{\text{new}} - w_i^{\text{old}}\vert$ = absolute weight change per asset (e.g., SMH moving from 20% to 30% produces a change of 0.10)
+- $\sum_i \vert\cdot\vert$ = total turnover across all assets
 - $\frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$ = per-asset fee rate converted from basis points to decimal (1 bps = 0.01%)
 
 **Example:** A \$100,000 portfolio shifting 10% into SMH (5 bps) incurs a cost of $100{,}000 \times 0.10 \times 0.0005 = 5$ dollars per rebalance.
@@ -452,7 +452,7 @@ $w \cdot M$ is the dot product of weights and cubed momentum scores. Since the o
 
 **Term 3: Entropy** — $-\lambda_{entropy} \cdot H(w)$ (maximized via negation)
 
-$H(w) = -\sum_i w_i \ln(w_i)$ is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum ($\ln 12 \approx 2.48$) when equally distributed. The coefficient $\lambda_{entropy} = 0.02$ is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section C: Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
+$H(w) = -\sum_i w_i \ln(w_i)$ is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum ($\ln{12} \approx 2.48$) when equally distributed. The coefficient $\lambda_{entropy} = 0.02$ is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section C: Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
 
 **Net effect:** The optimizer produces aggressive, momentum-driven portfolios concentrated in the top 3-4 trending assets, while the entropy term and bound constraints prevent full single-asset concentration.
 
@@ -1793,7 +1793,7 @@ $$x + x = 1 \quad \Rightarrow \quad x = 0.5, \quad y = 0.5, \quad \mu = -1$$
 
 The answer: $x = 0.5$, $y = 0.5$, and $f = 0.25 + 0.25 = 0.5$.
 
-**What does $\mu = -1$ mean?** If the constraint were relaxed from $x + y = 1$ to $x + y = 1.01$, the minimum value of $f$ would improve by approximately $0.01 \times |\mu| = 0.01$. The multiplier measures the "price" of the constraint.
+**What does $\mu = -1$ mean?** If the constraint were relaxed from $x + y = 1$ to $x + y = 1.01$, the minimum value of $f$ would improve by approximately $0.01 \times \vert\mu\vert = 0.01$. The multiplier measures the "price" of the constraint.
 
 **Why this trick works — the deep geometric intuition:** At the optimum on the constraint, two things must be true simultaneously: (1) you are ON the constraint line, and (2) you cannot improve by sliding along the line in either direction. Condition 2 means the gradient (slope) of $f$ must be perpendicular to the constraint line at the solution. If it were not perpendicular, there would be a component along the line — meaning you could slide along the line and get a better value, contradicting that you are at the optimum. The equation $\nabla f = -\mu \nabla g$ says exactly this: the gradient of the objective must point in the same direction as the gradient of the constraint (perpendicular to the constraint surface). The multiplier $\mu$ is just the scaling factor between them.
 
@@ -2960,17 +2960,17 @@ The policy is the agent's **decision-making rule** — it looks at market data a
 
 **Discrete case** (regime agent): The network outputs logits $\ell_1, \ell_2, \ell_3$ for the 3 regimes. Convert to probabilities via softmax:
 
-$$\pi_\theta(a | s) = \frac{e^{\ell_a}}{\sum_i e^{\ell_i}}$$
+$$\pi_\theta(a \mid s) = \frac{e^{\ell_a}}{\sum_i e^{\ell_i}}$$
 
 > This is the same softmax operation explained in the [subsection above](#softmax--turning-arbitrary-numbers-into-valid-allocations) — it converts 3 raw logits into 3 probabilities that sum to 1. If the logits are $[2.0, 0.5, -1.0]$, softmax gives $[0.82, 0.18, 0.04]$ — the agent strongly prefers RISK_ON.
 
-**Reading the notation:** $\pi_\theta(a | s)$ reads as "the probability of choosing action $a$ given state $s$, according to the policy with parameters $\theta$." So it answers: "given what the agent sees right now, how likely is it to pick each regime?"
+**Reading the notation:** $\pi_\theta(a \mid s)$ reads as "the probability of choosing action $a$ given state $s$, according to the policy with parameters $\theta$." So it answers: "given what the agent sees right now, how likely is it to pick each regime?"
 
 **Continuous case** (weight agent): The regime agent picks from 3 options — that is a discrete choice. But the weight agent outputs 12 continuous numbers (portfolio weights). The policy itself cannot be softmax here because there is no finite menu to pick from — the agent needs to output any combination of 12 numbers. So it uses **bell curves** instead: the network outputs a mean $\mu$ and width $\sigma$ for each asset, and the agent samples from those curves. Softmax still shows up later (Step 2 below), but only as a post-processing step to force the 12 sampled numbers to sum to 1 — it is not the decision-making mechanism.
 
 The network outputs two things:
 - $\mu$ — the **mean vector**: a list of 12 numbers representing "my best guess" for each weight. This is the center of 12 bell curves.
-- $\log\sigma$ — the **log standard deviation**: how wide each bell curve is. Big $\sigma$ = "I'm unsure, try wildly different values." Small $\sigma$ = "I'm pretty confident, stay close to $\mu$."
+- $\log{\sigma}$ — the **log standard deviation**: how wide each bell curve is. Big $\sigma$ = "I'm unsure, try wildly different values." Small $\sigma$ = "I'm pretty confident, stay close to $\mu$."
 
 **Step 1 — Sample from the bell curves.** For each of the 12 assets, generate a random number near the network's best guess:
 
@@ -3004,7 +3004,7 @@ This is how the agent **explores**. Here is what "trying" looks like concretely:
 
 **Force 2 — The entropy bonus** wants $\sigma$ **large**. Entropy measures how "spread out" the bell curves are — wide curves = high entropy = lots of randomness, narrow curves = low entropy = predictable. The entropy bonus is an extra term added to the loss function that **rewards** the agent for keeping entropy high.
 
-> **Not the same entropy as Section C.** The word "entropy" appears in two completely different places in this system. [Section C](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) uses **Shannon entropy** $H(\mathbf{w}) = -\sum w_i \ln w_i$ — it measures how spread out the portfolio *weights* are (diversification). Here in Section E, the entropy is **Gaussian entropy** $H = \frac{1}{2}(1 + \ln 2\pi) + \ln\sigma$ — it measures how wide the agent's *bell curves* are (exploration randomness). They share the name because both come from information theory (Shannon's idea of measuring "uncertainty"), but they measure different things: one asks "is the money spread across many assets?", the other asks "is the agent still trying new things?"
+> **Not the same entropy as Section C.** The word "entropy" appears in two completely different places in this system. [Section C](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) uses **Shannon entropy** $H(\mathbf{w}) = -\sum w_i \ln w_i$ — it measures how spread out the portfolio *weights* are (diversification). Here in Section E, the entropy is **Gaussian entropy** $H = \frac{1}{2}(1 + \ln{2\pi}) + \ln{\sigma}$ — it measures how wide the agent's *bell curves* are (exploration randomness). They share the name because both come from information theory (Shannon's idea of measuring "uncertainty"), but they measure different things: one asks "is the money spread across many assets?", the other asks "is the agent still trying new things?"
 
 In the code ([line 1124](rl_weight_agent.py#L1124)):
 ```python
@@ -3013,22 +3013,22 @@ entropy = 0.5 * n_assets * (1 + log(2*pi)) + sum(log_std)
 
 **Where does this formula come from?** It is the textbook entropy of a Gaussian (bell curve) distribution. For a single bell curve with width $\sigma$, the entropy is:
 
-$$H = \frac{1}{2}\left(1 + \ln(2\pi)\right) + \ln\sigma$$
+$$H = \frac{1}{2}\left(1 + \ln(2\pi)\right) + \ln{\sigma}$$
 
 This comes from the definition of continuous entropy — "take the bell curve formula, multiply each height by its own log, integrate over the entire curve." The integral has a known closed-form answer (derived in any probability textbook), and the result is the formula above. The important thing is what each piece means:
 
 | Piece | Value | What it does |
 |:---|:---|:---|
 | $\frac{1}{2}(1 + \ln(2\pi))$ | ≈ 1.42 | A constant — same for every bell curve regardless of width. Does not change during training. |
-| $\ln\sigma$ | varies | The only part that changes. When $\sigma$ is large, $\ln\sigma$ is large → high entropy. When $\sigma$ shrinks toward zero, $\ln\sigma$ goes to $-\infty$ → entropy plummets. |
+| $\ln{\sigma}$ | varies | The only part that changes. When $\sigma$ is large, $\ln{\sigma}$ is large → high entropy. When $\sigma$ shrinks toward zero, $\ln{\sigma}$ goes to $-\infty$ → entropy plummets. |
 
-So entropy is really just tracking $\ln\sigma$ plus a constant. The constant is irrelevant to training because the optimizer only cares about *changes* in the loss — adding or subtracting a fixed number doesn't change which direction the gradient points.
+So entropy is really just tracking $\ln{\sigma}$ plus a constant. The constant is irrelevant to training because the optimizer only cares about *changes* in the loss — adding or subtracting a fixed number doesn't change which direction the gradient points.
 
 The weight agent has 12 independent bell curves (one per asset), so the total entropy is the sum across all 12:
 
-$$H_{\text{total}} = \sum_{i=1}^{12}\left[\frac{1}{2}(1 + \ln(2\pi)) + \ln\sigma_i\right] = \frac{12}{2}(1 + \ln(2\pi)) + \sum_{i=1}^{12}\ln\sigma_i$$
+$$H_{\text{total}} = \sum_{i=1}^{12}\left[\frac{1}{2}(1 + \ln(2\pi)) + \ln{\sigma}_i\right] = \frac{12}{2}(1 + \ln(2\pi)) + \sum_{i=1}^{12}\ln{\sigma}_i$$
 
-Which is exactly what the code computes: `0.5 * n_assets * (1 + log(2*pi)) + sum(log_std)` where `n_assets = 12` and `log_std` is $\ln\sigma$ for each asset.
+Which is exactly what the code computes: `0.5 * n_assets * (1 + log(2*pi)) + sum(log_std)` where `n_assets = 12` and `log_std` is $\ln{\sigma}$ for each asset.
 
 **How the entropy bonus enters the loss.** The loss function *subtracts* this entropy term ([line 1127](rl_weight_agent.py#L1127)):
 ```python
@@ -3038,21 +3038,21 @@ The minus sign means: higher entropy → lower loss → the optimizer is rewarde
 
 **The gradient — why it's a constant push.** Let's work out exactly how the entropy bonus pushes on $\sigma$. The entropy bonus part of the loss is:
 
-$$L_{\text{entropy}} = -0.10 \times \left[\underbrace{\frac{12}{2}(1 + \ln 2\pi)}_{\text{constant } \approx 17.0} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
+$$L_{\text{entropy}} = -0.10 \times \left[\underbrace{\frac{12}{2}(1 + \ln{2\pi})}_{\text{constant } \approx 17.0} + \sum_{i=1}^{12} \ln{\sigma_i}\right]$$
 
-Now take the derivative with respect to a single asset's $\ln\sigma_j$ (say, SMH's bell curve width). The derivative asks: "if I make SMH's $\ln\sigma$ slightly bigger, how does the loss change?"
+Now take the derivative with respect to a single asset's $\ln{\sigma}_j$ (say, SMH's bell curve width). The derivative asks: "if I make SMH's $\ln{\sigma}$ slightly bigger, how does the loss change?"
 
-$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -0.10 \times \frac{\partial}{\partial \ln\sigma_j}\left[\text{constant} + \sum_{i=1}^{12} \ln\sigma_i\right]$$
+$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln{\sigma}_j} = -0.10 \times \frac{\partial}{\partial \ln{\sigma}_j}\left[\text{constant} + \sum_{i=1}^{12} \ln{\sigma}_i\right]$$
 
 Step by step:
-- The constant $\frac{12}{2}(1 + \ln 2\pi)$ doesn't depend on $\ln\sigma_j$ at all, so its derivative is **0** — it vanishes.
-- The sum $\ln\sigma_1 + \ln\sigma_2 + \cdots + \ln\sigma_{12}$ contains exactly one term with $\ln\sigma_j$. The derivative of $\ln\sigma_j$ with respect to itself is **1**. All the other terms ($\ln\sigma_1, \ln\sigma_2$, etc.) don't contain $\ln\sigma_j$, so they also vanish.
+- The constant $\frac{12}{2}(1 + \ln{2\pi})$ doesn't depend on $\ln{\sigma_j}$ at all, so its derivative is **0** — it vanishes.
+- The sum $\ln{\sigma}_1 + \ln{\sigma}_2 + \cdots + \ln{\sigma}_{12}$ contains exactly one term with $\ln{\sigma}_j$. The derivative of $\ln{\sigma}_j$ with respect to itself is **1**. All the other terms ($\ln{\sigma}_1, \ln{\sigma}_2$, etc.) don't contain $\ln{\sigma}_j$, so they also vanish.
 
 What's left:
 
-$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln\sigma_j} = -0.10 \times 1 = -0.10$$
+$$\frac{\partial \, L_{\text{entropy}}}{\partial \ln{\sigma}_j} = -0.10 \times 1 = -0.10$$
 
-This is the same for every asset, at every point in training, regardless of what $\sigma$ currently is. It is a **constant downward push of $-0.10$ on the loss for each asset's `log_std`**. In gradient descent, a negative gradient means "increasing this parameter decreases the loss" — so the optimizer is always nudged toward making $\ln\sigma$ larger (i.e., keeping $\sigma$ wide). This is what prevents $\sigma$ from collapsing: no matter how small $\sigma$ gets, the entropy bonus keeps pushing back with the same steady force.
+This is the same for every asset, at every point in training, regardless of what $\sigma$ currently is. It is a **constant downward push of $-0.10$ on the loss for each asset's `log_std`**. In gradient descent, a negative gradient means "increasing this parameter decreases the loss" — so the optimizer is always nudged toward making $\ln{\sigma}$ larger (i.e., keeping $\sigma$ wide). This is what prevents $\sigma$ from collapsing: no matter how small $\sigma$ gets, the entropy bonus keeps pushing back with the same steady force.
 
 **Why bother keeping $\sigma$ from collapsing?** Without the entropy bonus, the agent would quickly narrow its bell curves to near-zero width, locking in whatever allocation it found first. If that allocation happened to be mediocre (a "local optimum"), the agent would be stuck — it would never explore enough to discover something better. The entropy bonus forces the agent to keep trying new things even when it thinks it knows the answer. It is the difference between a student who only re-reads the one textbook they already own vs. one who occasionally picks up a new book.
 
@@ -3060,14 +3060,14 @@ $\sigma$ settles at whatever equilibrium these two forces reach: small enough to
 
 **Step 3 — Compute the log probability** of the specific sample. This asks: "how likely was this particular roll?" It is the standard bell curve (Gaussian) formula, written in log form:
 
-$$\log \pi_\theta(z | s) = -\frac{1}{2}\sum_{i=1}^{12}\left[\left(\frac{z_i - \mu_i}{\sigma_i}\right)^2 + 2\log\sigma_i + \log(2\pi)\right]$$
+$$\log \pi_\theta(z \mid s) = -\frac{1}{2}\sum_{i=1}^{12}\left[\left(\frac{z_i - \mu_i}{\sigma_i}\right)^2 + 2\log{\sigma_i} + \log(2\pi)\right]$$
 
 Each of the three parts inside the sum has a concrete meaning:
 
 | Part | Plain English |
 |:---|:---|
 | $\left(\frac{z_i - \mu_i}{\sigma_i}\right)^2$ | How far was the roll from the center, in standard deviations? Farther = less likely. |
-| $2\log\sigma_i$ | Wider bell curves spread probability thinner, so any specific value is less likely. |
+| $2\log{\sigma_i}$ | Wider bell curves spread probability thinner, so any specific value is less likely. |
 | $\log(2\pi)$ | A constant that makes the math work out (the bell curve normalization factor). |
 
 **Why does PPO need this probability?** Because PPO learns by asking "that action got a good reward — was it a lucky fluke (low probability roll) or my deliberate choice (high probability roll)?" The ratio of new probability to old probability is exactly the $r_t$ in the PPO clipping formula further below. Without knowing the probability, PPO cannot update the policy.
@@ -3305,7 +3305,7 @@ The `next_non_terminal` part handles episode endings — if the episode ended at
 
 This actually happens in practice. The pre-PPO approach (called "vanilla policy gradient") is:
 
-$$L = -\mathbb{E}\left[\log\pi_\theta(a_t | s_t) \cdot A_t\right]$$
+$$L = -\mathbb{E}\left[\log \pi_\theta(a_t \mid s_t) \cdot A_t\right]$$
 
 Breaking it down piece by piece:
 
@@ -3313,11 +3313,11 @@ Breaking it down piece by piece:
 |:---|:---|:---|
 | $L$ | The loss — the single number gradient descent tries to make smaller | This is the policy loss, one of the three losses in [Section 0](#what-is-a-loss-function) |
 | $\mathbb{E}[\ldots]$ | "Average over all the actions in the batch" | The agent collects many (state, action, reward) tuples; this averages across them |
-| $\log\pi_\theta(a_t \| s_t)$ | The log probability of the action the agent took | Computed in Step 3 of the policy — "how likely was this specific action under the current policy?" |
+| $\log \pi_\theta(a_t \mid s_t)$ | The log probability of the action the agent took | Computed in Step 3 of the policy — "how likely was this specific action under the current policy?" |
 | $A_t$ | The advantage — was this action better or worse than average? | Computed in Step 3 above (TD error + GAE) |
 | The $-$ sign | Flips the direction — minimizing $-x$ is the same as maximizing $x$ | Gradient descent minimizes, but we want to maximize good actions |
 
-What does the whole thing do? For each action the agent took, multiply its log probability by its advantage. If $A_t$ is positive (good action), gradient descent increases $\log\pi$ — making this action more likely next time. If $A_t$ is negative (bad action), it decreases $\log\pi$ — making this action less likely. The $-$ sign is there because gradient descent always *minimizes* the loss, but we want to *maximize* the probability of good actions — negating flips the direction.
+What does the whole thing do? For each action the agent took, multiply its log probability by its advantage. If $A_t$ is positive (good action), gradient descent increases $\log \pi$ — making this action more likely next time. If $A_t$ is negative (bad action), it decreases $\log \pi$ — making this action less likely. The $-$ sign is there because gradient descent always *minimizes* the loss, but we want to *maximize* the probability of good actions — negating flips the direction.
 
 The problem is there is **no limit** on how much the policy can change in one step. A single action with a large advantage can swing the entire policy, destroying behaviour that took thousands of steps to learn. PPO's entire purpose is to prevent this: **learn from good and bad experiences, but never change the policy too much in one update.**
 
@@ -3485,7 +3485,7 @@ value_loss = ((values - return_batch) ** 2).mean()
 
 The coefficient $c_1 = 0.5$ (`vf_coef` at [line 1081](rl_weight_agent.py#L1081)) scales this loss down by half before adding it to the total — this prevents the Critic's updates from overwhelming the Actor's updates.
 
-#### **Part 3: Entropy bonus $H[\pi]$**
+#### **Part 3: Entropy bonus $H\lbrack\pi\rbrack$**
 
 This is the same entropy bonus explained in detail in [Force 2 of the σ tug-of-war](#does-sigma-ever-reach-zero) earlier. Here is a quick recap of why it's in the loss function and how the two agents use it differently.
 
@@ -3497,19 +3497,19 @@ This is the same entropy bonus explained in detail in [Force 2 of the σ tug-of-
 
 **Regime agent** (discrete — picking 1 of 3 regimes). The entropy is [Shannon entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) applied to the regime probabilities:
 
-$$H = -\sum_a \pi(a|s) \log\pi(a|s)$$
+$$H = -\sum_a \pi(a \mid s) \log \pi(a \mid s)$$
 
 Concrete example: if the regime agent outputs probabilities [0.80, 0.15, 0.05] for [risk-on, risk-reduced, defensive]:
 
-$$H = -(0.80 \times \ln 0.80 + 0.15 \times \ln 0.15 + 0.05 \times \ln 0.05)$$
+$$H = -(0.80 \times \ln{0.80} + 0.15 \times \ln{0.15} + 0.05 \times \ln{0.05})$$
 $$= -(0.80 \times (-0.22) + 0.15 \times (-1.90) + 0.05 \times (-3.00))$$
 $$= -(-0.18 - 0.28 - 0.15) = 0.61$$
 
-If the probabilities were perfectly even [0.33, 0.33, 0.33], entropy would be $\ln 3 \approx 1.10$ (the maximum). If the agent was 99% sure of one regime [0.99, 0.005, 0.005], entropy would be near 0. The entropy bonus pushes the agent away from that 99% certainty.
+If the probabilities were perfectly even [0.33, 0.33, 0.33], entropy would be $\ln{3} \approx 1.10$ (the maximum). If the agent was 99% sure of one regime [0.99, 0.005, 0.005], entropy would be near 0. The entropy bonus pushes the agent away from that 99% certainty.
 
 **Weight agent** (continuous — outputting 12 bell curves). The entropy is the [Gaussian entropy derived earlier](#does-sigma-ever-reach-zero):
 
-$$H = \frac{12}{2}(1 + \ln 2\pi) + \sum_{i=1}^{12} \ln\sigma_i$$
+$$H = \frac{12}{2}(1 + \ln{2\pi}) + \sum_{i=1}^{12} \ln{\sigma_i}$$
 
 This depends entirely on $\sigma$ — wider bell curves = higher entropy. The formula and its derivation are already covered in the [Force 2 section above](#does-sigma-ever-reach-zero), so we won't repeat it here.
 
@@ -3528,7 +3528,7 @@ Here is how it all fits together in each iteration:
 
 **1. Collect experience** (`n_steps = 128` or `256` steps):
    - Run the current policy in the environment
-   - At each step, store the tuple $(s_t, a_t, r_t, V(s_t), \log\pi(a_t|s_t))$ in the rollout buffer
+   - At each step, store the tuple $(s_t, a_t, r_t, V(s_t), \log \pi(a_t \mid s_t))$ in the rollout buffer
    - When an episode ends (full backtest traversal), reset the environment and continue collecting
 
 **2. Compute advantages** using GAE:
@@ -3617,7 +3617,7 @@ The system operates as a principal-agent hierarchy:
 
 ### **Technical Summary**
 
-PPO is an on-policy actor-critic algorithm that stabilizes policy gradient updates via a clipped surrogate objective. At each iteration, the system collects a rollout of experience, computes GAE advantages (a bias-variance balanced estimate of action quality), then performs multiple epochs of mini-batch gradient descent on the clipped loss. The clipping mechanism — min($r_t A_t$, clip($r_t, 1 \pm \epsilon$) $A_t$) — prevents destructive policy updates by bounding the probability ratio, ensuring the policy evolves gradually rather than making catastrophic jumps. The Alpha Dual Engine deploys two PPO agents in a hierarchical configuration: a discrete agent for regime selection (3-action softmax over 25-dimensional macro observations) and a continuous agent for weight allocation (12-dimensional Gaussian over 103-dimensional per-asset observations). Both are implemented as shared-trunk actor-critic networks and trained natively on Apple Silicon via the MLX framework.
+PPO is an on-policy actor-critic algorithm that stabilizes policy gradient updates via a clipped surrogate objective. At each iteration, the system collects a rollout of experience, computes GAE advantages (a bias-variance balanced estimate of action quality), then performs multiple epochs of mini-batch gradient descent on the clipped loss. The clipping mechanism — $\min(r_t A_t, \text{clip}(r_t, 1 \pm \epsilon) A_t)$ — prevents destructive policy updates by bounding the probability ratio, ensuring the policy evolves gradually rather than making catastrophic jumps. The Alpha Dual Engine deploys two PPO agents in a hierarchical configuration: a discrete agent for regime selection (3-action softmax over 25-dimensional macro observations) and a continuous agent for weight allocation (12-dimensional Gaussian over 103-dimensional per-asset observations). Both are implemented as shared-trunk actor-critic networks and trained natively on Apple Silicon via the MLX framework.
 
 ====================================================================================
 # **Development Methodology**

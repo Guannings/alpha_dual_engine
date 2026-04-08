@@ -1,0 +1,20 @@
+# TAIFEX Competition Trading Bot — Dependencies
+
+# Core scientific computing
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# Machine learning
+xgboost>=1.7.0
+scikit-learn>=1.2.0
+shap>=0.42.0
+
+# HTTP client (TAIFEX OpenAPI)
+requests>=2.28.0
+
+# ZMQ (TTB / pytaifex broker connection) — needed on Windows execution machine
+pyzmq>=25.0.0
+
+# Visualization (optional, for backtest analysis)
+matplotlib>=3.7.0

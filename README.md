@@ -2462,7 +2462,9 @@ Entropy = 0. Zero surprise. Zero diversity. You know exactly where all the money
 **Portfolio B: Split between 2 stocks — SMH = 50%, QQQ = 50%**
 
 $$H = -(0.5 \times \ln(0.5) + 0.5 \times \ln(0.5))$$
+
 $$= -(0.5 \times (-0.693) + 0.5 \times (-0.693))$$
+
 $$= -(-0.347 - 0.347) = 0.693$$
 
 Entropy = 0.693. Some diversity.
@@ -2470,7 +2472,9 @@ Entropy = 0.693. Some diversity.
 **Portfolio C: Equal across all 12 assets — each at 8.33%**
 
 $$H = -12 \times (0.0833 \times \ln(0.0833))$$
+
 $$= -12 \times (0.0833 \times (-2.485))$$
+
 $$= -12 \times (-0.207) = 2.485$$
 
 Entropy = 2.485. Maximum diversity for 12 assets.
@@ -3214,7 +3218,7 @@ Then the agent acts, and one step of reality plays out. The agent earns an actua
 
 The TD error asks: "was the **updated picture** (actual reward + new estimate of the future) better or worse than the **original estimate**?" If it's higher, the situation turned out better than predicted — the action was above average. If it's lower, worse than predicted.
 
-The $\gamma = 0.99$ is a **discount factor** — it slightly shrinks the future estimate, reflecting the idea that rewards sooner are worth slightly more than rewards later ($1 tomorrow is worth $0.99 today). At 0.99, the agent cares about the future almost as much as the present.
+The $\gamma = 0.99$ is a **discount factor** — it slightly shrinks the future estimate, reflecting the idea that rewards sooner are worth slightly more than rewards later (\$1 tomorrow is worth \$0.99 today). At 0.99, the agent cares about the future almost as much as the present.
 
 In the code ([`rl_weight_agent.py:554`](rl_weight_agent.py#L554)):
 ```python
@@ -3395,7 +3399,9 @@ $$r_t \cdot A_t = 1.3 \times 2.0 = 2.6$$
 
 Step 2 — Compute the clipped version. First, apply the clip function to $r_t$. The clip function is simple: if the number is inside $[0.8, 1.2]$, leave it alone; if it's outside, force it to the nearest boundary. Since $1.3 > 1.2$, clip forces it down to $1.2$:
 $$\text{clip}(1.3, \; 0.8, \; 1.2) = 1.2$$
+
 Then multiply by the advantage:
+
 $$1.2 \times 2.0 = 2.4$$
 
 Step 3 — Take the min of the two:
@@ -3409,9 +3415,13 @@ The unclipped version wanted to give a score of 2.6, but the clipped version cap
 **Worked example — policy hasn't drifted much.** Same good action ($A_t = +2.0$), but now $r_t = 1.1$ (only 10% drift):
 
 $$\text{unclipped: } 1.1 \times 2.0 = 2.2$$
+
 $$\text{clip}(1.1, \; 0.8, \; 1.2) = 1.1 \quad \text{(inside the range — no change)}$$
+
 $$\text{clipped: } 1.1 \times 2.0 = 2.2$$
+
 $$\min(2.2, \; 2.2) = 2.2$$
+
 $$L_{\text{CLIP}} = -2.2$$
 
 Both versions agree — no clipping needed. The gradient flows normally and the policy keeps updating.
@@ -3419,9 +3429,13 @@ Both versions agree — no clipping needed. The gradient flows normally and the 
 **Worked example — bad action.** Now $r_t = 0.7$ (policy has moved away from this action) and $A_t = -1.5$ (bad action):
 
 $$\text{unclipped: } 0.7 \times (-1.5) = -1.05$$
+
 $$\text{clip}(0.7, \; 0.8, \; 1.2) = 0.8 \quad \text{(below 0.8, forced up to boundary)}$$
+
 $$\text{clipped: } 0.8 \times (-1.5) = -1.2$$
+
 $$\min(-1.05, \; -1.2) = -1.2$$
+
 $$L_{\text{CLIP}} = -(-1.2) = 1.2$$
 
 Again, the clipped version is chosen by the $\min$. The gradient of clip(0.7) = 0.8 is zero — **the update stops**. The policy has already moved 30% away from this bad action, which is past the 20% limit, so PPO says "enough, stop pushing."
@@ -3502,7 +3516,9 @@ $$H = -\sum_a \pi(a \mid s) \log \pi(a \mid s)$$
 Concrete example: if the regime agent outputs probabilities [0.80, 0.15, 0.05] for [risk-on, risk-reduced, defensive]:
 
 $$H = -(0.80 \times \ln{0.80} + 0.15 \times \ln{0.15} + 0.05 \times \ln{0.05})$$
+
 $$= -(0.80 \times (-0.22) + 0.15 \times (-1.90) + 0.05 \times (-3.00))$$
+
 $$= -(-0.18 - 0.28 - 0.15) = 0.61$$
 
 If the probabilities were perfectly even [0.33, 0.33, 0.33], entropy would be $\ln{3} \approx 1.10$ (the maximum). If the agent was 99% sure of one regime [0.99, 0.005, 0.005], entropy would be near 0. The entropy bonus pushes the agent away from that 99% certainty.

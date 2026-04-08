@@ -170,7 +170,7 @@ b. max_single_weight (0.30 / 30%)
 
 * Function: The "Anti-Blowup" Cap. No single asset can exceed 30% of the total portfolio value.
 
-* Logic: This forces the "Cubed Momentum" engine to select a basket of winners rather than betting the farm on one. Even if SMH (Semiconductors) has a perfect momentum score, the system must find at least two or three other assets (e.g., TAN, XBI) to fill the remaining allocation, ensuring a mathematical minimum diversity of $\sim 3.33$ assets ($1 / 0.30$).
+* Logic: This forces the "Cubed Momentum" engine to select a basket of winners rather than betting the farm on one. Even if SMH (Semiconductors) has a perfect momentum score, the system must find at least two or three other assets (e.g., TAN, XBI) to fill the remaining allocation, ensuring a mathematical minimum diversity of ~3.33 assets (1/0.30).
 
 c. gold_cap_risk_on (0.01 / 1%)
 
@@ -184,21 +184,21 @@ d. entropy_lambda (0.02)
 
 * Logic: A low lambda value (0.02) tells the optimizer that we prefer concentration over diversification. It allows the weights to cluster near the 30% maximums rather than being flattened out equally across all assets.
 
-Shannon Entropy $H(\mathbf{w}) = -\sum_i w_i \ln(w_i)$ quantifies weight dispersion: equal weighting across 12 assets yields the maximum ($\approx 2.48$), while full concentration yields 0. The optimizer includes $0.02 \times H(\mathbf{w})$ as a soft diversification bonus. Since $\lambda_{\text{entropy}} = 0.02$ is deliberately small, momentum signals dominate — the portfolio remains concentrated in top performers but avoids extreme single-asset allocation. See Appendix Section C for the full derivation.
+Shannon Entropy `H(w) = -Σ wᵢ·ln(wᵢ)` quantifies weight dispersion: equal weighting across 12 assets yields the maximum (≈ 2.48), while full concentration yields 0. The optimizer includes `0.02 × H(w)` as a soft diversification bonus. Since λ_entropy = 0.02 is deliberately small, momentum signals dominate — the portfolio remains concentrated in top performers but avoids extreme single-asset allocation. See Appendix Section C for the full derivation.
 
 **2. Execution & Cost Control (The "Fee Guillotine")**
 
 a. Transaction Cost Calculation & Formula
 
-$$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right| \times \frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$$
+**Formula:** Cost = Portfolio Value × Total Turnover × Average Cost Rate (converted from basis points) — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
 
-This formula computes the total transaction cost per rebalance:
-- $V_{\text{portfolio}}$ = total portfolio value
-- $\vert w_i^{\text{new}} - w_i^{\text{old}}\vert$ = absolute weight change per asset (e.g., SMH moving from 20% to 30% produces a change of 0.10)
-- $\sum_i \vert\cdot\vert$ = total turnover across all assets
-- $\frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$ = per-asset fee rate converted from basis points to decimal (1 bps = 0.01%)
+This formula computes the total transaction cost per rebalance (see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation):
+- V_portfolio = total portfolio value
+- |wᵢ^new - wᵢ^old| = absolute weight change per asset (e.g., SMH moving from 20% to 30% produces a change of 0.10)
+- Σᵢ |·| = total turnover across all assets
+- Cost_i^bps/10,000 = per-asset fee rate converted from basis points to decimal (1 bps = 0.01%)
 
-**Example:** A \$100,000 portfolio shifting 10% into SMH (5 bps) incurs a cost of $100{,}000 \times 0.10 \times 0.0005 = 5$ dollars per rebalance.
+**Example:** A $100,000 portfolio shifting 10% into SMH (5 bps) incurs a cost of 100,000 × 0.10 × 0.0005 = 5 dollars per rebalance.
 
 *  Per-Asset Transaction Costs:
 
@@ -223,7 +223,7 @@ b. min_rebalance_threshold (0.12 / 12%)
 
 * Logic: This is the most critical execution parameter. Before rebalancing, the engine calculates the total portfolio turnover (the sum of absolute weight changes).
 
-* If $\text{Turnover} < 12\%$: Trade Cancelled.
+* If Turnover < 12%: Trade Cancelled.
 
 * Effect: This prevents "noise trading"—small, mathematical adjustments that generate fees without adding significant alpha. The system only moves when the portfolio structure is significantly misaligned.
 
@@ -289,15 +289,15 @@ a. For Equities: The "Cubed Momentum" Metric
 
 * Formula:
 
-$$M_i = \left(\frac{P_i}{\text{SMA}_{60,i}}\right)^3$$
+**Formula:** M_i = (Current Price / 60-day SMA)³ — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
 
-Where $P_i$ is the current price of asset $i$ and $SMA_{60,i}$ is its 60-day Simple Moving Average. The ratio $P_i / SMA_{60,i}$ measures how far the asset is above or below its recent trend (e.g., $220/200 = 1.10$ means 10% above trend). The **cubing operation** nonlinearly amplifies the gap between strong and weak performers:
+The ratio (Price / 60-day SMA) measures how far the asset is above or below its recent trend (e.g., 220/200 = 1.10 means 10% above trend). The **cubing operation** nonlinearly amplifies the gap between strong and weak performers (see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation):
 
-Scenario A: Asset is 2% above trend → $1.02^3 \approx 1.06$
+Scenario A: Asset is 2% above trend → 1.02³ ≈ 1.06
 
-Scenario B: Asset is 10% above trend → $1.10^3 \approx 1.33$
+Scenario B: Asset is 10% above trend → 1.10³ ≈ 1.33
 
-After cubing, Scenario B scores approximately **5.5x higher** than Scenario A ($0.33 \div 0.06 \approx 5.5$), causing the optimizer to concentrate capital aggressively into the strongest-trending assets — the desired behavior for a momentum-driven strategy.
+After cubing, Scenario B scores approximately **5.5x higher** than Scenario A (0.33 ÷ 0.06 ≈ 5.5), causing the optimizer to concentrate capital aggressively into the strongest-trending assets — the desired behavior for a momentum-driven strategy.
 
 * Result: The optimizer sees Scenario B as dramatically better than Scenario A, naturally forcing capital into the fastest-moving sector without needing manual "if/else" exclusions.
 
@@ -307,7 +307,7 @@ b. For Crypto: The "RSI Rotation" Metric
 
 RSI is computed as:
 
-$$\text{RSI} = 100 - \frac{100}{1 + \frac{\text{Avg Gain over 14 days}}{\text{Avg Loss over 14 days}}}$$
+**Formula:** RSI = 100 - (100 / (1 + (Average Gain over 14 days / Average Loss over 14 days)))
 
 This produces a bounded oscillator between 0 and 100. Values above 70 indicate overbought conditions; below 30 indicates oversold; 50 is neutral. The system compares Bitcoin's RSI against Ethereum's RSI and allocates the entire crypto bucket to whichever coin exhibits stronger recent momentum.
 
@@ -321,21 +321,21 @@ This produces a bounded oscillator between 0 and 100. Values above 70 indicate o
 
 This section builds the input vectors for the Machine Learning "Brain." It distills the complex market state into 7 digestible numbers:
 
-These 7 features compress the market state into a compact input vector for the ML classifier. Each feature captures a distinct dimension of market conditions:
+These 7 features compress the market state into a compact input vector for the ML classifier. Each feature captures a distinct dimension of market conditions (see [Appendix Section A](#a-the-xgboost-ensemble-classifier--regime-detection) for the full XGBoost derivation and how these features are used):
 
-a. **realized_vol** = $\frac{\text{VIX}}{100}$. The VIX is a number (say 22) that represents how scared the market is. Dividing by 100 just rescales it to 0.22 so the model can digest it. Higher = more fear.
+a. **realized_vol** = VIX/100. The VIX is a number (say 22) that represents how scared the market is. Dividing by 100 just rescales it to 0.22 so the model can digest it. Higher = more fear.
 
-b. **trend_score** = $\frac{\text{SPY Price} - \text{SPY 200-day SMA}}{\text{SPY 200-day SMA}} \times 100$. This asks: "how far is the S&P 500 above or below its 200-day average, in percentage terms?" If SPY is at 500 and the 200-day average is 480, trend_score = $\frac{500 - 480}{480} \times 100 = 4.17$. Positive = bullish, negative = bearish.
+b. **trend_score** = (SPY Price - SPY 200-day SMA) / SPY 200-day SMA × 100. This asks: "how far is the S&P 500 above or below its 200-day average, in percentage terms?" If SPY is at 500 and the 200-day average is 480, trend_score = (500 - 480)/480 × 100 = 4.17. Positive = bullish, negative = bearish.
 
 c. **momentum_21d** = SPY's percentage return over the last 21 trading days (~1 month). Positive = market has been going up recently.
 
-d. **vol_momentum** = $\frac{\text{VIX today}}{\text{VIX 21 days ago}} - 1$. This measures: "is fear increasing or decreasing?" If VIX went from 15 to 20, vol_momentum = $\frac{20}{15} - 1 = 0.33$ (fear jumped 33%). Rising fear = bad.
+d. **vol_momentum** = VIX today / VIX 21 days ago - 1. This measures: "is fear increasing or decreasing?" If VIX went from 15 to 20, vol_momentum = 20/15 - 1 = 0.33 (fear jumped 33%). Rising fear = bad.
 
 e. **qqq_vs_spy** = QQQ return over 63 days minus SPY return over 63 days. This measures: "is tech outperforming the broader market?" If QQQ returned 12% and SPY returned 8% over 3 months, this equals 4%. Positive = tech is leading (usually bullish for growth).
 
 f. **tlt_momentum** = TLT's return over 21 days. TLT is a long-term bond fund. If TLT is crashing, it means interest rates are spiking — bad for stocks.
 
-g. **equity_risk_premium** = $\frac{1}{\text{SPY} / \text{SPY 252-day SMA}} - \text{risk-free rate}$. This is a rough valuation check. When SPY is way above its 1-year average, the "premium" for holding stocks shrinks. The model uses this to detect if the market is overvalued.
+g. **equity_risk_premium** = 1/(SPY/SPY 252-day SMA) - risk-free rate. This is a rough valuation check. When SPY is way above its 1-year average, the "premium" for holding stocks shrinks. The model uses this to detect if the market is overvalued.
 
 **4. Temporal Integrity (The "Time Machine")**
 
@@ -390,7 +390,7 @@ A `max_depth=2` tree can only split twice — for example: "Is trend_score > 0?"
 
 c. The Consensus Rule:
 
-To trigger a RISK_ON signal in the absence of a Macro Override, BOTH models must agree with high conviction (Probability > 0.55). If they disagree, the system defaults to safety.
+To trigger a RISK_ON signal in the absence of a Macro Override, BOTH models must agree with high conviction (Probability > 0.55). If they disagree, the system defaults to safety. See [Appendix Section A](#a-the-xgboost-ensemble-classifier--regime-detection) for the full mathematical derivation of the XGBoost classifier, log loss, and consensus logic.
 
 This dual-model consensus acts as a confirmation filter: the gradient-boosted model (XGBoost) captures complex nonlinear patterns, while the shallow Decision Tree provides a conservative baseline. Both must independently produce a bull probability exceeding 55% for the system to enter RISK_ON. This "default to safety" design ensures the system only takes risk when two structurally different models agree that the statistical edge is significant.
 
@@ -433,26 +433,26 @@ This is not a standard "Mean-Variance" optimizer (which often produces boring, o
 
 The heart of the optimizer is the function it tries to minimize:
 
-$$\mathcal{L}(\mathbf{w}) = \lambda_{\text{risk}} \mathbf{w}^\top \Sigma \mathbf{w} - \lambda_{\text{mom}} (\mathbf{w} \cdot \mathbf{M}) - \lambda_{\text{entropy}} H(\mathbf{w})$$
+**Formula:** L(w) = λ_risk × w^T Σ w - λ_mom × (w · M) - λ_entropy × H(w) — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
 
 This objective function balances three competing goals — minimize risk, maximize momentum exposure, and maintain diversification — through a single scalar that the SLSQP solver minimizes. The full mathematical derivation is provided in Appendix Section B.
 
 **Variables:**
-- $\mathbf{w}$ = The portfolio weight vector (e.g., $[0.25, 0.30, 0.10, \ldots]$ representing 25% SMH, 30% QQQ, 10% TLT). This is the unknown the optimizer solves for.
-- $\lambda$ = Scaling coefficients controlling the relative importance of each term.
-- $\Sigma$ = The **covariance matrix** — a symmetric matrix capturing pairwise co-movement between all 12 assets. High covariance between two assets means they tend to move together, reducing the diversification benefit of holding both.
+- **w** = The portfolio weight vector (e.g., [0.25, 0.30, 0.10, ...] representing 25% SMH, 30% QQQ, 10% TLT). This is the unknown the optimizer solves for.
+- λ = Scaling coefficients controlling the relative importance of each term.
+- Σ = The **covariance matrix** — a symmetric matrix capturing pairwise co-movement between all 12 assets. High covariance between two assets means they tend to move together, reducing the diversification benefit of holding both.
 
-**Term 1: Risk** — $\lambda_{risk} \cdot w^\top \Sigma w$ (minimized)
+**Term 1: Risk** — λ_risk · w'Σw (minimized)
 
-$w^\top \Sigma w$ computes the portfolio variance — a single scalar quantifying total risk, accounting for all pairwise correlations. Concentrated positions in correlated assets produce high variance; diversified positions across uncorrelated assets produce low variance. The $\lambda_{risk}$ coefficient is kept moderate to accommodate the 25% target volatility.
+w'Σw computes the portfolio variance — a single scalar quantifying total risk, accounting for all pairwise correlations. Concentrated positions in correlated assets produce high variance; diversified positions across uncorrelated assets produce low variance. The λ_risk coefficient is kept moderate to accommodate the 25% target volatility.
 
-**Term 2: Momentum** — $-\lambda_{mom} (w \cdot M)$ (maximized via negation)
+**Term 2: Momentum** — -λ_mom (w · M) (maximized via negation)
 
-$w \cdot M$ is the dot product of weights and cubed momentum scores. Since the optimizer minimizes the objective, the negative sign converts momentum maximization into an equivalent minimization problem (minimizing $-x$ is equivalent to maximizing $x$). This term drives the strategy toward high-momentum assets.
+w · M is the dot product of weights and cubed momentum scores. Since the optimizer minimizes the objective, the negative sign converts momentum maximization into an equivalent minimization problem (minimizing -x is equivalent to maximizing x). This term drives the strategy toward high-momentum assets.
 
-**Term 3: Entropy** — $-\lambda_{entropy} \cdot H(w)$ (maximized via negation)
+**Term 3: Entropy** — -λ_entropy · H(w) (maximized via negation)
 
-$H(w) = -\sum_i w_i \ln(w_i)$ is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum ($\ln{12} \approx 2.48$) when equally distributed. The coefficient $\lambda_{entropy} = 0.02$ is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section C: Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
+H(w) = -Σᵢ wᵢ ln(wᵢ) is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum (ln(12) ≈ 2.48) when equally distributed. The coefficient λ_entropy = 0.02 is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section C: Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
 
 **Net effect:** The optimizer produces aggressive, momentum-driven portfolios concentrated in the top 3-4 trending assets, while the entropy term and bound constraints prevent full single-asset concentration.
 
@@ -484,13 +484,13 @@ After finding a candidate portfolio, the optimizer runs a "Sanity Check" using t
 
 Effective N quantifies the number of independent positions the portfolio is effectively exposed to:
 
-$$N_{\text{eff}} = \frac{1}{\sum_i w_i^2}$$
+**Formula:** N_eff = 1 / (sum of w_i²) — see [Appendix Section C](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) for full derivation
 
-- 100% in one asset: $\frac{1}{1.0^2} = 1.0$ — effectively 1 position.
-- 50%/50% split: $\frac{1}{0.5^2 + 0.5^2} = \frac{1}{0.50} = 2.0$ — effectively 2 positions.
-- 30%/30%/30%/10%: $\frac{1}{0.09 + 0.09 + 0.09 + 0.01} = \frac{1}{0.28} \approx 3.6$ — effectively 3.6 positions.
+- 100% in one asset: 1/1.0² = 1.0 — effectively 1 position.
+- 50%/50% split: 1/(0.5² + 0.5²) = 1/0.50 = 2.0 — effectively 2 positions.
+- 30%/30%/30%/10%: 1/(0.09 + 0.09 + 0.09 + 0.01) = 1/0.28 ≈ 3.6 — effectively 3.6 positions.
 
-Squaring the weights penalizes concentration disproportionately: a 90% weight contributes $0.81$ to the denominator, dominating the sum and pushing $N_{\text{eff}}$ toward 1. The system requires $N_{\text{eff}} \geq 3.0$.
+Squaring the weights penalizes concentration disproportionately: a 90% weight contributes 0.81 to the denominator, dominating the sum and pushing N_eff toward 1. The system requires N_eff ≥ 3.0.
 
 * Target: min_effective_n = 3.0
 
@@ -529,13 +529,13 @@ This is the critical logic block implemented in v154.6 to solve the "Churn Probl
 
 a. Logic: Inside the main loop, before executing any rebalance, the engine calculates the Proposed Turnover:
 
-$$\text{Turnover} = \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right|$$
+**Formula:** Turnover = sum of |w_i_new - w_i_old| — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
 
-Turnover is the sum of absolute weight changes across all assets — it quantifies the total portfolio reallocation. For example, if SMH shifts from 25% to 30% (+5%) and QQQ from 20% to 15% (-5%), total turnover is $0.05 + 0.05 = 0.10$ (10%). If turnover falls below the 12% threshold, the rebalance is suppressed as the expected fee drag exceeds the benefit.
+Turnover is the sum of absolute weight changes across all assets — it quantifies the total portfolio reallocation. For example, if SMH shifts from 25% to 30% (+5%) and QQQ from 20% to 15% (-5%), total turnover is 0.05 + 0.05 = 0.10 (10%). If turnover falls below the 12% threshold, the rebalance is suppressed as the expected fee drag exceeds the benefit.
 
 b. The Rule:
 
-* If $\text{Turnover} < 0.12$ (12%): THE TRADE IS REJECTED.
+* If Turnover < 0.12 (12%): THE TRADE IS REJECTED.
 
 * Effect: The engine effectively says, "This change is too small to be worth the fees. Do nothing." It carries forward the existing portfolio weights exactly as they were.
 
@@ -547,13 +547,13 @@ If the Regime does change (e.g., Bullish to Defensive): The Gate is lifted. Safe
 
 The engine uses a tiered, per-asset transaction cost model that reflects real-world trading friction. Each asset has its own cost in basis points (see the fee table in Section I.2), ranging from 1 bps for the most liquid bond ETFs to 30 bps for cryptocurrency. The cost for each rebalance is calculated as:
 
-$$\text{Cost} = V_{\text{portfolio}} \times \sum_{i} \left| w_i^{\text{new}} - w_i^{\text{old}} \right| \times \frac{\text{Cost}_i^{\text{bps}}}{10{,}000}$$
+**Formula:** Cost = Portfolio Value × Total Turnover × Average Cost Rate (converted from basis points) — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for the full mathematical derivation
 
 The formula is identical to Section I.2: portfolio value multiplied by absolute weight changes multiplied by the per-asset fee rate. The tiered structure creates an implicit incentive against high-frequency crypto rebalancing — at 30 bps, cryptocurrency is 30x more expensive to trade than SHY (1 bps).
 
 This penalizes high-turnover strategies proportionally to the actual friction of the assets being traded, rewarding the "Lazy" approach mandated by the Fee Guillotine.
 
-To prevent the optimizer from putting 100% of the capital into a single "best" stock (a common flaw in traditional optimization), the system uses Shannon Entropy as an additional diversity penalty in the objective function.
+To prevent the optimizer from putting 100% of the capital into a single "best" stock (a common flaw in traditional optimization), the system uses Shannon Entropy as an additional diversity penalty in the objective function (see [Appendix Section C](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) for the full entropy derivation).
 
 **4. The "Sniper Score"**
 
@@ -571,9 +571,9 @@ b. Calculation:
 
 c. Formula:
 
-$$\text{Sniper Score} = \frac{\text{Successful Bull Signals}}{\text{Total Bull Signals}}$$
+**Formula:** Sniper Score = (Successful Bull Signals) / (Total Bull Signals)
 
-This measures the **directional precision** of RISK_ON signals — the proportion of bull signals followed by positive 21-day forward returns in the S&P 500. For example, if the model triggered 100 RISK_ON signals and 73 were followed by positive 21-day returns, the Sniper Score is $\frac{73}{100} = 0.73$ (73%). A random classifier would produce approximately 50%. Scores consistently above 70% indicate statistically meaningful timing ability.
+This measures the **directional precision** of RISK_ON signals — the proportion of bull signals followed by positive 21-day forward returns in the S&P 500. For example, if the model triggered 100 RISK_ON signals and 73 were followed by positive 21-day returns, the Sniper Score is 73/100 = 0.73 (73%). A random classifier would produce approximately 50%. Scores consistently above 70% indicate statistically meaningful timing ability.
 
 d. Target: A score >0.70 (70%) indicates the model is highly selective and only entering when the statistical edge is real.
 
@@ -624,17 +624,17 @@ Standard institutional metrics are calculated to benchmark against the SPY.
 
 a. **CAGR** (Compound Annual Growth Rate): The geometric mean return. (Target: >20%).
 
-> **Formula:** $\text{CAGR} = \left(\frac{\text{Final Value}}{\text{Initial Value}}\right)^{1/\text{years}} - 1$
+> **Formula:** CAGR = (Final Value / Initial Value)^(1/years) - 1
 >
-> If `$10,000` grew to `$80,000` over 15 years: $\left(\frac{80000}{10000}\right)^{1/15} - 1 = 8^{0.0667} - 1 \approx 14.9\%$ per year. It smooths out all the ups and downs into a single "average annual growth" number.
+> If \$10,000 grew to \$80,000 over 15 years: (80000/10000)^(1/15) - 1 = 8^0.0667 - 1 ≈ 14.9% per year. It smooths out all the ups and downs into a single "average annual growth" number.
 
 b. **Sharpe Ratio**: Return per unit of risk. (Target: ~1.0).
 
-**Formula:** $\text{Sharpe} = \frac{R_p - R_f}{\sigma_p}$ where $R_p$ = portfolio return, $R_f$ = risk-free rate (Treasury bills, ~4%), $\sigma_p$ = portfolio volatility. The ratio quantifies excess return per unit of risk: a Sharpe of 1.0 indicates 1% of excess return for every 1% of volatility. Above 1.0 is considered excellent; below 0.5 is mediocre.
+**Formula:** Sharpe = (R_p - R_f) / σ_p — where R_p = portfolio return, R_f = risk-free rate (Treasury bills, ~4%), σ_p = portfolio volatility. The ratio quantifies excess return per unit of risk: a Sharpe of 1.0 indicates 1% of excess return for every 1% of volatility. Above 1.0 is considered excellent; below 0.5 is mediocre.
 
 c. **Max Drawdown**: The deepest peak-to-trough decline. This verifies the "Defensive" logic works during crashes.
 
-For example, if the portfolio reached a peak of 150,000 dollars and subsequently declined to 100,000 dollars before recovering, the max drawdown is $(100{,}000 - 150{,}000) / 150{,}000 = -33.3\%$. This metric captures the worst cumulative loss from any peak to its subsequent trough — it represents the maximum capital loss an investor would have experienced at any point during the backtest. The defensive regime is specifically designed to limit this figure.
+For example, if the portfolio reached a peak of 150,000 dollars and subsequently declined to 100,000 dollars before recovering, the max drawdown is (100,000 - 150,000) / 150,000 = −33.3%. This metric captures the worst cumulative loss from any peak to its subsequent trough — it represents the maximum capital loss an investor would have experienced at any point during the backtest. The defensive regime is specifically designed to limit this figure.
 
 **3. Constraint Verification**
 
@@ -665,26 +665,26 @@ The Monte Carlo Simulator serves as the final, rigorous validation layer of the 
 
 a. Mathematical Foundation: The simulator utilizes Geometric Brownian Motion, the industry-standard model for projecting asset price paths. This model assumes that the logarithm of the asset price follows a Brownian motion with drift and diffusion components.
 
-b. Drift Component ($\mu$): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag:
+b. Drift Component (μ): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag:
 
-$$\mu_{\text{adj}} = \mu - \frac{1}{2}\sigma^2$$
+**Formula:** μ_adj = μ - (1/2)σ² — see [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation) for full derivation
 
-This adjustment accounts for **volatility drag** — the mathematical asymmetry where symmetric percentage gains and losses do not cancel out. For example, a +50% gain followed by a -50% loss does not return to breakeven: 100 → 150 → 75 (a net 25% loss). The $\sigma^2 / 2$ correction subtracts this drag from the raw expected return.
+This adjustment accounts for **volatility drag** — the mathematical asymmetry where symmetric percentage gains and losses do not cancel out. For example, a +50% gain followed by a -50% loss does not return to breakeven: 100 → 150 → 75 (a net 25% loss). The σ²/2 correction subtracts this drag from the raw expected return.
 
-- $\mu$ = annualized expected return (e.g., 0.20 = 20% per year)
-- $\sigma$ = annualized volatility (e.g., 0.25 = 25% per year)
-- With $\mu = 0.20$ and $\sigma = 0.25$: $\mu_{adj} = 0.20 - (0.25)^2 / 2 = 0.20 - 0.03125 = 0.169$, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation).
+- μ = annualized expected return (e.g., 0.20 = 20% per year)
+- σ = annualized volatility (e.g., 0.25 = 25% per year)
+- With μ = 0.20 and σ = 0.25: μ_adj = 0.20 - (0.25)² / 2 = 0.20 - 0.03125 = 0.169, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation).
 
-c. Diffusion Component ($\sigma$): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable ($Z$):
+c. Diffusion Component (σ): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable (Z):
 
-$$S_{t+1} = S_t \exp\left(\mu_{\text{adj}} \Delta t + \sigma \sqrt{\Delta t} Z\right)$$
+**Formula:** S_(t+1) = S_t × exp(μ_adj × Δt + σ × √(Δt) × Z) — see [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation) for full derivation
 
 This discrete-time simulation formula generates one step of price evolution. Each component:
 
-- $S_t$ = current portfolio value; $S_{t+1}$ = next-period simulated value
-- $\exp(\ldots)$ ensures prices remain strictly positive regardless of the random draw — this is the "Geometric" in GBM, operating on log-returns rather than absolute dollar changes
-- $\mu_{\text{adj}} \Delta t$ = the **deterministic drift** component, where $\Delta t = \frac{1}{252}$ (one trading day). This produces a small predictable upward nudge each day
-- $\sigma \sqrt{\Delta t} \cdot Z$ = the **stochastic diffusion** component, where $Z \sim \mathcal{N}(0, 1)$ is a standard normal random variable. The $\sqrt{\Delta t}$ factor converts annualized volatility to the daily timescale (the standard square-root-of-time scaling used throughout quantitative finance)
+- S_t = current portfolio value; S_(t+1) = next-period simulated value
+- exp(...) ensures prices remain strictly positive regardless of the random draw — this is the "Geometric" in GBM, operating on log-returns rather than absolute dollar changes
+- μ_adj × Δt = the **deterministic drift** component, where Δt = 1/252 (one trading day). This produces a small predictable upward nudge each day
+- σ × √(Δt) × Z = the **stochastic diffusion** component, where Z ~ N(0,1) is a standard normal random variable. The √(Δt) factor converts annualized volatility to the daily timescale (the standard square-root-of-time scaling used throughout quantitative finance)
 
 Each simulated path chains 1,260 daily steps (5 years) to produce one possible future trajectory. Repeating this process 1,000,000 times constructs the full probability distribution of portfolio outcomes.
 
@@ -696,7 +696,7 @@ f. Statistical Convergence: While standard academic projects run 1,000 to 10,000
 
 g. Data Intensity: Projecting 1,000,000 paths over a 5-year horizon (1,260 trading days) generates a matrix containing over 1.26 billion data points. This capability acts as a dual stress test: verifying the financial strategy's robustness and demonstrating the hardware's computational capacity.
 
-h. Extreme Tail Detection: At this magnitude, the simulation can capture rare $3\sigma$ or $4\sigma$ events that smaller simulations often miss, providing a more honest view of potential catastrophic downside.
+h. Extreme Tail Detection: At this magnitude, the simulation can capture rare 3σ or 4σ events that smaller simulations often miss, providing a more honest view of potential catastrophic downside.
 
 **2. Risk Metrics & Output Analytics**
 
@@ -810,13 +810,13 @@ b. **Low-Level Weight Agent** (`rl_weight_agent.py`)
 * Output: 12-dimensional continuous softmax (portfolio weight for each asset)
 * Training: `python train_weight_agent.py` (300K timestep PPO with Differential Sharpe Reward)
 
-The **softmax** function $\frac{e^{x_i}}{\sum_j e^{x_j}}$ maps the network's raw outputs to a valid probability distribution summing to 1. For example, raw outputs $[2.0, 1.0, 0.5, \ldots]$ become approximately $[0.45, 0.22, 0.12, \ldots]$ — directly interpretable as portfolio weights.
+The **softmax** function e^xᵢ / Σⱼ e^xⱼ maps the network's raw outputs to a valid probability distribution summing to 1. For example, raw outputs [2.0, 1.0, 0.5, ...] become approximately [0.45, 0.22, 0.12, ...] — directly interpretable as portfolio weights.
 
 **2. Soft Constraint Training**
 
 Unlike traditional constrained optimization where rules are imposed post-hoc, the weight agent learns from **quadratic soft-constraint penalties** during training. It experiences the cost of violating portfolio rules (concentration limits, gold cap, crypto bounds, growth anchor floor, ineligible asset penalties) as negative reward signals, allowing it to internalize the rules rather than having decisions overwritten.
 
-The penalty is **quadratic** in the violation magnitude: a 1% overshoot incurs a penalty of $(0.01)^2 = 0.0001$, while a 20% overshoot incurs $(0.20)^2 = 0.04$ — a 400x increase. This convex penalty structure ensures the agent strongly avoids large violations while tolerating minor boundary-pushing. The **Scale** column in the table below is a multiplier on the base penalty — higher values indicate constraints the system prioritizes more aggressively.
+The penalty is **quadratic** in the violation magnitude (see [Appendix Section E](#e-proximal-policy-optimization-ppo--the-complete-math) for the full PPO math): a 1% overshoot incurs a penalty of (0.01)² = 0.0001, while a 20% overshoot incurs (0.20)² = 0.04 — a 400x increase. This convex penalty structure ensures the agent strongly avoids large violations while tolerating minor boundary-pushing. The **Scale** column in the table below is a multiplier on the base penalty — higher values indicate constraints the system prioritizes more aggressively.
 
 | Constraint | Scale | Threshold | Purpose |
 |:---|:---:|:---:|:---|
@@ -835,9 +835,9 @@ a. **Reward Clipping** [-3, +3]: Prevents the agent from exploiting training-spe
 
 Daily rewards are capped to the range [-3, +3]. Without clipping, extreme market events (e.g., a crash producing a reward of -50) would disproportionately dominate the gradient signal, biasing the agent toward excessive risk aversion. Clipping ensures that no single observation dominates the learning process.
 
-b. **Observation Noise** ($\sigma = 0.10$): Gaussian noise injected into training observations to improve generalization to unseen market conditions.
+b. **Observation Noise** (σ = 0.10): Gaussian noise injected into training observations to improve generalization to unseen market conditions.
 
-Adding $\pm 10\%$ Gaussian noise to observations during training forces the agent to learn robust policies that generalize across noisy inputs rather than memorizing exact historical values (e.g., "VIX was 22.3 on March 5, 2020"). This is a standard regularization technique — the agent must learn transferable patterns, not overfit to specific data points.
+Adding ±10% Gaussian noise (see [Appendix Section E](#e-proximal-policy-optimization-ppo--the-complete-math) for the Gaussian policy derivation) to observations during training forces the agent to learn robust policies that generalize across noisy inputs rather than memorizing exact historical values (e.g., "VIX was 22.3 on March 5, 2020"). This is a standard regularization technique — the agent must learn transferable patterns, not overfit to specific data points.
 
 c. **Learning Rate Decay**: Linear decay to 20% of initial LR by end of training, reducing late-stage memorization.
 
@@ -887,7 +887,7 @@ All metrics evaluated with training cutoff at 2024-01-01:
 **Key definitions:**
 - **IS (In-Sample):** Performance evaluated on the training period (2010-2023) — measures how well the model fits known historical data.
 - **OOS (Out-of-Sample):** Performance evaluated on data the model has never seen (2024+) — measures generalization to unseen market conditions.
-- **Sharpe Decay (IS $-$ OOS):** The difference between in-sample and out-of-sample Sharpe ratios. A positive value indicates potential overfitting, where the model performs worse on new data than on training data. The RL agent's **negative** decay of $-0.076$ indicates that the model performed *better* on unseen data than on training data — the strongest possible evidence against overfitting, suggesting the learned policy captures genuinely transferable market patterns rather than memorized historical noise.
+- **Sharpe Decay (IS − OOS):** The difference between in-sample and out-of-sample Sharpe ratios. A positive value indicates potential overfitting, where the model performs worse on new data than on training data. The RL agent's **negative** decay of −0.076 indicates that the model performed *better* on unseen data than on training data — the strongest possible evidence against overfitting, suggesting the learned policy captures genuinely transferable market patterns rather than memorized historical noise.
 
 **7. New Files**
 

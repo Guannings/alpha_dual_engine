@@ -190,15 +190,15 @@ Shannon Entropy `H(w) = -Σ wᵢ·ln(wᵢ)` quantifies weight dispersion: equal 
 
 a. Transaction Cost Calculation & Formula
 
-**Formula:** Cost = Portfolio Value × Total Turnover × Average Cost Rate (converted from basis points) — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
+**Formula:** Cost = Portfolio Value × Total Turnover × Average Cost Rate (converted from basis points) — see [Appendix Section B](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#b-the-objective-function--slsqp-solver) for full derivation
 
-This formula computes the total transaction cost per rebalance (see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation):
+This formula computes the total transaction cost per rebalance (see [Appendix Section B](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#b-the-objective-function--slsqp-solver) for full derivation):
 - V_portfolio = total portfolio value
 - |wᵢ^new - wᵢ^old| = absolute weight change per asset (e.g., SMH moving from 20% to 30% produces a change of 0.10)
 - Σᵢ |·| = total turnover across all assets
 - Cost_i^bps/10,000 = per-asset fee rate converted from basis points to decimal (1 bps = 0.01%)
 
-**Example:** A $100,000 portfolio shifting 10% into SMH (5 bps) incurs a cost of 100,000 × 0.10 × 0.0005 = 5 dollars per rebalance.
+**Example:** A \$100,000 portfolio shifting 10% into SMH (5 bps) incurs a cost of 100,000 × 0.10 × 0.0005 = 5 dollars per rebalance.
 
 *  Per-Asset Transaction Costs:
 
@@ -289,9 +289,9 @@ a. For Equities: The "Cubed Momentum" Metric
 
 * Formula:
 
-**Formula:** M_i = (Current Price / 60-day SMA)³ — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
+**Formula:** M_i = (Current Price / 60-day SMA)³ — see [Appendix Section B](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#b-the-objective-function--slsqp-solver) for full derivation
 
-The ratio (Price / 60-day SMA) measures how far the asset is above or below its recent trend (e.g., 220/200 = 1.10 means 10% above trend). The **cubing operation** nonlinearly amplifies the gap between strong and weak performers (see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation):
+The ratio (Price / 60-day SMA) measures how far the asset is above or below its recent trend (e.g., 220/200 = 1.10 means 10% above trend). The **cubing operation** nonlinearly amplifies the gap between strong and weak performers (see [Appendix Section B](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#b-the-objective-function--slsqp-solver) for full derivation):
 
 Scenario A: Asset is 2% above trend → 1.02³ ≈ 1.06
 
@@ -321,7 +321,7 @@ This produces a bounded oscillator between 0 and 100. Values above 70 indicate o
 
 This section builds the input vectors for the Machine Learning "Brain." It distills the complex market state into 7 digestible numbers:
 
-These 7 features compress the market state into a compact input vector for the ML classifier. Each feature captures a distinct dimension of market conditions (see [Appendix Section A](#a-the-xgboost-ensemble-classifier--regime-detection) for the full XGBoost derivation and how these features are used):
+These 7 features compress the market state into a compact input vector for the ML classifier. Each feature captures a distinct dimension of market conditions (see [Appendix Section A](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#a-the-xgboost-ensemble-classifier--regime-detection) for the full XGBoost derivation and how these features are used):
 
 a. **realized_vol** = VIX/100. The VIX is a number (say 22) that represents how scared the market is. Dividing by 100 just rescales it to 0.22 so the model can digest it. Higher = more fear.
 
@@ -390,7 +390,7 @@ A `max_depth=2` tree can only split twice — for example: "Is trend_score > 0?"
 
 c. The Consensus Rule:
 
-To trigger a RISK_ON signal in the absence of a Macro Override, BOTH models must agree with high conviction (Probability > 0.55). If they disagree, the system defaults to safety. See [Appendix Section A](#a-the-xgboost-ensemble-classifier--regime-detection) for the full mathematical derivation of the XGBoost classifier, log loss, and consensus logic.
+To trigger a RISK_ON signal in the absence of a Macro Override, BOTH models must agree with high conviction (Probability > 0.55). If they disagree, the system defaults to safety. See [Appendix Section A](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#a-the-xgboost-ensemble-classifier--regime-detection) for the full mathematical derivation of the XGBoost classifier, log loss, and consensus logic.
 
 This dual-model consensus acts as a confirmation filter: the gradient-boosted model (XGBoost) captures complex nonlinear patterns, while the shallow Decision Tree provides a conservative baseline. Both must independently produce a bull probability exceeding 55% for the system to enter RISK_ON. This "default to safety" design ensures the system only takes risk when two structurally different models agree that the statistical edge is significant.
 
@@ -433,7 +433,7 @@ This is not a standard "Mean-Variance" optimizer (which often produces boring, o
 
 The heart of the optimizer is the function it tries to minimize:
 
-**Formula:** L(w) = λ_risk × w^T Σ w - λ_mom × (w · M) - λ_entropy × H(w) — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
+**Formula:** L(w) = λ_risk × w^T Σ w - λ_mom × (w · M) - λ_entropy × H(w) — see [Appendix Section B](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#b-the-objective-function--slsqp-solver) for full derivation
 
 This objective function balances three competing goals — minimize risk, maximize momentum exposure, and maintain diversification — through a single scalar that the SLSQP solver minimizes. The full mathematical derivation is provided in Appendix Section B.
 
@@ -452,7 +452,7 @@ w · M is the dot product of weights and cubed momentum scores. Since the optimi
 
 **Term 3: Entropy** — -λ_entropy · H(w) (maximized via negation)
 
-H(w) = -Σᵢ wᵢ ln(wᵢ) is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum (ln(12) ≈ 2.48) when equally distributed. The coefficient λ_entropy = 0.02 is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section C: Shannon Entropy](#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
+H(w) = -Σᵢ wᵢ ln(wᵢ) is Shannon Entropy, measuring weight dispersion. Entropy equals 0 when fully concentrated and reaches its maximum (ln(12) ≈ 2.48) when equally distributed. The coefficient λ_entropy = 0.02 is deliberately small — a soft diversification nudge that prevents extreme concentration without overriding momentum signals. For a detailed derivation of Shannon Entropy and the Effective N metric, see [Section C: Shannon Entropy](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#c-shannon-entropy--from-information-theory-to-portfolio-diversification).
 
 **Net effect:** The optimizer produces aggressive, momentum-driven portfolios concentrated in the top 3-4 trending assets, while the entropy term and bound constraints prevent full single-asset concentration.
 
@@ -484,7 +484,7 @@ After finding a candidate portfolio, the optimizer runs a "Sanity Check" using t
 
 Effective N quantifies the number of independent positions the portfolio is effectively exposed to:
 
-**Formula:** N_eff = 1 / (sum of w_i²) — see [Appendix Section C](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) for full derivation
+**Formula:** N_eff = 1 / (sum of w_i²) — see [Appendix Section C](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#c-shannon-entropy--from-information-theory-to-portfolio-diversification) for full derivation
 
 - 100% in one asset: 1/1.0² = 1.0 — effectively 1 position.
 - 50%/50% split: 1/(0.5² + 0.5²) = 1/0.50 = 2.0 — effectively 2 positions.
@@ -529,7 +529,7 @@ This is the critical logic block implemented in v154.6 to solve the "Churn Probl
 
 a. Logic: Inside the main loop, before executing any rebalance, the engine calculates the Proposed Turnover:
 
-**Formula:** Turnover = sum of |w_i_new - w_i_old| — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for full derivation
+**Formula:** Turnover = sum of |w_i_new - w_i_old| — see [Appendix Section B](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#b-the-objective-function--slsqp-solver) for full derivation
 
 Turnover is the sum of absolute weight changes across all assets — it quantifies the total portfolio reallocation. For example, if SMH shifts from 25% to 30% (+5%) and QQQ from 20% to 15% (-5%), total turnover is 0.05 + 0.05 = 0.10 (10%). If turnover falls below the 12% threshold, the rebalance is suppressed as the expected fee drag exceeds the benefit.
 
@@ -547,13 +547,13 @@ If the Regime does change (e.g., Bullish to Defensive): The Gate is lifted. Safe
 
 The engine uses a tiered, per-asset transaction cost model that reflects real-world trading friction. Each asset has its own cost in basis points (see the fee table in Section I.2), ranging from 1 bps for the most liquid bond ETFs to 30 bps for cryptocurrency. The cost for each rebalance is calculated as:
 
-**Formula:** Cost = Portfolio Value × Total Turnover × Average Cost Rate (converted from basis points) — see [Appendix Section B](#b-the-objective-function--slsqp-solver) for the full mathematical derivation
+**Formula:** Cost = Portfolio Value × Total Turnover × Average Cost Rate (converted from basis points) — see [Appendix Section B](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#b-the-objective-function--slsqp-solver) for the full mathematical derivation
 
 The formula is identical to Section I.2: portfolio value multiplied by absolute weight changes multiplied by the per-asset fee rate. The tiered structure creates an implicit incentive against high-frequency crypto rebalancing — at 30 bps, cryptocurrency is 30x more expensive to trade than SHY (1 bps).
 
 This penalizes high-turnover strategies proportionally to the actual friction of the assets being traded, rewarding the "Lazy" approach mandated by the Fee Guillotine.
 
-To prevent the optimizer from putting 100% of the capital into a single "best" stock (a common flaw in traditional optimization), the system uses Shannon Entropy as an additional diversity penalty in the objective function (see [Appendix Section C](#c-shannon-entropy--from-information-theory-to-portfolio-diversification) for the full entropy derivation).
+To prevent the optimizer from putting 100% of the capital into a single "best" stock (a common flaw in traditional optimization), the system uses Shannon Entropy as an additional diversity penalty in the objective function (see [Appendix Section C](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#c-shannon-entropy--from-information-theory-to-portfolio-diversification) for the full entropy derivation).
 
 **4. The "Sniper Score"**
 
@@ -667,17 +667,17 @@ a. Mathematical Foundation: The simulator utilizes Geometric Brownian Motion, th
 
 b. Drift Component (μ): The engine calculates the annualized drift based on the portfolio's optimized weighted returns from the backtest, adjusted for volatility drag:
 
-**Formula:** μ_adj = μ - (1/2)σ² — see [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation) for full derivation
+**Formula:** μ_adj = μ - (1/2)σ² — see [Appendix Section D](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#d-geometric-brownian-motion--the-complete-derivation) for full derivation
 
 This adjustment accounts for **volatility drag** — the mathematical asymmetry where symmetric percentage gains and losses do not cancel out. For example, a +50% gain followed by a -50% loss does not return to breakeven: 100 → 150 → 75 (a net 25% loss). The σ²/2 correction subtracts this drag from the raw expected return.
 
 - μ = annualized expected return (e.g., 0.20 = 20% per year)
 - σ = annualized volatility (e.g., 0.25 = 25% per year)
-- With μ = 0.20 and σ = 0.25: μ_adj = 0.20 - (0.25)² / 2 = 0.20 - 0.03125 = 0.169, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation).
+- With μ = 0.20 and σ = 0.25: μ_adj = 0.20 - (0.25)² / 2 = 0.20 - 0.03125 = 0.169, reducing the effective growth rate to approximately 16.9%. The full derivation via Ito's Lemma is provided in [Appendix Section D](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#d-geometric-brownian-motion--the-complete-derivation).
 
 c. Diffusion Component (σ): Volatility is modeled as a random walk, scaled by the annualized standard deviation of the portfolio and a standard normal random variable (Z):
 
-**Formula:** S_(t+1) = S_t × exp(μ_adj × Δt + σ × √(Δt) × Z) — see [Appendix Section D](#d-geometric-brownian-motion--the-complete-derivation) for full derivation
+**Formula:** S_(t+1) = S_t × exp(μ_adj × Δt + σ × √(Δt) × Z) — see [Appendix Section D](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#d-geometric-brownian-motion--the-complete-derivation) for full derivation
 
 This discrete-time simulation formula generates one step of price evolution. Each component:
 
@@ -788,7 +788,7 @@ The Alpha Dual Engine now includes an optional **Hierarchical RL** system that r
 
 **1. Architecture: Two-Level PPO Hierarchy**
 
-The system operates as a principal-agent hierarchy. The high-level **Regime Agent** selects the macro strategy (RISK_ON / RISK_REDUCED / DEFENSIVE) based on market conditions. The low-level **Weight Agent** then allocates portfolio weights conditioned on that regime decision. Both agents are trained using **Proximal Policy Optimization (PPO)** — an on-policy actor-critic algorithm that stabilizes learning by clipping policy updates to prevent catastrophic forgetting. The full mathematical derivation of PPO is provided in [Appendix Section E](#e-proximal-policy-optimization-ppo--the-complete-math).
+The system operates as a principal-agent hierarchy. The high-level **Regime Agent** selects the macro strategy (RISK_ON / RISK_REDUCED / DEFENSIVE) based on market conditions. The low-level **Weight Agent** then allocates portfolio weights conditioned on that regime decision. Both agents are trained using **Proximal Policy Optimization (PPO)** — an on-policy actor-critic algorithm that stabilizes learning by clipping policy updates to prevent catastrophic forgetting. The full mathematical derivation of PPO is provided in [Appendix Section E](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#e-proximal-policy-optimization-ppo--the-complete-math).
 
 **Key terminology:**
 - **PPO (Proximal Policy Optimization):** "Policy" refers to the agent's decision-making function. "Proximal" constrains how much the policy can change per update, ensuring stable convergence.
@@ -816,7 +816,7 @@ The **softmax** function e^xᵢ / Σⱼ e^xⱼ maps the network's raw outputs to
 
 Unlike traditional constrained optimization where rules are imposed post-hoc, the weight agent learns from **quadratic soft-constraint penalties** during training. It experiences the cost of violating portfolio rules (concentration limits, gold cap, crypto bounds, growth anchor floor, ineligible asset penalties) as negative reward signals, allowing it to internalize the rules rather than having decisions overwritten.
 
-The penalty is **quadratic** in the violation magnitude (see [Appendix Section E](#e-proximal-policy-optimization-ppo--the-complete-math) for the full PPO math): a 1% overshoot incurs a penalty of (0.01)² = 0.0001, while a 20% overshoot incurs (0.20)² = 0.04 — a 400x increase. This convex penalty structure ensures the agent strongly avoids large violations while tolerating minor boundary-pushing. The **Scale** column in the table below is a multiplier on the base penalty — higher values indicate constraints the system prioritizes more aggressively.
+The penalty is **quadratic** in the violation magnitude (see [Appendix Section E](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#e-proximal-policy-optimization-ppo--the-complete-math) for the full PPO math): a 1% overshoot incurs a penalty of (0.01)² = 0.0001, while a 20% overshoot incurs (0.20)² = 0.04 — a 400x increase. This convex penalty structure ensures the agent strongly avoids large violations while tolerating minor boundary-pushing. The **Scale** column in the table below is a multiplier on the base penalty — higher values indicate constraints the system prioritizes more aggressively.
 
 | Constraint | Scale | Threshold | Purpose |
 |:---|:---:|:---:|:---|
@@ -837,7 +837,7 @@ Daily rewards are capped to the range [-3, +3]. Without clipping, extreme market
 
 b. **Observation Noise** (σ = 0.10): Gaussian noise injected into training observations to improve generalization to unseen market conditions.
 
-Adding ±10% Gaussian noise (see [Appendix Section E](#e-proximal-policy-optimization-ppo--the-complete-math) for the Gaussian policy derivation) to observations during training forces the agent to learn robust policies that generalize across noisy inputs rather than memorizing exact historical values (e.g., "VIX was 22.3 on March 5, 2020"). This is a standard regularization technique — the agent must learn transferable patterns, not overfit to specific data points.
+Adding ±10% Gaussian noise (see [Appendix Section E](https://github.com/Guannings/alpha_dual_engine/wiki/Mathematical-Foundations#e-proximal-policy-optimization-ppo--the-complete-math) for the Gaussian policy derivation) to observations during training forces the agent to learn robust policies that generalize across noisy inputs rather than memorizing exact historical values (e.g., "VIX was 22.3 on March 5, 2020"). This is a standard regularization technique — the agent must learn transferable patterns, not overfit to specific data points.
 
 c. **Learning Rate Decay**: Linear decay to 20% of initial LR by end of training, reducing late-stage memorization.
 

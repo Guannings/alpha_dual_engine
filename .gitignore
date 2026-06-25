@@ -5,3 +5,8 @@ INTERVIEW_PREP.md
 SESSION_STATE.md
 debug_*.py
 generate_*.py
+
+# Competition bot lives in its own PRIVATE repo (Guannings/taifex-competition-bot) — never publish here
+competition/
+competition_bot.log
+.fuse_hidden*

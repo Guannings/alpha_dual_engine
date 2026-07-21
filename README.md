@@ -36,6 +36,10 @@ pip install -r requirements.txt
 
 ### 4. Launching the Dashboard (Choose One Method)
 
+> **Which file is the app?** The main dashboard is **`alpha_engine.py`** — the ⚙️ live strategy runner with configurable sliders and the Monte Carlo stress test. This is what every method below launches.
+>
+> `app.py` is a **separate, optional** dashboard for comparing saved training checkpoints (the "Scorecard" view). It is **not** the primary app — run it only if you specifically want the checkpoint comparison, via `streamlit run app.py`.
+
 Method A: The "One-Click" Launch (Recommended) Best for first-time setup. This script automatically handles the build, cache-clearing, and port mapping to ensure the 1M simulations work correctly.
 
 ```bash
@@ -59,6 +63,17 @@ docker build --no-cache -t alpha-dual_engine .
 # 2. Run the Container
 docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dual_engine
 ```
+
+Method C: Run Locally Without Docker Best for quick iteration if you already have Python 3.9+ and the dependencies installed (Step 3). No build step required.
+
+```bash
+# Launch the primary dashboard directly
+streamlit run alpha_engine.py
+```
+
+Then open **http://localhost:8501** in your browser.
+
+> **Note on results:** `alpha_engine.py` downloads **live market data** (via `yfinance`, from 2010 to today) on every run, so backtest numbers will shift over time as new market data arrives. This is expected — it is not a bug.
 
 ### Troubleshooting & Best Practices
 #### **1. Avoid System Folders (Windows Users)**

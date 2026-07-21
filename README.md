@@ -1,77 +1,81 @@
-# **How to Run the Docker File**
+# **How to Run**
 
-This project is fully containerized to ensure reproducibility.
+There are two ways to run this project. Pick the one that fits you:
 
-**It runs consistently on whatever software environment using Docker.**
+- **[Option A — With Docker](#option-a--with-docker)** (recommended): fully containerized, no Python setup, guaranteed reproducibility.
+- **[Option B — Without Docker](#option-b--without-docker)**: run directly with your own Python — fastest for quick iteration.
 
-### 1. Prerequisites
-**a. Docker Desktop (The Environment)**
-
-  Installed and running ([Download here if you don't have one](https://www.docker.com/products/docker-desktop/))
-
-**b. Git (The Code Downloader)**
-
-  Check if you have it by typing `git --version` in your terminal. If not installed:
-
-   **macOS:** Open Terminal and type `xcode-select --install` or download from [git-scm.com](https://git-scm.com/download/mac).
-
-   **Windows:** Download and install **Git for Windows** from [gitforwindows.org](https://gitforwindows.org/).
-
-   **Linux:** Run `sudo apt-get install git` (Debian/Ubuntu).
-
-
-### 2. Installation
-Open your terminal (or Command Prompt) and run:
-
-```bash
-# Clone the repository
-git clone https://github.com/Guannings/alpha_dual_engine.git
-```
-
-### 3. Enter the project folder and install dependencies
-```bash
-cd alpha_dual_engine
-pip install -r requirements.txt
-```
-
-### 4. Launching the Dashboard (Choose One Method)
-
-> **Which file is the app?** The main dashboard is **`alpha_engine.py`** — the ⚙️ live strategy runner with configurable sliders and the Monte Carlo stress test. This is what every method below launches.
+> **Which file is the app?** The main dashboard is **`alpha_engine.py`** — the ⚙️ live strategy runner with configurable sliders and the Monte Carlo stress test. This is what both options launch.
 >
 > `app.py` is a **separate, optional** dashboard for comparing saved training checkpoints (the "Scorecard" view). It is **not** the primary app — run it only if you specifically want the checkpoint comparison, via `streamlit run app.py`.
 
-Method A: The "One-Click" Launch (Recommended) Best for first-time setup. This script automatically handles the build, cache-clearing, and port mapping to ensure the 1M simulations work correctly.
+---
 
+## Option A — With Docker
+
+Fully containerized to ensure reproducibility. Runs consistently on any OS.
+
+### Prerequisites
+- **Docker Desktop** — installed and running ([download](https://www.docker.com/products/docker-desktop/)).
+- **Git** — check with `git --version`. If missing:
+  - **macOS:** `xcode-select --install`, or download from [git-scm.com](https://git-scm.com/download/mac).
+  - **Windows:** install **Git for Windows** from [gitforwindows.org](https://gitforwindows.org/).
+  - **Linux:** `sudo apt-get install git` (Debian/Ubuntu).
+
+### Steps
+
+**1. Clone and enter the project**
 ```bash
-# 1. Make the script executable (only needed once)
-chmod +x run_app.sh
+git clone https://github.com/Guannings/alpha_dual_engine.git
+cd alpha_dual_engine
 ```
 
+**2. Launch — the "one-click" way (recommended)**
+This script handles the build, cache-clearing, and port mapping automatically so the 1M simulations work correctly.
 ```bash
-# 2. Launch the App
+chmod +x run_app.sh    # only needed once
 ./run_app.sh
 ```
 
-Method B: Manual Build & Run (Advanced) Use this if you want to configure specific ports or debug the Dockerfile manually.
-
+**2. (Alternative) Manual build & run** — use this if you want to configure ports or debug the Dockerfile.
 ```bash
-# 1. Build the Image (Force fresh build)
 docker build --no-cache -t alpha-dual_engine .
-```
-
-```bash
-# 2. Run the Container
 docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dual_engine
 ```
 
-Method C: Run Locally Without Docker Best for quick iteration if you already have Python 3.9+ and the dependencies installed (Step 3). No build step required.
+**3. Open the dashboard** at **http://localhost:8501**.
 
+---
+
+## Option B — Without Docker
+
+Fastest for quick iteration if you already have Python. No build step.
+
+### Prerequisites
+- **Python 3.9+** — check with `python --version`.
+- **Git** — see the install notes under Option A.
+
+### Steps
+
+**1. Clone and enter the project**
 ```bash
-# Launch the primary dashboard directly
+git clone https://github.com/Guannings/alpha_dual_engine.git
+cd alpha_dual_engine
+```
+
+**2. Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+**3. Launch the primary dashboard**
+```bash
 streamlit run alpha_engine.py
 ```
 
-Then open **http://localhost:8501** in your browser.
+**4. Open the dashboard** at **http://localhost:8501**.
+
+---
 
 > **Note on results:** `alpha_engine.py` downloads **live market data** (via `yfinance`, from 2010 to today) on every run, so backtest numbers will shift over time as new market data arrives. This is expected — it is not a bug.
 
@@ -86,7 +90,7 @@ cd ~
 # Then go to your desktop:
 cd Desktop
 ```
-Then proceed with **2. Installation** and its following commands.
+Then proceed with the **Steps** under your chosen option (A or B) above.
 
 #### **2. Case Sensitivity & Folder Names**
 If you encounter a "Path not found" error when using `cd`, ensure you are matching the exact capitalization of the repository:

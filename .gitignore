@@ -10,3 +10,7 @@ generate_*.py
 competition/
 competition_bot.log
 .fuse_hidden*
+
+# Editor settings and large local screenshots
+.vscode/
+*.png

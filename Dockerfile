@@ -1,4 +1,6 @@
-FROM python:3.9-slim
+# 3.11-slim (Debian bookworm, glibc 2.36): mlx only ships wheels for
+# Python >= 3.10 and glibc >= 2.35 — the build fails on python:3.9-slim.
+FROM python:3.11-slim
 
 WORKDIR /app
 

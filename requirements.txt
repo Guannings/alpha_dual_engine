@@ -9,5 +9,7 @@ shap
 matplotlib
 seaborn
 plotly
-mlx
+# [cpu] pulls the mlx-cpu backend on Linux (plain "mlx" there is only a shell
+# missing libmlx.so); on macOS the extra is a no-op and mlx-metal is used.
+mlx[cpu]
 gymnasium>=0.29.0

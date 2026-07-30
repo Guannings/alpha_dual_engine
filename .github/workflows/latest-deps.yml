@@ -1,0 +1,28 @@
+# Early-warning canary: runs the test suite against the LATEST versions of
+# every dependency (ignoring the pins in requirements.txt). When this job
+# starts failing, a future library release (like pandas 3.0, which broke the
+# first cloud deploy) is incompatible — fix at leisure before ever unpinning.
+name: Latest-deps canary
+
+on:
+  schedule:
+    - cron: "0 5 * * 1" # Mondays 05:00 UTC
+  workflow_dispatch:
+
+jobs:
+  test-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install everything at latest versions
+        run: |
+          pip install -r requirements.txt pytest
+          pip install -U streamlit yfinance pandas numpy scipy scikit-learn \
+            xgboost shap matplotlib seaborn "mlx[cpu]" gymnasium joblib
+      - name: Show resolved versions
+        run: pip list | grep -Ei "pandas|numpy|scipy|sklearn|scikit|xgboost|shap|streamlit|mlx"
+      - name: Run tests against latest deps
+        run: python -m pytest tests/ -v

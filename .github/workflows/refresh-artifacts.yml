@@ -1,0 +1,38 @@
+# Retrains the classifier on current market data and commits the artifact
+# that alpha_engine.py loads on startup. Keeps the Streamlit Cloud demo's
+# cold starts fast (the artifact is only trusted while < 10 days old, so
+# this must run at least weekly). The push also triggers a demo redeploy.
+name: Refresh classifier artifact
+
+on:
+  schedule:
+    - cron: "30 2 * * 1" # Mondays 02:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Retrain and write artifact
+        run: python tools/refresh_artifacts.py
+      - name: Commit artifact if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add artifacts/classifier_cache.joblib
+          if git diff --cached --quiet; then
+            echo "Artifact unchanged — nothing to commit."
+          else
+            git commit -m "Refresh classifier artifact (weekly retrain)"
+            git push
+          fi

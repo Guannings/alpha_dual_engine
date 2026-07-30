@@ -40,8 +40,16 @@ from dataclasses import dataclass
 import logging
 import io
 import sys
+import threading
 
 import streamlit as st
+
+# One-at-a-time gate for anything that touches MLX plus the heavy compute
+# sections. Streamlit starts each rerun on a new thread while the previous one
+# may still be mid-backtest; MLX is not thread-safe (concurrent evals from two
+# threads segfault — verified on both the Metal and CPU backends), so every
+# model load and inference path must hold this lock.
+_COMPUTE_LOCK = threading.RLock()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -1562,8 +1570,10 @@ class MonteCarloSimulator:
         self.n_days = projection_years * 252
         self.risk_free_rate = risk_free_rate
 
-        # We only store full paths for a small subset to save RAM
-        self.n_display_paths = 10000
+        # We only store full paths for a small subset to save RAM.
+        # Capped at n_simulations: slicing current_values[:n_display_paths]
+        # would otherwise raise a shape mismatch when fewer sims are requested.
+        self.n_display_paths = min(10000, n_simulations)
         self.display_paths: Optional[np.ndarray] = None
 
         self.ending_values: Optional[np.ndarray] = None
@@ -2016,82 +2026,88 @@ def main():
     st.title("🎯 Alpha Dual Engine v154.6")
     st.markdown("**IR Filter + Growth Anchor + Regularized ML**")
 
-    ml_threshold = st.sidebar.slider(
-        "ML Threshold",
-        min_value=0.40,
-        max_value=0.80,
-        value=0.55,
-        step=0.01,
-        key="ml_threshold_v2",
-        help="Probability threshold for RISK_ON regime classification"
-    )
+    # All controls live inside a form: adjusting them does NOT rerun the app.
+    # The (multi-minute) pipeline only reruns when "Apply & Run" is pressed,
+    # so slider drags can no longer stack up overlapping compute threads.
+    with st.sidebar.form("strategy_config"):
+        ml_threshold = st.slider(
+            "ML Threshold",
+            min_value=0.40,
+            max_value=0.80,
+            value=0.55,
+            step=0.01,
+            key="ml_threshold_v2",
+            help="Probability threshold for RISK_ON regime classification"
+        )
 
-    min_growth_anchor = st.sidebar.slider(
-        "Min Growth Anchor Weight",
-        min_value=0.10,
-        max_value=0.80,
-        value=0.40,
-        step=0.05,
-        key="min_growth_anchor_v2",
-        help="Minimum combined weight for SMH+XBI+TAN+IGV in RISK_ON"
-    )
+        min_growth_anchor = st.slider(
+            "Min Growth Anchor Weight",
+            min_value=0.10,
+            max_value=0.80,
+            value=0.40,
+            step=0.05,
+            key="min_growth_anchor_v2",
+            help="Minimum combined weight for SMH+XBI+TAN+IGV in RISK_ON"
+        )
 
-    n_simulations = st.sidebar.number_input(
-        "Monte Carlo Simulations (Change If you Wish)",
-        min_value=1000,
-        max_value=1000000,
-        value=1000000,
-        step=10000,
-        key="montecarlo_v4",  # <--- ADDED UNIQUE KEY (This breaks the cache)
-        help="Number of Monte Carlo simulations for stress testing"
-    )
+        n_simulations = st.number_input(
+            "Monte Carlo Simulations (Change If you Wish)",
+            min_value=1000,
+            max_value=1000000,
+            value=1000000,
+            step=10000,
+            key="montecarlo_v4",
+            help="Number of Monte Carlo simulations for stress testing"
+        )
 
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### Advanced Settings")
+        st.markdown("---")
+        st.markdown("### Advanced Settings")
 
-    use_rl_agent = st.sidebar.checkbox(
-        "Use RL Agent (PPO)",
-        value=False,
-        key="use_rl_agent",
-        help="Replace rule-based regime classifier with trained PPO agent (MLX)"
-    )
+        use_rl_agent = st.checkbox(
+            "Use RL Agent (PPO)",
+            value=False,
+            key="use_rl_agent",
+            help="Replace rule-based regime classifier with trained PPO agent (MLX)"
+        )
 
-    use_hierarchical_rl = st.sidebar.checkbox(
-        "Use Hierarchical RL (Regime + Weights)",
-        value=False,
-        key="use_hierarchical_rl",
-        help="Both RL agents: high-level regime + low-level weights"
-    )
+        use_hierarchical_rl = st.checkbox(
+            "Use Hierarchical RL (Regime + Weights)",
+            value=False,
+            key="use_hierarchical_rl",
+            help="Both RL agents: high-level regime + low-level weights"
+        )
 
-    ir_threshold = st.sidebar.slider(
-        "IR Threshold",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.5,
-        step=0.05,
-        key="ir_threshold_v2",
-        help="Information Ratio threshold for asset eligibility"
-    )
+        ir_threshold = st.slider(
+            "IR Threshold",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.5,
+            step=0.05,
+            key="ir_threshold_v2",
+            help="Information Ratio threshold for asset eligibility"
+        )
 
-    gold_cap = st.sidebar.slider(
-        "Gold Cap (Risk On)",
-        min_value=0.0,
-        max_value=0.20,
-        value=0.01,
-        step=0.01,
-        key="gold_cap_v2",
-        help="Maximum gold allocation in RISK_ON regime"
-    )
+        gold_cap = st.slider(
+            "Gold Cap (Risk On)",
+            min_value=0.0,
+            max_value=0.20,
+            value=0.01,
+            step=0.01,
+            key="gold_cap_v2",
+            help="Maximum gold allocation in RISK_ON regime"
+        )
 
-    turnover_penalty = st.sidebar.slider(
-        "Turnover Penalty",
-        min_value=0.0,
-        max_value=5.0,
-        value=0.3,
-        step=0.1,
-        key="turnover_penalty_v2",
-        help="Penalty multiplier for portfolio turnover"
-    )
+        turnover_penalty = st.slider(
+            "Turnover Penalty",
+            min_value=0.0,
+            max_value=5.0,
+            value=0.3,
+            step=0.1,
+            key="turnover_penalty_v2",
+            help="Penalty multiplier for portfolio turnover"
+        )
+
+        st.form_submit_button("▶ Apply & Run", use_container_width=True)
 
     # Create config with sidebar values
     config = StrategyConfig(
@@ -2139,7 +2155,8 @@ def main():
 
     if use_hierarchical_rl:
         from rl_weight_agent import HierarchicalRLController
-        hier_controller = HierarchicalRLController(config=config)
+        with _COMPUTE_LOCK:
+            hier_controller = HierarchicalRLController(config=config)
         if hier_controller.regime_agent.model is not None and hier_controller.weight_agent.model is not None:
             # Keep baseline XGBoost ml_probs (don't overwrite with 0.5 stub)
             # Real ml_probs flow to get_regime() for consensus filtering
@@ -2153,10 +2170,12 @@ def main():
             st.warning(f"Missing trained models: {', '.join(missing)}. Falling back to rule-based.")
     elif use_rl_agent:
         from rl_regime_agent import RLRegimeClassifier
-        rl_classifier = RLRegimeClassifier(config=config)
+        with _COMPUTE_LOCK:
+            rl_classifier = RLRegimeClassifier(config=config)
         if rl_classifier.model is not None:
             # RL classifier produces its own ml_probs stub (constant 0.5)
-            ml_probs = rl_classifier.walk_forward_train(features, returns['SPY'])
+            with _COMPUTE_LOCK:
+                ml_probs = rl_classifier.walk_forward_train(features, returns['SPY'])
             classifier = rl_classifier
         else:
             st.warning("No trained RL model found. Run `python rl_regime_agent.py --train 100000` first. Falling back to rule-based.")
@@ -2164,7 +2183,7 @@ def main():
     # ==========================================================================
     # RUN BACKTEST
     # ==========================================================================
-    with st.spinner("📊 Running backtest..."):
+    with st.spinner("📊 Running backtest..."), _COMPUTE_LOCK:
         optimizer = AlphaDominatorOptimizer(dm.all_tickers, categories, config)
 
         if hasattr(classifier, 'set_backtest_context'):
@@ -2187,7 +2206,7 @@ def main():
     # Run baseline comparison backtest when RL is active
     baseline_metrics = None
     if use_rl_agent or use_hierarchical_rl:
-        with st.spinner("Running baseline comparison..."):
+        with st.spinner("Running baseline comparison..."), _COMPUTE_LOCK:
             baseline_engine = BacktestEngine(config)
             baseline_results = baseline_engine.run(
                 prices, returns, features, baseline_ml_probs, sma_200, above_sma,
@@ -2303,7 +2322,7 @@ def main():
             st.caption("GBM projection using final portfolio weights and recent return statistics")
         st.write(f"Running {n_simulations:,} simulations over 5 years...")
 
-        with st.spinner("Running Monte Carlo simulation..."):
+        with st.spinner("Running Monte Carlo simulation..."), _COMPUTE_LOCK:
             mc = MonteCarloSimulator(
                 n_simulations=n_simulations,
                 projection_years=5,
@@ -2327,7 +2346,9 @@ def main():
             st.metric("Prob. of Loss", f"{mc_stats['prob_loss']:.1%}")
 
         st.markdown("### Simulation Paths")
-        paths_fig = mc.get_paths_figure(n_display=100000)
+        # 2,000 drawn lines keeps the fan visually dense; 10,000+ makes
+        # matplotlib take minutes and hundreds of MB to render one chart.
+        paths_fig = mc.get_paths_figure(n_display=2000)
         if paths_fig:
             st.pyplot(paths_fig)
             plt.close(paths_fig)
@@ -2657,7 +2678,7 @@ def main():
             run_ablation = st.checkbox("Run ablation test (takes ~10 seconds)", key="run_ablation")
 
             if run_ablation:
-                with st.spinner("Running ablation backtests (Random + Equal weight baselines)..."):
+                with st.spinner("Running ablation backtests (Random + Equal weight baselines)..."), _COMPUTE_LOCK:
                     from rl_weight_agent import HierarchicalRLController as _HRL
 
                     class _RandomModel:

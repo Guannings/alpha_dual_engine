@@ -49,6 +49,11 @@ import mlx.core as mx
 import mlx.nn as nn
 import mlx.optimizers as optim
 
+# Run MLX on CPU: the Metal (GPU) backend segfaults when two Streamlit rerun
+# threads evaluate concurrently, and these MLPs are too small to benefit from
+# the GPU anyway (per-op dispatch overhead exceeds the compute).
+mx.set_default_device(mx.cpu)
+
 WEIGHT_MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "rl_weight_ppo")
 
 REGIME_MAP = {0: 'RISK_ON', 1: 'RISK_REDUCED', 2: 'DEFENSIVE'}

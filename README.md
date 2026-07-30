@@ -1,3 +1,13 @@
+# 🌐 **Live Demo**
+
+[![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://alpha-dual-engine.streamlit.app)
+
+**Try the dashboard in your browser — no installation:** **[alpha-dual-engine.streamlit.app](https://alpha-dual-engine.streamlit.app)**
+
+> The hosted demo runs on Streamlit Community Cloud's free tier (1 GB RAM, shared CPU), so Monte Carlo simulations are capped at 100k there and the first load after a period of inactivity takes a few minutes while data downloads and the classifier trains. Clone the repo (below) for the full 1,000,000-simulation configuration.
+
+---
+
 # **How to Run**
 
 There are two ways to run this project. Pick the one that fits you:

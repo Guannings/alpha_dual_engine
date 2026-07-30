@@ -52,7 +52,7 @@ docker run --rm --dns 8.8.8.8 -p 8501:8501 alpha-dual_engine
 Fastest for quick iteration if you already have Python. No build step.
 
 ### Prerequisites
-- **Python 3.9+** — check with `python --version`.
+- **Python 3.10+** — check with `python --version`. (3.9 still runs the core strategy, but the RL features are disabled: MLX ships no wheels below 3.10.)
 - **Git** — see the install notes under Option A.
 
 ### Steps
@@ -101,6 +101,9 @@ cd alpha_dual_engine
 
 #### **3. Port Conflicts:**
 **If port 8501 is busy, simply use Option B above to map it to a different local port (replace the first `8501` before the colon with a port number of your choice, e.g. `-p 9000:8501`).**
+
+#### **4. RL checkboxes greyed out?**
+The two RL options ("Use RL Agent" / "Use Hierarchical RL") require the **MLX** backend, which only installs on **Python 3.10+** (and, on macOS, only Apple Silicon). On unsupported systems `pip install -r requirements.txt` skips MLX automatically (via pip environment markers) and the dashboard detects this at startup, disabling the RL checkboxes with an explanatory note. The rule-based strategy — the default configuration — is unaffected.
 
 ====================================================================================
 
@@ -731,7 +734,7 @@ b. Distribution Histograms: It plots the frequency distribution of both CAGR and
 
 **VIII. Main Execution**
 
-The main() function is the entry point that transforms the complex backend logic into an interactive, visual command center. It leverages the Streamlit library to create a browser-based dashboard that allows users to monitor, configure, and stress-test the strategy in real-time without touching the raw Python code.
+The main() function is the entry point that transforms the complex backend logic into an interactive, visual command center. It leverages the Streamlit library to create a browser-based dashboard that allows users to monitor, configure, and stress-test the strategy without touching the raw Python code. Sidebar parameters are grouped in a form: adjust them freely, then press **▶ Apply & Run** to launch the pipeline — individual slider movements do not trigger recomputation.
 
 This interface is designed for transparency and control, bridging the gap between a black-box algorithm and a human portfolio manager.
 
@@ -817,7 +820,7 @@ The system operates as a principal-agent hierarchy. The high-level **Regime Agen
 a. **High-Level Regime Agent** (`rl_regime_agent.py`)
 
 * Architecture: 2x64 MLP Actor-Critic trained with Proximal Policy Optimization (PPO)
-* Backend: MLX (Apple Silicon native — no CUDA dependency)
+* Backend: MLX (Apple-designed ML framework; inference runs on the CPU backend on all platforms — no CUDA dependency, requires Python 3.10+)
 * Input: 7-dimensional macro feature vector (VIX, SPY momentum, trend score, ML probability, drawdown, vol momentum, equity risk premium)
 * Output: Discrete action space — RISK_ON / RISK_REDUCED / DEFENSIVE
 * Training: `python train_100k.py` (100K timestep PPO on historical regime labels)

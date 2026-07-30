@@ -40,9 +40,22 @@ from dataclasses import dataclass
 import logging
 import io
 import sys
+import platform
 import threading
 
 import streamlit as st
+
+# Can the MLX backend actually load on this machine? Trying the import answers
+# more than checking the OS name: it also catches Intel Macs, Python < 3.10,
+# and a half-installed mlx (binding present but backend library missing).
+# When it fails, the RL checkboxes are disabled and everything else still runs.
+try:
+    import mlx.core as _mlx_probe  # noqa: F401
+    RL_BACKEND_AVAILABLE = True
+    RL_BACKEND_ERROR = ""
+except Exception as _mlx_err:  # ImportError, or OSError for missing libmlx
+    RL_BACKEND_AVAILABLE = False
+    RL_BACKEND_ERROR = str(_mlx_err)
 
 # One-at-a-time gate for anything that touches MLX plus the heavy compute
 # sections. Streamlit starts each rerun on a new thread while the previous one
@@ -2067,6 +2080,7 @@ def main():
             "Use RL Agent (PPO)",
             value=False,
             key="use_rl_agent",
+            disabled=not RL_BACKEND_AVAILABLE,
             help="Replace rule-based regime classifier with trained PPO agent (MLX)"
         )
 
@@ -2074,8 +2088,18 @@ def main():
             "Use Hierarchical RL (Regime + Weights)",
             value=False,
             key="use_hierarchical_rl",
+            disabled=not RL_BACKEND_AVAILABLE,
             help="Both RL agents: high-level regime + low-level weights"
         )
+
+        if not RL_BACKEND_AVAILABLE:
+            st.caption(
+                f"🚫 RL options disabled — the MLX backend cannot load on this "
+                f"system ({platform.system()} {platform.machine()}, "
+                f"Python {platform.python_version()}): {RL_BACKEND_ERROR}. "
+                f'Requires Python 3.10+ and `pip install "mlx[cpu]"`. '
+                f"The rule-based strategy below is unaffected."
+            )
 
         ir_threshold = st.slider(
             "IR Threshold",
@@ -2108,6 +2132,11 @@ def main():
         )
 
         st.form_submit_button("▶ Apply & Run", use_container_width=True)
+
+    # Hard guard: never enter the RL code paths (which import mlx) when the
+    # backend is unavailable, even if session state carries a stale True.
+    use_rl_agent = use_rl_agent and RL_BACKEND_AVAILABLE
+    use_hierarchical_rl = use_hierarchical_rl and RL_BACKEND_AVAILABLE
 
     # Create config with sidebar values
     config = StrategyConfig(

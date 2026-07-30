@@ -9,7 +9,14 @@ shap
 matplotlib
 seaborn
 plotly
+# MLX (RL agents). The ";"-conditions are pip environment markers, evaluated
+# on the installing machine — mlx only ships wheels for Python >= 3.10, and on
+# macOS only for Apple Silicon, so we skip it where it cannot install instead
+# of failing the whole pip install. The app detects a missing/broken MLX at
+# runtime and greys out the RL checkboxes; everything else works without it.
 # [cpu] pulls the mlx-cpu backend on Linux (plain "mlx" there is only a shell
 # missing libmlx.so); on macOS the extra is a no-op and mlx-metal is used.
-mlx[cpu]
+# Windows needs mlx-cpu spelled out: the [cpu] extra's own marker is Linux-only.
+mlx[cpu]; python_version >= "3.10" and (sys_platform != "darwin" or platform_machine == "arm64")
+mlx-cpu; python_version >= "3.10" and sys_platform == "win32"
 gymnasium>=0.29.0

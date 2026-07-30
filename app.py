@@ -11,12 +11,28 @@ from plotly.subplots import make_subplots
 
 from alpha_engine import (
     StrategyConfig, DataManager, AdaptiveRegimeClassifier,
-    AlphaDominatorOptimizer, BacktestEngine
+    AlphaDominatorOptimizer, BacktestEngine,
+    RL_BACKEND_AVAILABLE, RL_BACKEND_ERROR, _COMPUTE_LOCK,
 )
-from rl_weight_agent import HierarchicalRLController, WEIGHT_MODEL_DIR, _load_weight_model
 
 st.set_page_config(page_title="Alpha Dual Engine v154.6", layout="wide")
 st.title("Alpha Dual Engine v154.6 — Backtest Dashboard")
+
+# This dashboard exists solely to compare RL checkpoints — without the MLX
+# backend there is nothing it can show, so stop with a clear message instead
+# of an ImportError traceback. (alpha_engine.py, the main app, degrades
+# gracefully and works without MLX.)
+if not RL_BACKEND_AVAILABLE:
+    st.error(
+        f"This checkpoint-comparison dashboard requires the **MLX** backend, "
+        f"which cannot load on this system: {RL_BACKEND_ERROR}\n\n"
+        f'MLX needs Python 3.10+ (`pip install "mlx[cpu]"`; on macOS, Apple '
+        f"Silicon only). The main dashboard works without it: "
+        f"`streamlit run alpha_engine.py`."
+    )
+    st.stop()
+
+from rl_weight_agent import HierarchicalRLController, WEIGHT_MODEL_DIR, _load_weight_model
 
 
 @st.cache_data(show_spinner="Loading market data...")
@@ -43,11 +59,14 @@ def run_baseline_backtest(dm, config, data, categories, ml_probs):
         log_ret_30d, rsi_14 = data
     optimizer = AlphaDominatorOptimizer(dm.all_tickers, categories, config)
     engine = BacktestEngine(config)
-    results = engine.run(
-        prices, returns, features, ml_probs, sma_200, above_sma,
-        raw_mom, rel_strength, vols, info_ratio, mom_score, golden_cross,
-        log_ret_30d, rsi_14, AdaptiveRegimeClassifier(config), optimizer
-    )
+    # Same rerun-race protection as alpha_engine: Streamlit may start a new
+    # script thread while this backtest is still running.
+    with _COMPUTE_LOCK:
+        results = engine.run(
+            prices, returns, features, ml_probs, sma_200, above_sma,
+            raw_mom, rel_strength, vols, info_ratio, mom_score, golden_cross,
+            log_ret_30d, rsi_14, AdaptiveRegimeClassifier(config), optimizer
+        )
     # retrain classifier inside since we need a fresh one for baseline
     metrics = engine.calculate_metrics(results)
     return results, metrics
@@ -58,25 +77,28 @@ def run_rl_backtest(dm, config, data, categories, ml_probs, weight_model_path=No
         rel_strength, vols, info_ratio, mom_score, golden_cross, \
         log_ret_30d, rsi_14 = data
 
-    hier = HierarchicalRLController(config=config)
-    if weight_model_path:
-        hier.weight_agent.model = _load_weight_model(weight_model_path)
-        hier.weight_agent.model_path = weight_model_path
+    # MLX is not thread-safe: model loading and the RL backtest must hold the
+    # shared lock so an overlapping Streamlit rerun can't evaluate concurrently.
+    with _COMPUTE_LOCK:
+        hier = HierarchicalRLController(config=config)
+        if weight_model_path:
+            hier.weight_agent.model = _load_weight_model(weight_model_path)
+            hier.weight_agent.model_path = weight_model_path
 
-    optimizer = AlphaDominatorOptimizer(dm.all_tickers, categories, config)
-    if hasattr(hier, 'set_backtest_context'):
-        hier.set_backtest_context(
-            above_sma=above_sma, raw_momentum=raw_mom,
-            asset_volatilities=vols, information_ratio=info_ratio,
-            golden_cross=golden_cross, features=features, optimizer=optimizer,
+        optimizer = AlphaDominatorOptimizer(dm.all_tickers, categories, config)
+        if hasattr(hier, 'set_backtest_context'):
+            hier.set_backtest_context(
+                above_sma=above_sma, raw_momentum=raw_mom,
+                asset_volatilities=vols, information_ratio=info_ratio,
+                golden_cross=golden_cross, features=features, optimizer=optimizer,
+            )
+
+        engine = BacktestEngine(config)
+        results = engine.run(
+            prices, returns, features, ml_probs, sma_200, above_sma,
+            raw_mom, rel_strength, vols, info_ratio, mom_score, golden_cross,
+            log_ret_30d, rsi_14, hier, optimizer
         )
-
-    engine = BacktestEngine(config)
-    results = engine.run(
-        prices, returns, features, ml_probs, sma_200, above_sma,
-        raw_mom, rel_strength, vols, info_ratio, mom_score, golden_cross,
-        log_ret_30d, rsi_14, hier, optimizer
-    )
     metrics = engine.calculate_metrics(results)
     return results, metrics
 

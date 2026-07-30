@@ -30,7 +30,9 @@ Classes:
 """
 
 import warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings('once', category=FutureWarning)
+warnings.filterwarnings('once', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=UserWarning)
 
 import os
 import json

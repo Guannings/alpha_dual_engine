@@ -1217,7 +1217,9 @@ class BacktestEngine:
             prev_date = valid_dates[i - 1]
 
             daily_ret = returns.loc[date][optimizer.assets].values
-            daily_ret = np.nan_to_num(daily_ret, 0)
+            # nan= keyword is required: the second positional arg is `copy`,
+            # and copy=False crashes on the read-only arrays pandas 3.0 returns
+            daily_ret = np.nan_to_num(daily_ret, nan=0.0)
 
             ml_prob = ml_probs.loc[date]
             if np.isnan(ml_prob):

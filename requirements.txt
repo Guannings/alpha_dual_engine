@@ -1,7 +1,9 @@
 streamlit
 yfinance
-pandas
-numpy
+# pandas 3.0 returns read-only arrays (copy-on-write) and breaks in-place
+# numpy patterns; the codebase is developed and tested against the 2.x line.
+pandas>=2.0,<3
+numpy>=1.26,<3
 scipy
 scikit-learn
 xgboost

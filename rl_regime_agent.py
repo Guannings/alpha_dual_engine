@@ -470,7 +470,7 @@ class RegimeBacktestEnv(gym.Env):
         for day_idx in range(rebal_idx, min(end_idx, len(self.valid_dates))):
             day = self.valid_dates[day_idx]
             daily_ret = self.returns.loc[day][self.optimizer.assets].values
-            daily_ret = np.nan_to_num(daily_ret, 0)
+            daily_ret = np.nan_to_num(daily_ret, nan=0.0)
             port_daily_ret = np.dot(self._current_weights, daily_ret)
             self._portfolio_value *= (1 + port_daily_ret)
             window_port_returns.append(port_daily_ret)

@@ -39,11 +39,20 @@ from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 import logging
 import io
+import os
 import sys
 import platform
 import threading
 
 import streamlit as st
+
+# Hosted-demo detection: Streamlit Community Cloud mounts the repo under
+# /mount/src and provides ~1 GB RAM / shared CPU — far below the 8 GB the
+# full configuration assumes. There we cap the Monte Carlo widget so the
+# demo stays responsive; local runs keep the full 1,000,000-sim setup.
+IS_HOSTED_DEMO = os.path.exists("/mount/src") or os.environ.get("HOSTNAME") == "streamlit"
+MC_SIM_MAX = 100_000 if IS_HOSTED_DEMO else 1_000_000
+MC_SIM_DEFAULT = 50_000 if IS_HOSTED_DEMO else 1_000_000
 
 # Can the MLX backend actually load on this machine? Trying the import answers
 # more than checking the OS name: it also catches Intel Macs, Python < 3.10,
@@ -2066,12 +2075,19 @@ def main():
         n_simulations = st.number_input(
             "Monte Carlo Simulations (Change If you Wish)",
             min_value=1000,
-            max_value=1000000,
-            value=1000000,
+            max_value=MC_SIM_MAX,
+            value=MC_SIM_DEFAULT,
             step=10000,
             key="montecarlo_v4",
             help="Number of Monte Carlo simulations for stress testing"
         )
+
+        if IS_HOSTED_DEMO:
+            st.caption(
+                "🌐 Hosted demo: simulations capped at 100k for the 1 GB "
+                "cloud tier. Clone the repo to run the full 1,000,000-sim "
+                "configuration locally."
+            )
 
         st.markdown("---")
         st.markdown("### Advanced Settings")

@@ -10,7 +10,6 @@ xgboost
 shap
 matplotlib
 seaborn
-plotly
 # MLX (RL agents). The ";"-conditions are pip environment markers, evaluated
 # on the installing machine — mlx only ships wheels for Python >= 3.10, and on
 # macOS only for Apple Silicon, so we skip it where it cannot install instead

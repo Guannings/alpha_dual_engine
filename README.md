@@ -15,9 +15,7 @@ There are two ways to run this project. Pick the one that fits you:
 - **[Option A — With Docker](#option-a--with-docker)** (recommended): fully containerized, no Python setup, guaranteed reproducibility.
 - **[Option B — Without Docker](#option-b--without-docker)**: run directly with your own Python — fastest for quick iteration.
 
-> **Which file is the app?** The main dashboard is **`alpha_engine.py`** — the ⚙️ live strategy runner with configurable sliders and the Monte Carlo stress test. This is what both options launch.
->
-> `app.py` is a **separate, optional** dashboard for comparing saved training checkpoints (the "Scorecard" view). It is **not** the primary app — run it only if you specifically want the checkpoint comparison, via `streamlit run app.py`.
+> **Which file is the app?** The dashboard is **`alpha_engine.py`** — the ⚙️ live strategy runner with configurable sliders and the Monte Carlo stress test. This is what both options launch. (For comparing saved RL training checkpoints from the command line, see `eval_checkpoints.py`.)
 
 ---
 

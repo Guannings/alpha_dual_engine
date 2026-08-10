@@ -167,8 +167,12 @@ class DataManager:
 
     def load_data(self, max_retries: int = 3) -> None:
         logger.info(f"Loading data for {len(self.all_tickers)} assets")
+        # Capture the full asset universe once: self.all_tickers gets narrowed
+        # to whatever downloaded successfully below, so a retry must start from
+        # the complete list rather than an already-trimmed one.
+        full_asset_tickers = list(self.all_tickers)
         # Always download SPY (benchmark) even if it's not a tradeable asset
-        download_tickers = list(set(self.all_tickers + [self.BENCHMARK_TICKER, self.VIX_TICKER]))
+        download_tickers = list(set(full_asset_tickers + [self.BENCHMARK_TICKER, self.VIX_TICKER]))
         for attempt in range(max_retries):
             try:
                 data = yf.download(download_tickers, start=self.start_date, end=self.end_date,
@@ -182,7 +186,7 @@ class DataManager:
                     prices = prices.drop(columns=[self.VIX_TICKER])
                 else:
                     self.vix = prices['SPY'].pct_change().rolling(21).std() * np.sqrt(252) * 100
-                available = [t for t in self.all_tickers if t in prices.columns]
+                available = [t for t in full_asset_tickers if t in prices.columns]
                 self.all_tickers = available
                 # Keep SPY in prices for indicator calculation even if not tradeable
                 cols_to_keep = list(dict.fromkeys(available + [self.BENCHMARK_TICKER]))
@@ -191,6 +195,15 @@ class DataManager:
                 # Drop rows only where ALL columns are NaN, preserving lookback data
                 self.prices = prices.dropna(how='all')
                 self.returns = self.prices.pct_change().dropna()
+                # yfinance can return an empty/degenerate frame WITHOUT raising
+                # (e.g. a transient "database is locked" on its tz cache poisons
+                # the batch). Treat that as a failure so the retry/backoff below
+                # fires — otherwise we'd silently train on nothing.
+                if (self.BENCHMARK_TICKER not in self.prices.columns
+                        or len(self.prices) < 100 or len(available) < 2):
+                    raise RuntimeError(
+                        f"yfinance returned unusable data: {self.prices.shape[0]} rows, "
+                        f"{len(available)} assets (need SPY + >=2 assets, >=100 rows)")
                 self.vix = self.vix.reindex(self.prices.index).ffill().bfill()
                 self._calculate_indicators()
                 return

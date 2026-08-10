@@ -10,8 +10,17 @@ Usage: python tools/refresh_artifacts.py
 """
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import yfinance as yf  # noqa: E402
+
+# yfinance keeps a shared SQLite timezone cache. On CI runners a stale or
+# contended cache throws "database is locked" mid-download, which silently
+# empties the batch. Point it at a fresh per-run directory so this job can
+# never inherit a locked cache from a previous run.
+yf.set_tz_cache_location(tempfile.mkdtemp(prefix="yf_tz_cache_"))
 
 from alpha_engine import (  # noqa: E402
     StrategyConfig, DataManager, AdaptiveRegimeClassifier, save_classifier_artifact,
